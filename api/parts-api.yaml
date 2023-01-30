@@ -1,0 +1,233 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: The API documentation for tracking cycling equipment and parts
+  version: 1.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Parts
+    description: Part related definitions
+  - name: PartTypes
+    description: Part type related definitions
+
+paths:
+  /parts:
+    get:
+      operationId: getParts
+      description: returns all unfiltered parts
+      tags:
+        - Parts
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Parts'
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+    post:
+      operationId: createPart
+      description: creates a new part
+      tags:
+        - Parts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Part'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Part'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+  /parts/{partId}:
+    parameters:
+      - $ref: '#/components/parameters/partId'
+    get:
+      operationId: getPart
+      description: returns a single part
+      tags:
+        - Parts
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Part'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  /parts/{partId}/action/relate:
+    parameters:
+      - $ref: '#/components/parameters/partId'
+    post:
+      operationId: relatePartToPartType
+      description: relates a part to a partType
+      tags:
+        - Parts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartPartTypeRelation'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Part'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  /partTypes:
+    get:
+      operationId: getPartTypes
+      description: returns all defined part types
+      tags:
+        - PartTypes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartTypes'
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+    post:
+      operationId: createPartType
+      description: creates a new part type
+      tags:
+        - PartTypes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartType'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartType'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+
+components:
+  parameters:
+    partId:
+      name: partId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    partTypeId:
+      name: partTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Part:
+      type: object
+      required:
+       - name
+      properties:
+        id:
+            type: string
+            format: uuid
+            description: the created part
+            readOnly: true
+        name:
+            type: string
+            description: the created part
+        boughtAt:
+          type: string
+          format: date-time
+        partTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartType'
+        createdAt:
+          type: string
+          format: date-time
+    Parts:
+      type: array
+      items:
+        $ref: '#/components/schemas/Part'
+    PartType:
+      type: object
+      required:
+       - name
+      properties:
+        id:
+            type: string
+            format: uuid
+            description: the part type id
+            readOnly: true
+        name:
+            type: string
+            description: part type name
+        createdAt:
+          type: string
+          format: date-time
+    PartTypes:
+      type: array
+      items:
+        $ref: '#/components/schemas/PartType'
+    PartPartTypeRelation:
+      type: object
+      required:
+       - partId
+       - partTypeId
+       - validFrom
+      properties:
+        partId:
+          type: string
+          format: uuid
+          description: the part's id
+        partTypeId:
+          type: string
+          format: uuid
+          description: the part type's id
+        validFrom:
+          type: string
+          format: date-time
+          description: start date the relation is valid from

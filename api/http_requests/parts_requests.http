@@ -1,0 +1,11 @@
+###
+GET http://localhost:8080/api/parts
+Content-Type: application/json
+
+###
+POST http://localhost:8080/api/parts
+Content-Type: application/json
+
+{
+  "name": "Campagnolo AFS 03 Bremsscheibe 160mm original vorn"
+}
