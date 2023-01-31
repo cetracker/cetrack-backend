@@ -8,7 +8,6 @@ import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapp
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
-import de.cyclingsir.cetrack.part.storage.PartTypeRepository
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -21,9 +20,8 @@ import java.util.UUID
 private val logger = KotlinLogging.logger {}
 
 @Service
-class PartsService(
+class PartService(
     private val partRepository: PartRepository,
-    private val partTypeRepository: PartTypeRepository,
     private val partParTypRelationRepository: PartPartTypeRelationRepository,
     private val partDomain2StorageMapper: PartDomain2StorageMapper,
     private val partPartTypeRelationMapper: PartPartTypeRelationDomain2StorageMapper

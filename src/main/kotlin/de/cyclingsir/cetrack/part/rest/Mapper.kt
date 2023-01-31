@@ -2,12 +2,14 @@ package de.cyclingsir.cetrack.part.rest
 
 import com.syouth.kmapper.processor_annotations.Mapper
 import de.cyclingsir.cetrack.infrastructure.api.model.Part
+import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
+import de.cyclingsir.cetrack.infrastructure.api.model.PartType
 import de.cyclingsir.cetrack.part.domain.DomainPart
-import de.cyclingsir.cetrack.part.storage.PartEntity
+import de.cyclingsir.cetrack.part.domain.DomainPartPartTypeRelation
+import de.cyclingsir.cetrack.part.domain.DomainPartType
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import java.util.*
 
 /**
  * Initially created on 1/24/23.
@@ -23,4 +25,17 @@ interface PartDomain2ApiMapper : PartDomain2ApiMapperSupport {
     fun map(domain: DomainPart): Part
 
     fun map(rest: Part): DomainPart
+}
+
+@Mapper
+interface PartPartTypeRelationDomain2ApiMapper : PartDomain2ApiMapperSupport {
+    fun map(domain: DomainPartPartTypeRelation) : PartPartTypeRelation
+
+    fun map(rest: PartPartTypeRelation) : DomainPartPartTypeRelation
+}
+@Mapper
+interface PartTypeDomain2ApiMapper : PartDomain2ApiMapperSupport {
+    fun map(domain: DomainPartType): PartType
+
+    fun map(rest: PartType): DomainPartType
 }

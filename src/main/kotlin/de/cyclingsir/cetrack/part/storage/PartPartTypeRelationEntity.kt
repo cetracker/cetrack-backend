@@ -25,9 +25,9 @@ class PartPartTypeRelationEntity(
     var partTypeId: UUID,
 
     @Id
-    private val validFrom: Instant,
+    var validFrom: Instant,
 
-    private val validUntil: Instant? = null)
+    var validUntil: Instant? = null)
 
 class CompositeKey(
     var partId: UUID,

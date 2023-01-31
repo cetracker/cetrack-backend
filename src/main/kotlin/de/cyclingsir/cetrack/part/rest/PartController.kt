@@ -3,7 +3,7 @@ package de.cyclingsir.cetrack.part.rest
 import de.cyclingsir.cetrack.infrastructure.api.model.Part
 import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
-import de.cyclingsir.cetrack.part.domain.PartsService
+import de.cyclingsir.cetrack.part.domain.PartService
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -16,8 +16,8 @@ import java.util.*
  * Initially created on 12/17/22.
  */
 @RestController
-class PartsController(
-    val service: PartsService,
+class PartController(
+    val service: PartService,
     val partMapper: PartDomain2ApiMapper,
     val relationMapper: PartPartTypeRelationDomain2ApiMapper
 ) : PartsApi {
