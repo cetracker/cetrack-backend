@@ -231,3 +231,7 @@ components:
           type: string
           format: date-time
           description: start date the relation is valid from
+        validUntil:
+          type: string
+          format: date-time
+          description: the last date, the relation is valid

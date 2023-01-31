@@ -1,11 +1,23 @@
 ###
-GET http://localhost:8080/api/parts
+// @no-log
+GET http://{{host}}:{{port}}/api/parts
 Content-Type: application/json
 
 ###
-POST http://localhost:8080/api/parts
+// @no-log
+POST http://{{host}}:{{port}}/api/parts
 Content-Type: application/json
 
 {
   "name": "Campagnolo AFS 03 Bremsscheibe 160mm original vorn"
+}
+
+###
+POST http://{{host}}:{{port}}/parts/e0d3d2d3-f7bc-4267-8d14-15b9a3faae0f/action/relate
+Content-Type: application/json
+
+{
+  "partId": "e0d3d2d3-f7bc-4267-8d14-15b9a3faae0f",
+  "partTypeId": "3c17e0c1-9cc2-4ba5-a656-44c6964dc6d3",
+  "validFrom": "2022-08-14T14:00:00Z"
 }
