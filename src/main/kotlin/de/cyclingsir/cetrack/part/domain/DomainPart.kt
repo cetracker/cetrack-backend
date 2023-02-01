@@ -1,6 +1,6 @@
 package de.cyclingsir.cetrack.part.domain
 
-import de.cyclingsir.cetrack.infrastructure.api.model.PartType
+import jakarta.validation.constraints.NotNull
 import java.time.Instant
 import java.util.UUID
 
@@ -9,8 +9,8 @@ import java.util.UUID
  */
 data class DomainPart(
     val id: UUID?,
-    val name: String,
+    val name: @NotNull String,
     val boughtAt: Instant?,
-    val partTypes: MutableList<PartType> = mutableListOf(),
+    val partTypes: MutableList<DomainPartType> = mutableListOf(),
     val createdAt: Instant?
 )

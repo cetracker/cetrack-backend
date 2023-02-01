@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.part.storage
 
 import jakarta.persistence.Column
+import jakarta.persistence.Embeddable
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.IdClass
@@ -29,6 +30,7 @@ class PartPartTypeRelationEntity(
 
     var validUntil: Instant? = null)
 
+@Embeddable
 class CompositeKey(
     var partId: UUID,
     var partTypeId: UUID,

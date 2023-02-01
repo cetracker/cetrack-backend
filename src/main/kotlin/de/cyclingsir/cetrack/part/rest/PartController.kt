@@ -4,13 +4,12 @@ import de.cyclingsir.cetrack.infrastructure.api.model.Part
 import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
-import io.swagger.v3.oas.annotations.Parameter
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import java.util.*
+import java.util.UUID
 
 /**
  * Initially created on 12/17/22.
@@ -43,8 +42,8 @@ class PartController(
     }
 
     override fun relatePartToPartType(
-        @Parameter(required = true) @PathVariable("partId") partId: UUID,
-        @Parameter(required = true) @Valid @RequestBody partPartTypeRelation: PartPartTypeRelation
+        @PathVariable("partId") partId: UUID,
+        @Valid @RequestBody partPartTypeRelation: PartPartTypeRelation
     ): ResponseEntity<Part> {
         val domainPart = service.createPartPartTypeRelation(relationMapper.map(partPartTypeRelation))
         return ResponseEntity.ok(partMapper.map(domainPart))

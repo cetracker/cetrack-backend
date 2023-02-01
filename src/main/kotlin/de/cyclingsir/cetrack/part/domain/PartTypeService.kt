@@ -16,7 +16,6 @@ class PartTypeService(
     private val partTypeDomain2StorageMapper: PartTypeDomain2StorageMapper,
 ) {
     fun addPartType(partType: DomainPartType): DomainPartType {
-        TODO("Not yet implemented")
         val partTypeEntity = repository.save(partTypeDomain2StorageMapper.map(partType))
         logger.info { "Added Entity: ${partTypeEntity.createdAt?.toString()}, ${partTypeEntity.name}" }
         val domainPart = partTypeDomain2StorageMapper.map(partTypeEntity)

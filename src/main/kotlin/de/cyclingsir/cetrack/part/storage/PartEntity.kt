@@ -1,6 +1,5 @@
 package de.cyclingsir.cetrack.part.storage
 
-import de.cyclingsir.cetrack.infrastructure.api.model.PartType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
@@ -13,7 +12,7 @@ import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 /**
  * Initially created on 1/23/23.
@@ -32,12 +31,12 @@ class PartEntity(
         joinColumns = [JoinColumn(name = "part_id", updatable = false, insertable = false)],
         inverseJoinColumns = [JoinColumn(name = "part_type_id", updatable = false, insertable = false)]
     )
-    private var partTypes: MutableList<PartType> = mutableListOf(),
+    var partTypes: MutableList<PartTypeEntity> = mutableListOf(),
 
     var boughtAt: Instant? = null,
 
     @CreatedDate
-    var createdAt: Instant? = null,
+    var createdAt: Instant? = null
 )
 
 

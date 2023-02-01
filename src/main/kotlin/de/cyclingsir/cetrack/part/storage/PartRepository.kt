@@ -1,4 +1,4 @@
-package de.cyclingsir.cetrack.part.storage;
+package de.cyclingsir.cetrack.part.storage
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
