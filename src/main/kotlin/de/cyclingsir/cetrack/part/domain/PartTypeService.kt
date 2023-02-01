@@ -19,7 +19,7 @@ class PartTypeService(
         val partTypeEntity = repository.save(partTypeDomain2StorageMapper.map(partType))
         logger.info { "Added Entity: ${partTypeEntity.createdAt?.toString()}, ${partTypeEntity.name}" }
         val domainPart = partTypeDomain2StorageMapper.map(partTypeEntity)
-        logger.info { "Domain Part (mapped) ${domainPart.createdAt?.toString()}" }
+        logger.info { "Domain PartType (mapped) ${domainPart.createdAt?.toString()}" }
         return domainPart
     }
 
