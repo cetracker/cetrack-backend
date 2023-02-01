@@ -8,9 +8,9 @@ data class DomainBike(
 
     val manufacturer: String?,
 
-    val id: java.util.UUID? = null,
+    val id: java.util.UUID?,
 
-    val boughtAt: java.time.Instant? = null,
+    val boughtAt: java.time.Instant?,
 
-    val createdAt: java.time.Instant? = null
+    val createdAt: java.time.Instant?
 )

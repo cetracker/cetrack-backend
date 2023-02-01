@@ -26,6 +26,8 @@ class BikeEntity(
     @Column(length = 255)
     var manufacturer: String? = null,
 
+    var boughtAt: Instant? = null,
+
     @CreatedDate
     var createdAt: Instant? = null
 )
