@@ -1,0 +1,26 @@
+###
+// @no-log
+GET http://{{host}}:{{port}}/api/bikes
+Content-Type: application/json
+
+###
+// @no-log
+POST http://{{host}}:{{port}}/api/bikes
+Content-Type: application/json
+
+{
+  "model": "Atmos",
+  "manufacturer": "Parapera",
+  "boughtAt": "2022-02-01T14:00:05.0Z"
+}
+> {%
+    client.test("Response content-type is json", function() {
+        let type = response.contentType.mimeType;
+        client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+    });
+if(response.contentType.mimeType == "application/json") {
+    client.global.set("bikeId", response.body.id);
+} else {
+    client.global.set("bikeId", "unknown");
+}
+%}

@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: The API documentation for tracking cycling equipment and parts - bike realated definitions
+  version: 1.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Bikes
+    description: Bike related definitions
+
+paths:
+  /bikes:
+    get:
+      operationId: getBikes
+      description: returns all unfiltered bikes
+      tags:
+        - Bikes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bikes'
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+    post:
+      operationId: createBike
+      description: creates a new bike
+      tags:
+        - Bikes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bike'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+  /bikes/{bikeId}:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+    get:
+      operationId: getBike
+      description: returns a single bike
+      tags:
+        - Bikes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+
+components:
+  parameters:
+    bikeId:
+      name: bikeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Bike:
+      type: object
+      required:
+       - model
+      properties:
+        id:
+            type: string
+            format: uuid
+            description: id of the created bike
+            readOnly: true
+        model:
+            type: string
+            description: bike's model name
+        manufacturer:
+            type: string
+            description: bike's manufacturer
+        boughtAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    Bikes:
+      type: array
+      items:
+        $ref: '#/components/schemas/Bike'
