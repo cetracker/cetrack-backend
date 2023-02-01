@@ -11,13 +11,53 @@ Content-Type: application/json
 {
   "name": "Campagnolo AFS 03 Bremsscheibe 160mm original vorn"
 }
+> {%
+    client.test("Response content-type is json", function() {
+        let type = response.contentType.mimeType;
+        client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+    });
+if(response.contentType.mimeType == "application/json") {
+    // let text = '{ "id": "aaa"}'
+    // let arr = JSON.parse(response.body);
+    // let arr = JSON.parse(text);
+    // client.global.set("partId", arr.id);
+    client.global.set("partId", response.body.id);
+} else {
+    client.global.set("partId", "unknown");
+}
+%}
 
 ###
-POST http://{{host}}:{{port}}/parts/e0d3d2d3-f7bc-4267-8d14-15b9a3faae0f/action/relate
+POST http://localhost:8080/api/partTypes
 Content-Type: application/json
 
 {
-  "partId": "e0d3d2d3-f7bc-4267-8d14-15b9a3faae0f",
-  "partTypeId": "3c17e0c1-9cc2-4ba5-a656-44c6964dc6d3",
-  "validFrom": "2022-08-14T14:00:00Z"
+  "name": "Bremsscheibe vorn"
+}
+
+> {%
+    client.test("Response content-type is json", function() {
+        let type = response.contentType.mimeType;
+        client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+    });
+    if(response.contentType.mimeType == "application/json") {
+        client.global.set("partTypeId", response.body.id);
+    } else {
+        client.global.set("partTypeId", "unknown");
+    }
+%}
+
+###
+// @no-log
+GET http://{{host}}:{{port}}/api/partTypes
+Content-Type: application/json
+
+###
+POST http://{{host}}:{{port}}/api/parts/{{partId}}/action/relate
+Content-Type: application/json
+
+{
+  "partId": "{{partId}}",
+  "partTypeId": "{{partTypeId}}",
+  "validFrom": "2022-09-14T14:00:00Z"
 }
