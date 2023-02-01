@@ -29,8 +29,6 @@ class PartService(
 
     fun getParts(): List<DomainPart> {
         val partEntities = partRepository.findAll()
-        val part = PartEntity(UUID.randomUUID(), "Lenker")
-        partEntities.add(part)
         return partEntities.map(partDomain2StorageMapper::map)
     }
 
