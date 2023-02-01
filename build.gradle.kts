@@ -46,44 +46,70 @@ repositories {
     mavenLocal()
 }
 
+// multiple api specs:
+// https://stackoverflow.com/a/73081035/2664521
+val openapiSpecs = mapOf(
+    "part" to "api/parts-api.yaml",
+    "bike" to "api/bike-api.yaml"
+)
+openapiSpecs.forEach {
+    println("$rootDir/${it.value}")
+    tasks.create("openApiGenerate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
+        generatorName.set("kotlin-spring")
+        library.set("spring-boot")
+        generateApiTests.set(false)
+        generateApiDocumentation.set(false)
+        generateModelTests.set(false)
+        generateModelDocumentation.set(true)
+        templateDir.set("$rootDir/api/templates")
+        inputSpec.set("$rootDir/${it.value}")
+        outputDir.set("$buildDir/generated")
+        apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
+        modelPackage.set("de.cyclingsir.cetrack.infrastructure.api.model")
+        configOptions.set(
+            mapOf(
+                "interfaceOnly" to "true",
+//            delegatePattern: "true",
+                "useSwaggerUI" to "false",
+                "SpringBoot3" to "true",
+                // https://github.com/OpenAPITools/openapi-generator/pull/13620 ==> conflicts
+                // ==> https://github.com/OpenAPITools/openapi-generator/pull/14369
+                // https://github.com/OpenAPITools/openapi-generator/issues/14010
+                // https://github.com/OpenAPITools/openapi-generator/issues/13578
+                "useBeanValidation" to "true",
+                "useTags" to "true",
+//            skipDefaultInterface: "true",
+//            "hideGenerationTimestamp" to "true"
+            )
+        )
+
+//        sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).java.srcDir("$buildDir/generated/openapi/src")
+    }
+    tasks.create("openApiValidate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.ValidateTask::class) {
+        inputSpec.set("$rootDir/${it.value}")
+    }
+}
+tasks.register("openApiGenerateAll") { dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" }) }
+tasks.register("openApiValidateAll") { dependsOn(openapiSpecs.keys.map { "openApiValidate-$it" }) }
+/* not working yet
 openApiValidate {
     inputSpec.set("$rootDir/api/parts-api.yaml")
 }
-openApiGenerate {
-    generatorName.set("kotlin-spring")
-    library.set("spring-boot")
-    generateApiTests.set(false)
-    generateApiDocumentation.set(false)
-    generateModelTests.set(false)
-    generateModelDocumentation.set(true)
-    templateDir.set("$rootDir/api/templates")
-    inputSpec.set("$rootDir/api/parts-api.yaml")
-    outputDir.set("$buildDir/generated")
-    apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
-    modelPackage.set("de.cyclingsir.cetrack.infrastructure.api.model")
-    configOptions.set(
-        mapOf(
-            "interfaceOnly" to "true",
-//            delegatePattern: "true",
-            "useSwaggerUI" to "false",
-            "SpringBoot3" to "true",
-            // https://github.com/OpenAPITools/openapi-generator/pull/13620 ==> conflicts
-            // ==> https://github.com/OpenAPITools/openapi-generator/pull/14369
-            // https://github.com/OpenAPITools/openapi-generator/issues/14010
-            // https://github.com/OpenAPITools/openapi-generator/issues/13578
-            "useBeanValidation" to "true",
-            "useTags" to "true",
-//            skipDefaultInterface: "true",
-//            "hideGenerationTimestamp" to "true"
-        )
-    )
+openApiValidate {
+    inputSpec.set("$rootDir/api/bike-api.yaml")
 }
+
+tasks.withType<org.openapitools.generator.gradle.plugin.tasks.ValidateTask> {
+    dependsOn("openApiValidate-part", "openApiValidate-bike")
+}
+*/
+
 
 // https://kotlinlang.org/docs/ksp-quickstart.html#make-ide-aware-of-generated-code
 // for kMapper and openApiGenerator
 kotlin {
     sourceSets.main {
-        kotlin.srcDirs("build/generated/ksp/main/kotlin", "${openApiGenerate.outputDir.get()}/src/main")
+        kotlin.srcDirs("build/generated/ksp/main/kotlin", "build/generated/src/main")
     }
     sourceSets.test {
         kotlin.srcDir("build/generated/ksp/test/kotlin")
@@ -128,7 +154,7 @@ tasks.withType<KotlinCompile> {
         jvmTarget = "17"
         // useK2 = true
     }
-    dependsOn("openApiGenerate")
+    dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
 }
 
 tasks.bootRun {
