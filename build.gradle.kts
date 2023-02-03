@@ -50,7 +50,8 @@ repositories {
 // https://stackoverflow.com/a/73081035/2664521
 val openapiSpecs = mapOf(
     "part" to "api/parts-api.yaml",
-    "bike" to "api/bike-api.yaml"
+    "bike" to "api/bike-api.yaml",
+    "tour" to "api/tour-api.yaml"
 )
 openapiSpecs.forEach {
     println("$rootDir/${it.value}")
