@@ -5,8 +5,10 @@ import de.cyclingsir.cetrack.infrastructure.api.rest.PartTypesApi
 import de.cyclingsir.cetrack.part.domain.PartTypeService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 /**
  * Initially created on 1/31/23.
@@ -26,5 +28,13 @@ class PartTypeController(
         val domainPartTypes = service.getPartTypes()
         val restPartTypes = domainPartTypes.map(mapper::map)
         return ResponseEntity.ok(restPartTypes);
+    }
+
+    override fun relatePartTypeToBike(
+        @PathVariable("partTypeId") partTypeId: UUID,
+        @PathVariable("bikeId") bikeId: UUID
+    ): ResponseEntity<PartType> {
+        val modifiedPartType = service.relatePartTypeToBike(partTypeId, bikeId)
+        return ResponseEntity.ok(mapper.map(modifiedPartType))
     }
 }

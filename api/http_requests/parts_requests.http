@@ -48,6 +48,12 @@ Content-Type: application/json
 %}
 
 ###
+# 62cd2b7c-4766-4962-a2ce-f777d164ab1b
+POST http://{{host}}:{{port}}/api/partTypes/{{partTypeId}}/action/relate/{{bikeId}}
+#POST http://{{host}}:{{port}}/api/partTypes/{{partTypeId}}/action/relate/4598aded-4886-496c-9042-0358c7f5de7a
+Content-Type: application/json
+
+###
 // @no-log
 GET http://{{host}}:{{port}}/api/partTypes
 Content-Type: application/json

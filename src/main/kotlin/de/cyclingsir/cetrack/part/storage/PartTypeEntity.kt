@@ -1,9 +1,11 @@
 package de.cyclingsir.cetrack.part.storage
 
+import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
 import jakarta.persistence.Id
+import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
@@ -22,6 +24,8 @@ class PartTypeEntity(
 
     @Column(length = 255)
     var name: @NotNull String,
+
+    @ManyToOne var bike: BikeEntity? = null,
 
     @CreatedDate
     var createdAt: Instant? = null
