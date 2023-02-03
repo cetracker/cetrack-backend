@@ -12,7 +12,7 @@ import java.time.ZoneOffset
  */
 
 interface BikeDomain2ApiMapperSupport {
-    fun mapOffsetDateTime(o: OffsetDateTime?): Instant? = o?.toInstant()
+    fun mapNullableOffsetDateTime(o: OffsetDateTime?): Instant? = o?.toInstant()
     fun mapNullableInstant2UTC(i: Instant?): OffsetDateTime? = i?.atOffset(ZoneOffset.UTC)
 }
 

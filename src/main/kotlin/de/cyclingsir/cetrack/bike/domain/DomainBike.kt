@@ -1,5 +1,8 @@
 package de.cyclingsir.cetrack.bike.domain
 
+import java.time.Instant
+import java.util.UUID
+
 /**
  * Initially created on 2/1/23.
  */
@@ -8,9 +11,9 @@ data class DomainBike(
 
     val manufacturer: String?,
 
-    val id: java.util.UUID?,
+    val id: UUID?,
 
-    val boughtAt: java.time.Instant?,
+    val boughtAt: Instant?,
 
-    val createdAt: java.time.Instant?
+    val createdAt: Instant?
 )
