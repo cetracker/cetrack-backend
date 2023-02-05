@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
@@ -39,6 +40,11 @@ class PartController(
         val domainParts = service.getParts()
         val restParts = domainParts.map(partMapper::map)
         return ResponseEntity.ok(restParts);
+    }
+
+    override fun getReport(): ResponseEntity<Unit> {
+        service.getReport()
+        return ResponseEntity(HttpStatus.NO_CONTENT)
     }
 
     override fun relatePartToPartType(

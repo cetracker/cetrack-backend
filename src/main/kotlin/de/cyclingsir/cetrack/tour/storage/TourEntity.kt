@@ -10,7 +10,6 @@ import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -28,7 +27,7 @@ class TourEntity(
 
     var length: Int,
 
-    var duration: Duration,
+    var duration: Long,
 
     @ManyToOne var bike: BikeEntity? = null,
 

@@ -1,7 +1,6 @@
 package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.bike.domain.DomainBike
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -12,7 +11,7 @@ data class DomainTour(
     val id: UUID?,
     val title: String,
     val length: Int,
-    val duration: Duration,
+    val duration: Long,
     val bike: DomainBike?,
     val startedAt: Instant,
     val createdAt: Instant?
