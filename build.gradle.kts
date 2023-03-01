@@ -62,7 +62,7 @@ openapiSpecs.forEach {
         generateApiDocumentation.set(false)
         generateModelTests.set(false)
         generateModelDocumentation.set(true)
-        templateDir.set("$rootDir/api/templates")
+//        templateDir.set("$rootDir/api/templates")
         inputSpec.set("$rootDir/${it.value}")
         outputDir.set("$buildDir/generated")
         apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
