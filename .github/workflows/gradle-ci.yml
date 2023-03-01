@@ -30,11 +30,9 @@ jobs:
         distribution: 'temurin'
         java-version: 17
         
-    - name: Setup Gradle
+    - name: Run Gradle Wrapper
       uses: gradle/gradle-build-action@v2
       with:
         gradle-version: wrapper
-     
-    - name: Execute Gradle build
       run: ./gradlew build -x test
       
