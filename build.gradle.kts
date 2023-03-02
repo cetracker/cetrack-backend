@@ -137,7 +137,7 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging:3.0.4")
 
-    implementation("io.swagger.core.v3:swagger-annotations:2.2.7")
+    implementation("io.swagger.core.v3:swagger-annotations:2.2.8")
     implementation("io.swagger.core.v3:swagger-models:2.2.8")
 
     // data classes mapper - https://github.com/s0nicyouth/kmapper
