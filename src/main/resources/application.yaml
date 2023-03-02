@@ -20,6 +20,10 @@ spring:
   config:
     activate:
       on-profile: default
+  servlet:
+    multipart:
+      max-file-size: 512KB
+      max-request-size: 512KB
 server:
   port: 8080
 
@@ -105,6 +109,10 @@ spring:
   h2:
     console:
       enabled: true
+      path: "/h2"
+      settings:
+        web-allow-others: true
+        trace: true
   sql:
     init:
       mode: always

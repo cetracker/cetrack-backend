@@ -1,6 +1,8 @@
 package de.cyclingsir.cetrack.tour.rest
 
 import com.syouth.kmapper.processor_annotations.Mapper
+import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
+import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.tour.domain.DomainTour
 import java.time.Duration
@@ -32,4 +34,9 @@ interface TourDomain2ApiMapper : TourDomain2ApiMapperSupport {
     fun map(domain: DomainTour) : Tour
 
     fun map(rest: Tour) : DomainTour
+}
+
+@Mapper
+interface MTTourDomain2ApiMapper  {
+    fun map(rest: MTTour) : DomainMTTour
 }

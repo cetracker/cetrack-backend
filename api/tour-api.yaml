@@ -60,12 +60,70 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+  /tours/upload:
+    post:
+      operationId: uploadTours
+      description: upload tour list exported from MyTourbook
+      tags:
+        - Tours
+      requestBody:
+        required: true
+        content:
+          'text/plain; charset=utf-8':
+            schema:
+              type: string
+      responses:
+        '201':
+          description: The Uploaded file was successfully processed
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+  /tours/import:
+    post:
+      operationId: importTours
+      description: import tours exported from MyTourbook Derby DB as JSON from DBeaver
+      tags:
+        - Tours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MTTours'
+      responses:
+        '201':
+          description: The Uploaded file was successfully processed
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
   /tours/{tourId}:
     parameters:
       - $ref: '#/components/parameters/tourId'
     get:
       operationId: getTour
       description: returns a single tour
+      tags:
+        - Tours
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+  /tours/{tourId}/action/relate:
+    parameters:
+      - $ref: '#/components/parameters/tourId'
+      - $ref: '#/components/parameters/bikeId'
+    post:
+      operationId: relateBikeToTour
+      description: relates a bike to the tour
       tags:
         - Tours
       responses:
@@ -89,13 +147,20 @@ components:
       schema:
         type: string
         format: uuid
+    bikeId:
+      name: bikeId
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     Tour:
       type: object
       required:
        - title
-       - length
-       - duration
+       - distance
+       - durationMoving
        - startedAt
       properties:
         id:
@@ -106,10 +171,10 @@ components:
         title:
           type: string
           description: tour's model name
-        length:
+        distance:
           type: integer
           minimum: 0
-        duration:
+        durationMoving:
           type: integer
           format: int64
           minimum: 0
@@ -121,7 +186,53 @@ components:
         createdAt:
           type: string
           format: date-time
+    MTTour:
+      type: object
+      required:
+        - MTTOURID
+        - TITLE
+        - DISTANCE
+        - DURATIONMOVING
+        - STARTYEAR
+        - STARTMONTH
+        - STARTDAY
+        - STARTTIMESTAMP
+      properties:
+        MTTOURID:
+          type: string
+          description: id for the tour created by MT
+        TITLE:
+          type: string
+          description: tour's model name
+        DISTANCE:
+          type: integer
+          minimum: 0
+          description: tour's distance in meters
+        DURATIONMOVING:
+          type: integer
+          format: int64
+          minimum: 0
+          description: time cycled in seconds
+        TIMEELAPSEDDEVICE:
+          type: integer
+          format: int64
+          minimum: 0
+          description: time including stops in seconds
+        TIMERECORDEDDEVICE:
+          type: integer
+          format: int64
+          minimum: 0
+          description: recorded movement by device
+        STARTTIMESTAMP:
+          type: integer
+          format: int64
+          minimum: 1
+          description: tour's start time in unix epoch
     Tours:
       type: array
       items:
         $ref: '#/components/schemas/Tour'
+    MTTours:
+      type: array
+      items:
+        $ref: '#/components/schemas/MTTour'

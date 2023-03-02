@@ -1,5 +1,7 @@
 package de.cyclingsir.cetrack.tour.configuration
 
+import de.cyclingsir.cetrack.tour.rest.MTTourDomain2ApiMapper
+import de.cyclingsir.cetrack.tour.rest.MTTourDomain2ApiMapperImpl
 import de.cyclingsir.cetrack.tour.rest.TourDomain2ApiMapper
 import de.cyclingsir.cetrack.tour.rest.TourDomain2ApiMapperImpl
 import de.cyclingsir.cetrack.tour.storage.TourDomain2StorageMapper
@@ -18,4 +20,7 @@ class TourMapperConfiguration {
 
     @Bean
     fun getTourDomain2StorageMapper() : TourDomain2StorageMapper = TourDomain2StorageMapperImpl()
+
+    @Bean
+    fun getMTTourDomain2ApiMapper() : MTTourDomain2ApiMapper = MTTourDomain2ApiMapperImpl()
 }

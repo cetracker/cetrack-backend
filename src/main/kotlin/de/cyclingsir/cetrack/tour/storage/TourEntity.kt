@@ -22,12 +22,15 @@ import java.util.UUID
 class TourEntity(
     @Id var id: UUID,
 
+    @Column(length = 30)
+    var mtTourId: String? = null,
+
     @Column(length = 255)
     var title: @NotNull String,
 
-    var length: Int,
+    var distance: Int,
 
-    var duration: Long,
+    var durationMoving: Long,
 
     @ManyToOne var bike: BikeEntity? = null,
 

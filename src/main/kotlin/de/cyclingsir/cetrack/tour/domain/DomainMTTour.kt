@@ -1,0 +1,28 @@
+package de.cyclingsir.cetrack.infrastructure.api.model
+
+/**
+ *
+ * @param mtTourId id for the tour created by MT
+ * @param title tour's model name
+ * @param distance tour's distance in meters
+ * @param durationMoving time cycled in seconds
+ * @param timeElapsedDevice time including stops in seconds
+ * @param timeRecordedDevice recorded movement by device
+ * @param startTimestamp tour's start time in unix epoch
+ */
+data class DomainMTTour(
+
+    val MTTOURID: String,
+
+    val TITLE: String,
+
+    val DISTANCE: Int,
+
+    val DURATIONMOVING: Long,
+
+    val TIMEELAPSEDDEVICE: Long? = null,
+
+    val TIMERECORDEDDEVICE: Long? = null,
+
+    val STARTTIMESTAMP: Long
+)

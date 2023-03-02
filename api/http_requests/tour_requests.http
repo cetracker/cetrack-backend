@@ -1,0 +1,25 @@
+###
+// @no-log
+GET http://{{host}}:{{port}}/api/tours
+Content-Type: application/json
+
+###
+// @no-log
+GET http://{{host}}:{{port}}/api/tours/<TOUR-ID-HERE>
+Content-Type: application/json
+
+> {%
+    client.test("Response content-type is json", function() {
+        let type = response.contentType.mimeType;
+        client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
+    });
+    if(response.contentType.mimeType == "application/json") {
+        client.global.set("tourId", response.body.id);
+    } else {
+        client.global.set("tourId", "unknown");
+    }
+%}
+
+###
+POST http://localhost:8080/{{basePath}}/tours/{{tourId}}/action/relate?bikeId={{bikeId}}
+Content-Type: application/json

@@ -160,7 +160,7 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
-  /partTypes/{partTypeId}/action/relate/{bikeId}:
+  /partTypes/{partTypeId}/action/relate:
     parameters:
       - $ref: '#/components/parameters/partTypeId'
       - $ref: '#/components/parameters/bikeId'
@@ -199,7 +199,7 @@ components:
         format: uuid
     bikeId:
       name: bikeId
-      in: path
+      in: query
       required: true
       schema:
         type: string

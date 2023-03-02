@@ -7,6 +7,7 @@ import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -32,7 +33,7 @@ class PartTypeController(
 
     override fun relatePartTypeToBike(
         @PathVariable("partTypeId") partTypeId: UUID,
-        @PathVariable("bikeId") bikeId: UUID
+        @Valid @RequestParam(value = "bikeId", required = true) bikeId: UUID
     ): ResponseEntity<PartType> {
         val modifiedPartType = service.relatePartTypeToBike(partTypeId, bikeId)
         return ResponseEntity.ok(mapper.map(modifiedPartType))

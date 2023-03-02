@@ -22,6 +22,7 @@ class PartController(
     val relationMapper: PartPartTypeRelationDomain2ApiMapper
 ) : PartsApi {
 
+//    @CrossOrigin
     override fun createPart(@Valid @RequestBody part: Part): ResponseEntity<Part> {
         val addedPart = service.addPart(partMapper.map(part))
         return ResponseEntity.ok(partMapper.map(addedPart))

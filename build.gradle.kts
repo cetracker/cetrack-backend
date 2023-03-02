@@ -5,7 +5,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.0"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
     id("com.google.devtools.ksp") version "1.8.0-1.0.8" // /for kmapper
-    id("org.openapi.generator") version "6.2.1"
+    id("org.openapi.generator") version "6.4.0"
     checkstyle
     idea
 
@@ -42,8 +42,9 @@ version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
+    maven( url="https://s01.oss.sonatype.org/content/repositories/snapshots" )
     mavenCentral()
-    mavenLocal()
+//    mavenLocal()
 }
 
 // multiple api specs:
@@ -62,7 +63,6 @@ openapiSpecs.forEach {
         generateApiDocumentation.set(false)
         generateModelTests.set(false)
         generateModelDocumentation.set(true)
-        templateDir.set("$rootDir/api/templates")
         inputSpec.set("$rootDir/${it.value}")
         outputDir.set("$buildDir/generated")
         apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
@@ -72,7 +72,7 @@ openapiSpecs.forEach {
                 "interfaceOnly" to "true",
 //            delegatePattern: "true",
                 "useSwaggerUI" to "false",
-                "SpringBoot3" to "true",
+                "useSpringBoot3" to "true",
                 // https://github.com/OpenAPITools/openapi-generator/pull/13620 ==> conflicts
                 // ==> https://github.com/OpenAPITools/openapi-generator/pull/14369
                 // https://github.com/OpenAPITools/openapi-generator/issues/14010
@@ -129,6 +129,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
+    // temporarily needed for upload html form - until being replaced by frontend
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(kotlin("stdlib-jdk8"))
 
@@ -138,9 +141,9 @@ dependencies {
     implementation("io.swagger.core.v3:swagger-models:2.2.7")
 
     // data classes mapper - https://github.com/s0nicyouth/kmapper
-    implementation("io.github.s0nicyouth:processor_annotations:1.1.0-SNAPSHOT")
-    implementation("io.github.s0nicyouth:converters:1.1.0-SNAPSHOT")
-    ksp("io.github.s0nicyouth:processor:1.1.0-SNAPSHOT")
+    implementation("io.github.cetracker:processor_annotations:1.1.0-SNAPSHOT")
+    implementation("io.github.cetracker:converters:1.1.0-SNAPSHOT")
+    ksp("io.github.cetracker:processor:1.1.0-SNAPSHOT")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("com.h2database:h2")
@@ -167,4 +170,8 @@ tasks.bootRun {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.getByName<Jar>("jar") {
+    enabled = false
 }

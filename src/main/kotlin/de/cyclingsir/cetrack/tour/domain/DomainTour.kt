@@ -9,9 +9,10 @@ import java.util.UUID
  */
 data class DomainTour(
     val id: UUID?,
+    val mtTourId: String? = null,
     val title: String,
-    val length: Int,
-    val duration: Long,
+    val distance: Int,
+    val durationMoving: Long,
     val bike: DomainBike?,
     val startedAt: Instant,
     val createdAt: Instant?
