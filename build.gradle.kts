@@ -9,6 +9,8 @@ plugins {
     checkstyle
     idea
 
+    id("com.palantir.docker") version "0.34.0"
+
     kotlin("jvm") version "1.8.0"
     kotlin("plugin.spring") version "1.8.0"
     kotlin("plugin.jpa") version "1.8.0"
@@ -159,6 +161,13 @@ tasks.withType<KotlinCompile> {
         // useK2 = true
     }
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
+}
+
+docker {
+    println("VERSION: ${version.toString().replace("-SNAPSHOT", "")}")
+    name="ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}"
+    files("${buildDir}/libs")
+    dependsOn(tasks.getByName(tasks.bootJar.name))
 }
 
 tasks.bootRun {
