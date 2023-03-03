@@ -169,6 +169,10 @@ docker {
     // https://docs.gradle.org/8.0.1/userguide/validation_problems.html#implicit_dependency
     files(tasks.bootJar.get().archiveFile)
     dependsOn(tasks.getByName(tasks.bootJar.name))
+    labels(mutableMapOf<String, String>(
+            "org.opencontainers.image.source" to "https://github.com/cetracker/cetrack-backend",
+            "org.opencontainers.image.description" to "CETracker backend container image",
+            "org.opencontainers.image.licenses" to "GPLv3"))
 }
 
 tasks.bootRun {
