@@ -166,7 +166,8 @@ tasks.withType<KotlinCompile> {
 docker {
     println("VERSION: ${version.toString().replace("-SNAPSHOT", "")}")
     name="ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}"
-    files("${buildDir}/libs")
+    // https://docs.gradle.org/8.0.1/userguide/validation_problems.html#implicit_dependency
+    files(tasks.bootJar.get().archiveFile)
     dependsOn(tasks.getByName(tasks.bootJar.name))
 }
 
