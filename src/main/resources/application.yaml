@@ -31,6 +31,7 @@ logging:
   level:
     root: WARN
     org.springframework: INFO
+    org.springframework.web.filter: DEBUG # Logging incoming requests see RequestLoggingFilterConfig
     de.cyclingsir.cetrack: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
