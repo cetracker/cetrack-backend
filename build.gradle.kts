@@ -11,9 +11,9 @@ plugins {
 
     id("com.palantir.docker") version "0.34.0"
 
-    kotlin("jvm") version "1.8.0"
+    kotlin("jvm") version "1.8.10"
     kotlin("plugin.spring") version "1.8.0"
-    kotlin("plugin.jpa") version "1.8.0"
+    kotlin("plugin.jpa") version "1.8.10"
     kotlin("plugin.allopen") version "1.8.0" // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
     kotlin("plugin.lombok") version "1.8.0"
