@@ -1,9 +1,9 @@
-package de.cyclingsir.cetrack.tour.configuration
+package de.cyclingsir.cetrack.configuration
 
 import mu.KotlinLogging
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.ui.ModelMap
+import org.springframework.web.context.request.ServletWebRequest
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.context.request.WebRequestInterceptor
 import org.springframework.web.servlet.config.annotation.CorsRegistry
@@ -26,12 +26,12 @@ private val logger = KotlinLogging.logger {}
 @Configuration(proxyBeanMethods = false)
 class CorsConfiguration {
 
-    @Bean
+//    @Bean
     fun corsConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/api/**")
-                    .allowedOriginPatterns("http://localhost*")
+                    .allowedOriginPatterns("*")
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
@@ -44,17 +44,24 @@ class CorsConfiguration {
 
 class Interceptor: WebRequestInterceptor {
     override fun preHandle(request: WebRequest) {
+        if( request is ServletWebRequest ) {
+            logger.info("uri: ${request.request.requestURI}")
+        }
+        logger.info("contextPath: ${request.contextPath}")
+        logger.info("-------- HEADER ----------------------")
         request.headerNames.forEach {
             logger.info( "$it : ${request.getHeader(it)}" )
         }
-        logger.info("------------")
+        logger.info("-------- PARAMETER ----------------------")
         request.parameterNames.forEach {
             logger.info( "$it : ${request.getParameter(it)}" )
         }
+        logger.info("-----------------------------------------")
     }
 
     override fun postHandle(request: WebRequest, model: ModelMap?) {
         logger.info("postHandle")
+        logger.info("model keys: ${model?.keys}")
     }
 
     override fun afterCompletion(request: WebRequest, ex: Exception?) {
