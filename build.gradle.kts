@@ -137,7 +137,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.github.microutils:kotlin-logging:3.0.4")
+    implementation("io.github.microutils:kotlin-logging:3.0.5")
 
     implementation("io.swagger.core.v3:swagger-annotations:2.2.8")
     implementation("io.swagger.core.v3:swagger-models:2.2.8")
