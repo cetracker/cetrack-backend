@@ -2,6 +2,7 @@
 // @no-log
 GET http://{{host}}:{{port}}/api/parts
 Content-Type: application/json
+Accept: application/json
 
 ###
 // @no-log
