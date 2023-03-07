@@ -12,7 +12,7 @@ interface TourDomain2StorageMapperSupport {
 }
 
 @Mapper
-interface TourDomain2StorageMapper : TourDomain2StorageMapperSupport {
+interface TourDomain2StorageMapper {
     fun map(domain: DomainTour) : TourEntity
 
     fun map(jpa: TourEntity) : DomainTour

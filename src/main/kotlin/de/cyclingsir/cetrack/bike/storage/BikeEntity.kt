@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.bike.storage
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
@@ -18,7 +19,9 @@ import java.util.UUID
 @Table(name = "bike")
 @EntityListeners(AuditingEntityListener::class)
 class BikeEntity(
-    @Id var id: UUID,
+    @Id
+    @GeneratedValue
+    var id: UUID?,
 
     @Column(length = 255)
     var model: @NotNull String,

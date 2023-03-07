@@ -4,6 +4,7 @@ import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
@@ -20,7 +21,9 @@ import java.util.UUID
 @Table(name = "part_type")
 @EntityListeners(AuditingEntityListener::class)
 class PartTypeEntity(
-    @Id var id: UUID,
+    @Id
+    @GeneratedValue
+    var id: UUID?,
 
     @Column(length = 255)
     var name: @NotNull String,

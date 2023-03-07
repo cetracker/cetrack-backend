@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.part.storage
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
+import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.JoinTable
@@ -21,7 +22,9 @@ import java.util.UUID
 @Table(name = "part")
 @EntityListeners(AuditingEntityListener::class)
 class PartEntity(
-    @Id var id: UUID,
+    @Id
+    @GeneratedValue
+    var id: UUID?,
 
     @Column(length = 255)
     var name: @NotNull String,
