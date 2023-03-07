@@ -1,3 +1,5 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -9,7 +11,7 @@ plugins {
     checkstyle
     idea
 
-    id("com.palantir.docker") version "0.34.0"
+    id("com.bmuschko.docker-remote-api") version "9.2.1"
 
     kotlin("jvm") version "1.8.10"
     kotlin("plugin.spring") version "1.8.10"
@@ -163,16 +165,40 @@ tasks.withType<KotlinCompile> {
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
 }
 
-docker {
-    println("VERSION: ${version.toString().replace("-SNAPSHOT", "")}")
-    name="ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}"
+/*
+   id("com.palantir.docker") version "0.34.0" ==> Deprecated!
+ - https://bmuschko.github.io/gradle-docker-plugin/current/user-guide/#introduction
+ - https://plugins.gradle.org/plugin/org.jetbrains.gradle.docker
+ */
+tasks.create("docker", DockerBuildImage::class) {
+    inputDir.set(file("."))
+    images.add("ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}")
+    images.add("ghcr.io/cetracker/cetrack-backend:latest")
+    files(tasks.bootJar.get().archiveFile)
     // https://docs.gradle.org/8.0.1/userguide/validation_problems.html#implicit_dependency
+    dependsOn(tasks.getByName(tasks.bootJar.name))
+    labels.set(mutableMapOf<String, String>(
+        "org.opencontainers.image.source" to "https://github.com/cetracker/cetrack-backend",
+        "org.opencontainers.image.description" to "CETracker backend container image",
+        "org.opencontainers.image.licenses" to "GPLv3"))
+}
+tasks.create("dockerPushRelease", DockerPushImage::class) {
+    images.add("ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}")
+    dependsOn(tasks.getByName("docker"))
+}
+tasks.create("dockerBuildSnapshot", DockerBuildImage::class) {
+    inputDir.set(file("."))
+    images.add("ghcr.io/cetracker/cetrack-backend:${version.toString()}")
     files(tasks.bootJar.get().archiveFile)
     dependsOn(tasks.getByName(tasks.bootJar.name))
-    labels(mutableMapOf<String, String>(
-            "org.opencontainers.image.source" to "https://github.com/cetracker/cetrack-backend",
-            "org.opencontainers.image.description" to "CETracker backend container image",
-            "org.opencontainers.image.licenses" to "GPLv3"))
+    labels.set(mutableMapOf<String, String>(
+        "org.opencontainers.image.source" to "https://github.com/cetracker/cetrack-backend",
+        "org.opencontainers.image.description" to "CETracker backend container image SNAPSHOT",
+        "org.opencontainers.image.licenses" to "GPLv3"))
+}
+tasks.create("dockerPushSnapshot", DockerPushImage::class) {
+    images.add("ghcr.io/cetracker/cetrack-backend:${version.toString()}")
+    dependsOn(tasks.getByName("dockerBuildSnapshot"))
 }
 
 tasks.bootRun {

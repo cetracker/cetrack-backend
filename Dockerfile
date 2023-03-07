@@ -6,7 +6,7 @@ FROM eclipse-temurin:17.0.6_10-jre-alpine
 
 #ENTRYPOINT [ "/opt/bin/entrypoint.sh" ]
 
-ADD cetrack-*.jar /app/service.jar
+ADD /build/libs/cetrack-*.jar /app/service.jar
 WORKDIR /app
 
 CMD ["java", "-jar", "-Dspring.profiles.active=default, h2db", "service.jar"]
