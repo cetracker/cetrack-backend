@@ -4,7 +4,9 @@ import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.infrastructure.api.rest.ToursApi
 import de.cyclingsir.cetrack.tour.domain.TourService
+import io.swagger.v3.oas.annotations.Parameter
 import jakarta.validation.Valid
+import jakarta.validation.constraints.NotNull
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -44,7 +46,8 @@ class TourController(
     }
 
     override fun relateBikeToTour(
-        @PathVariable tourId: UUID, @Valid @RequestParam(value = "bikeId", required = true) bikeId: UUID
+        @Parameter(required = true) @PathVariable("tourId") tourId: java.util.UUID,
+        @NotNull @Parameter(required = true) @Valid @RequestParam(value = "bikeId", required = true) bikeId: java.util.UUID
     ): ResponseEntity<Tour> {
         val modifiedTour = service.relateTourToBike(tourId, bikeId)
         return ResponseEntity.ok(mapper.map(modifiedTour))
