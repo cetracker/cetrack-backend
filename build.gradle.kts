@@ -1,3 +1,4 @@
+
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -23,6 +24,8 @@ plugins {
     */
 }
 
+val kMapperVersion = "1.1.0"
+
 gitProperties {
     keys = listOf("git.branch","git.commit.id","git.commit.time","git.commit.message.short","git.tags","git.commit.user.email")
 }
@@ -46,7 +49,7 @@ version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
-    maven( url="https://s01.oss.sonatype.org/content/repositories/snapshots" )
+//    maven( url="https://s01.oss.sonatype.org/content/repositories/snapshots" )
     mavenCentral()
 //    mavenLocal()
 }
@@ -144,10 +147,10 @@ dependencies {
     implementation("io.swagger.core.v3:swagger-annotations:2.2.8")
     implementation("io.swagger.core.v3:swagger-models:2.2.8")
 
-    // data classes mapper - https://github.com/s0nicyouth/kmapper
-    implementation("io.github.cetracker:processor_annotations:1.1.0-SNAPSHOT")
-    implementation("io.github.cetracker:converters:1.1.0-SNAPSHOT")
-    ksp("io.github.cetracker:processor:1.1.0-SNAPSHOT")
+    // (data) classes mapper - https://github.com/s0nicyouth/kmapper
+    implementation("io.github.s0nicyouth:processor_annotations:$kMapperVersion")
+    implementation("io.github.s0nicyouth:converters:$kMapperVersion")
+    ksp("io.github.s0nicyouth:processor:$kMapperVersion")
 
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("com.h2database:h2")
