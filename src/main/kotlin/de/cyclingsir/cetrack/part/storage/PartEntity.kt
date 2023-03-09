@@ -1,13 +1,12 @@
 package de.cyclingsir.cetrack.part.storage
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.JoinTable
-import jakarta.persistence.ManyToMany
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
@@ -29,12 +28,12 @@ class PartEntity(
     @Column(length = 255)
     var name: @NotNull String,
 
-    @ManyToMany(targetEntity = PartTypeEntity::class) @JoinTable(
-        name = "part_part_types",
-        joinColumns = [JoinColumn(name = "part_id", updatable = false, insertable = false)],
-        inverseJoinColumns = [JoinColumn(name = "part_type_id", updatable = false, insertable = false)]
+    @OneToMany(
+        mappedBy = "partId",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true,
     )
-    var partTypes: MutableList<PartTypeEntity> = mutableListOf(),
+    var partTypeRelations: MutableList<PartPartTypeRelationEntity> = mutableListOf(),
 
     var boughtAt: Instant? = null,
 
@@ -58,3 +57,13 @@ class PartEntity(
  * https://youtrack.jetbrains.com/issue/KT-6653
  * that’s why it is recommended to always use entities with generated IDs in Kotlin.
  */
+/*
+    @ManyToMany(targetEntity = PartTypeEntity::class) @JoinTable(
+        name = "part_part_types",
+        joinColumns = [JoinColumn(name = "part_id", updatable = false, insertable = false)],
+        inverseJoinColumns = [JoinColumn(name = "part_type_id", updatable = false, insertable = false)]
+    )
+    var partTypes: MutableList<PartTypeEntity> = mutableListOf(),
+    ==>
+    https://vladmihalcea.com/the-best-way-to-map-a-many-to-many-association-with-extra-columns-when-using-jpa-and-hibernate/
+*/

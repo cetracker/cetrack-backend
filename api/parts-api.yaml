@@ -221,10 +221,10 @@ components:
         boughtAt:
           type: string
           format: date-time
-        partTypes:
+        partTypeRelations:
           type: array
           items:
-            $ref: '#/components/schemas/PartType'
+            $ref: '#/components/schemas/PartPartTypeRelation'
         createdAt:
           type: string
           format: date-time
@@ -277,3 +277,5 @@ components:
           type: string
           format: date-time
           description: the last date, the relation is valid
+        partType:
+          $ref: '#/components/schemas/PartType'

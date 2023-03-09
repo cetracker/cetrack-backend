@@ -128,7 +128,7 @@ class PartService(
         val relationEntity = partPartTypeRelationMapper.map(relation)
         val createdRelation: PartPartTypeRelationEntity = partParTypRelationRepository.save(relationEntity)
         val part: PartEntity = partRepository.findById(createdRelation.partId).get()
-        logger.info("Newly related part: ${part.id} ${part.name} with ${part.partTypes.size} PartTypes")
+        logger.info("Newly related part: ${part.id} ${part.name} with ${part.partTypeRelations.size} PartTypeRelations")
         return partDomain2StorageMapper.map(part)
     }
 
