@@ -66,6 +66,22 @@ class PartService(
         return domainPart
     }
 
+    fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
+        logger.debug("Modify Part for part $part was called!")
+        assert(partId == part.id)
+        logger.debug("DomainPart: $part")
+        val entity = partDomain2StorageMapper.map(part)
+        logger.debug("Mapped Entity: $entity")
+
+        val partEntity = try {
+            partRepository.save(entity)
+        } catch (e: Exception) {
+            throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message)
+        }
+        logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.name} - ${partEntity.partTypeRelations?.size}" }
+        return partDomain2StorageMapper.map(partEntity)
+    }
+
     fun getPart(partId: UUID): DomainPart? {
         val part = partRepository.findById(partId)
         return part.let {
