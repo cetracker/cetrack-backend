@@ -33,7 +33,7 @@ class PartEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    var partTypeRelations: MutableList<PartPartTypeRelationEntity> = mutableListOf(),
+    var partTypeRelations: MutableList<PartPartTypeRelationEntity>? = mutableListOf(),
 
     var boughtAt: Instant? = null,
 
