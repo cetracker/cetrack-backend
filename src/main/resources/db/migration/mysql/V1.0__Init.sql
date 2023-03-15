@@ -2,6 +2,7 @@ create table if not exists `part_type`
 (
   `id`             binary(16)   primary key,
   `name`           VARCHAR(255) CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci' NOT NULL,
+  `bike_id`        binary(16),
   `created_at`     DATETIME(3)  NOT NULL
 )
 DEFAULT CHARSET = latin1;
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `part`
   `id`              BINARY(16)    NOT NULL,
   `name`            VARCHAR(255) CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_0900_ai_ci' NOT NULL,
   `created_at`      DATETIME(3)   NOT NULL,
+  `bought_at`       DATETIME(3)   NULL,
   `first_used_date` DATETIME      NULL,
   `retired_date`    DATETIME      NULL,
   PRIMARY KEY (`id`)
