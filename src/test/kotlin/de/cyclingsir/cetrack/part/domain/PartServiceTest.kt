@@ -12,9 +12,8 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -26,7 +25,6 @@ import java.util.UUID
 /**
  * Initially created on 3/15/23.
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockKExtension::class)
 class PartServiceTest {
 
@@ -50,9 +48,8 @@ class PartServiceTest {
 
   private lateinit var partService: PartService
 
-  @BeforeAll
+  @BeforeEach
   fun init() {
-//  MockKAnnotations.init(this)
     partService =
       PartService(partRepository, relationRepository, partDomain2StorageMapper, partPartTypeRelationMapper)
   }
@@ -64,18 +61,19 @@ class PartServiceTest {
 
     val relationEntity = partPartTypeRelationMapper.map(relation)
 
-    every { relationRepository.save(any()) } returns relationEntity
     every { relationRepository.countByPartId(UUID_PART_A) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
+    every { relationRepository.save(any()) } returns relationEntity
     every { partRepository.findById(UUID_PART_A) } returns Optional.of(PartEntity(UUID_PART_A, "A"))
 
-    val addedRelation = partService.createPartPartTypeRelation(relation)
+    val partRelationWasAddedTo = partService.createPartPartTypeRelation(relation)
 
     verify(exactly = 1) { relationRepository.save(any()) }
-    Assertions.assertEquals(UUID_PART_A, addedRelation.id)
+    Assertions.assertEquals(UUID_PART_A, partRelationWasAddedTo.id)
   }
 
   @Test
-  fun `date time instance`() {
+  fun `test offset date time to instance calculations conversions`() {
     val validFrom = OffsetDateTime.parse("2022-03-01T13:10:23+01")
     val validUntilExpected = OffsetDateTime.parse("2022-02-28T23:59:59+01")
     val validUntilExpectedUTC = OffsetDateTime.parse("2022-02-28T22:59:59Z")
@@ -97,7 +95,6 @@ class PartServiceTest {
     val relationEntityA = partPartTypeRelationMapper.map(relationA)
     val relationB =
       DomainPartPartTypeRelation(UUID_PART_B, UUID_PART_TYPE_CRANK, validFrom, null, null)
-    val relationEntityB = partPartTypeRelationMapper.map(relationB)
     val partEntityB = PartEntity(UUID_PART_B, "B")
 
     val savedEntitySlot = slot<PartPartTypeRelationEntity>()
@@ -105,7 +102,6 @@ class PartServiceTest {
 
     every { relationRepository.countByPartId(UUID_PART_A) } returns 1
     every { relationRepository.countByPartId(UUID_PART_B) } returns 0
-//    every { relationRepository.countByPartIdAndValidUntilIsNull(UUID_PART_A) } returns 1
     every { relationRepository.countByPartIdAndValidUntilIsNull(UUID_PART_B) } returns 0
     every { relationRepository.countByPartIdAndPartTypeIdAndValidUntilIsNull(UUID_PART_B, UUID_PART_TYPE_CRANK) } returns 0
     every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 1
@@ -117,12 +113,16 @@ class PartServiceTest {
     }
     every { partRepository.findById(UUID_PART_B) } returns Optional.of(partEntityB)
 
-    val addedRelation = partService.createPartPartTypeRelation(relationB)
+    val partRelationWasAddedTo = partService.createPartPartTypeRelation(relationB)
 
     verify (exactly = 2) { relationRepository.save(ofType(PartPartTypeRelationEntity::class)) }
     verify { relationRepository.save(and( match { it.partId == UUID_PART_A  }, match { it.validUntil != null } )) }
-    val persistedEntityPartA = savedEntities.find { entity -> entity.partId == UUID_PART_A }
-    Assertions.assertEquals(expectedValidUntil, persistedEntityPartA?.validUntil)
+    val persistedRelationEntityPartA = savedEntities.find { entity -> entity.partId == UUID_PART_A }
+    val persistedRelationEntityPartB = savedEntities.find { entity -> entity.partId == UUID_PART_B }
+    Assertions.assertEquals(expectedValidUntil, persistedRelationEntityPartA?.validUntil)
+    Assertions.assertEquals(UUID_PART_B, partRelationWasAddedTo.id)
+    Assertions.assertNotNull(persistedRelationEntityPartB)
+    Assertions.assertNull(persistedRelationEntityPartB?.validUntil)
 
   }
 
