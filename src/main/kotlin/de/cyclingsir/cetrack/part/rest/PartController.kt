@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
 import jakarta.validation.Valid
+import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
@@ -15,6 +16,8 @@ import java.util.UUID
 /**
  * Initially created on 12/17/22.
  */
+private val logger = KotlinLogging.logger {}
+
 @RestController
 class PartController(
     val service: PartService,
@@ -28,6 +31,16 @@ class PartController(
         return ResponseEntity.ok(partMapper.map(addedPart))
     }
 
+    override fun modifyPart(@PathVariable("partId") partId: UUID, @Valid @RequestBody part: Part): ResponseEntity<Part> {
+        logger.debug("API Part: $part")
+        val domainPart = partMapper.map(part)
+        logger.debug("DomainPart: $domainPart")
+        val persistedPart = service.modifyPart(partId, domainPart)
+        persistedPart?.apply {
+            return ResponseEntity.ok(partMapper.map(persistedPart))
+        }
+        return ResponseEntity.notFound().build()
+    }
 
     override fun getPart(partId: UUID): ResponseEntity<Part> {
         val part = service.getPart(partId)

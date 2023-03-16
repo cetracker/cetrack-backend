@@ -1,6 +1,5 @@
 package de.cyclingsir.cetrack.part.domain
 
-import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -15,6 +14,7 @@ data class DomainPartPartTypeRelation(
 
     val partId: UUID,
     val partTypeId: UUID,
-    val validFrom: Instant,
-    val validUntil: Instant?
+    val validFrom: OffsetDateTime,
+    val validUntil: OffsetDateTime?,
+    val partType: DomainPartType?
 )

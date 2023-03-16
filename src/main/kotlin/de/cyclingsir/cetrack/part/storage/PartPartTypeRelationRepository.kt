@@ -16,9 +16,13 @@ interface PartPartTypeRelationRepository : JpaRepository<PartPartTypeRelationEnt
 
   fun findFirstByPartIdAndValidUntilIsNull(partId: UUID): PartPartTypeRelationEntity?
 
+  fun findFirstByPartTypeIdAndValidUntilIsNull(partTypeId: UUID): PartPartTypeRelationEntity?
+
   fun findFirstByPartIdAndValidUntilIsNotNullOrderByValidUntilDesc(partId: UUID): PartPartTypeRelationEntity?
 
   fun countByPartId(partId: UUID): Long
+
+  fun countByPartTypeIdAndValidUntilIsNull(partTypeId: UUID): Long
 
   fun countByPartIdAndPartTypeIdAndValidUntilIsNull(partId: UUID, partTypeId: UUID): Long
 

@@ -94,6 +94,28 @@ paths:
           description: Bad Request
         '404':
           description: Not Found
+    put:
+      operationId: modifyPart
+      description: modifies an existing part
+      tags:
+        - Parts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Part'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Part'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
   /parts/{partId}/action/relate:
     parameters:
       - $ref: '#/components/parameters/partId'
@@ -221,10 +243,10 @@ components:
         boughtAt:
           type: string
           format: date-time
-        partTypes:
+        partTypeRelations:
           type: array
           items:
-            $ref: '#/components/schemas/PartType'
+            $ref: '#/components/schemas/PartPartTypeRelation'
         createdAt:
           type: string
           format: date-time
@@ -277,3 +299,5 @@ components:
           type: string
           format: date-time
           description: the last date, the relation is valid
+        partType:
+          $ref: '#/components/schemas/PartType'

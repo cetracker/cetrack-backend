@@ -11,6 +11,6 @@ data class DomainPart(
     val id: UUID?,
     val name: @NotNull String,
     val boughtAt: Instant?,
-    val partTypes: MutableList<DomainPartType> = mutableListOf(),
+    val partTypeRelations: List<DomainPartPartTypeRelation>? = mutableListOf(),
     val createdAt: Instant?
 )
