@@ -69,6 +69,12 @@ paths:
       tags:
         - Parts
       responses:
+        '200':
+          description: o.k
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
         '204':
           description: No Content
         '400':
@@ -301,3 +307,21 @@ components:
           description: the last date, the relation is valid
         partType:
           $ref: '#/components/schemas/PartType'
+    Report:
+      type: array
+      items:
+        $ref: '#/components/schemas/ReportItem'
+    ReportItem:
+      type: object
+      properties:
+        part:
+          type: string
+          description: The part's name
+        distance:
+          type: integer
+          format: int64
+          description: Total distance of usage in meter
+        durationMoving:
+          type: integer
+          format: int64
+          description: Total time of usage (moving) in seconds

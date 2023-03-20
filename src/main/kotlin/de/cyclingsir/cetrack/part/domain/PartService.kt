@@ -35,7 +35,8 @@ class PartService(
         return partEntities.map(partDomain2StorageMapper::map)
     }
 
-    fun getReport() {
+    fun getReport() : List<DomainReportItem>{
+        var reportList : List<DomainReportItem> = mutableListOf();
         try {
             val report: Collection<ReportProjection> = partRepository.getReport()
             report.forEach { r ->
@@ -52,10 +53,12 @@ class PartService(
                 logger.info { "${r.partName} | ${r.meterTotal} | ${r.secondsTotal}" }
             }
             logger.info("$report")
+            reportList = report.map { r -> (DomainReportItem(r.partName, r.meterTotal.toLong(), r.secondsTotal)) }
         } catch (e: Exception) {
             logger.warn { e }
             e.printStackTrace()
         }
+        return reportList
     }
 
     fun addPart(part: DomainPart): DomainPart {

@@ -6,6 +6,8 @@ import de.cyclingsir.cetrack.part.rest.PartPartTypeRelationDomain2ApiMapper
 import de.cyclingsir.cetrack.part.rest.PartPartTypeRelationDomain2ApiMapperImpl
 import de.cyclingsir.cetrack.part.rest.PartTypeDomain2ApiMapper
 import de.cyclingsir.cetrack.part.rest.PartTypeDomain2ApiMapperImpl
+import de.cyclingsir.cetrack.part.rest.ReportDomain2ApiMapper
+import de.cyclingsir.cetrack.part.rest.ReportDomain2ApiMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapper
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapper
@@ -41,5 +43,8 @@ class PartsConfiguration {
 
     @Bean
     fun getPartTypeDomain2StorageMapper() : PartTypeDomain2StorageMapper = PartTypeDomain2StorageMapperImpl()
+
+    @Bean
+    fun getReportDomain2ApiMapper() : ReportDomain2ApiMapper = ReportDomain2ApiMapperImpl()
 
 }

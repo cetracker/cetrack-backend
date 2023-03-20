@@ -2,11 +2,11 @@ package de.cyclingsir.cetrack.part.rest
 
 import de.cyclingsir.cetrack.infrastructure.api.model.Part
 import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
+import de.cyclingsir.cetrack.infrastructure.api.model.ReportItem
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
 import jakarta.validation.Valid
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
@@ -22,7 +22,8 @@ private val logger = KotlinLogging.logger {}
 class PartController(
     val service: PartService,
     val partMapper: PartDomain2ApiMapper,
-    val relationMapper: PartPartTypeRelationDomain2ApiMapper
+    val relationMapper: PartPartTypeRelationDomain2ApiMapper,
+    val reportMapper: ReportDomain2ApiMapper
 ) : PartsApi {
 
 //    @CrossOrigin
@@ -56,9 +57,10 @@ class PartController(
         return ResponseEntity.ok(restParts);
     }
 
-    override fun getReport(): ResponseEntity<Unit> {
-        service.getReport()
-        return ResponseEntity(HttpStatus.NO_CONTENT)
+    override fun getReport(): ResponseEntity<List<ReportItem>> {
+        val domainReport = service.getReport()
+        val restReport = domainReport.map(reportMapper::map)
+        return ResponseEntity.ok(restReport)
     }
 
     override fun relatePartToPartType(
