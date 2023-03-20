@@ -1,5 +1,7 @@
 package de.cyclingsir.cetrack.infrastructure.api.model
 
+import java.util.UUID
+
 /**
  *
  * @param mtTourId id for the tour created by MT
@@ -24,5 +26,7 @@ data class DomainMTTour(
 
     val TIMERECORDEDDEVICE: Long? = null,
 
-    val STARTTIMESTAMP: Long
+    val STARTTIMESTAMP: Long,
+
+    val bikeId: UUID?
 )

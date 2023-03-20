@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.bike.domain.BikeService
+import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.storage.TourDomain2StorageMapper
@@ -53,10 +54,11 @@ class TourService(
             id = UUID.randomUUID(),
             mtTourId = mtTour.MTTOURID,
             title = mtTour.TITLE,
-            distance = mtTour.DISTANCE,
+            // MyTourBook stores tour distance in centimeters
+            distance = mtTour.DISTANCE / 10,
             durationMoving = mtTour.DURATIONMOVING,
             startedAt = instantStarted,
-            bike = null,
+            bike = DomainBike("", null, mtTour.bikeId, null, null),
             createdAt = null
         )
     }

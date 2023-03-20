@@ -228,6 +228,10 @@ components:
           format: int64
           minimum: 1
           description: tour's start time in unix epoch
+        bikeId:
+          type: string
+          format: uuid
+          description: bike used on the tour
     Tours:
       type: array
       items:
