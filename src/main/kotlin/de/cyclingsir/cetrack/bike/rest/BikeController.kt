@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.Bike
 import de.cyclingsir.cetrack.infrastructure.api.rest.BikesApi
 import jakarta.validation.Valid
 import mu.KotlinLogging
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
@@ -25,6 +26,21 @@ class BikeController(private val service: BikeService, private val mapper: BikeD
     override fun getBike(@PathVariable("bikeId") bikeId: UUID): ResponseEntity<Bike> {
         val domainBike = service.getBike(bikeId)
         return ResponseEntity.ok(/* body = */ mapper.map(domainBike))
+    }
+
+    override fun modifyBike(@PathVariable("bikeId") bikeId: UUID, @Valid @RequestBody bike: Bike): ResponseEntity<Bike> {
+        val domainBike = mapper.map(bike)
+        val persistedBike = service.modifyBike(bikeId, domainBike)
+        persistedBike?.apply {
+            return ResponseEntity.ok(mapper.map(this))
+        }
+        return ResponseEntity.notFound().build()
+
+    }
+
+    override fun deleteBike(@PathVariable("bikeId") bikeId: UUID): ResponseEntity<Unit> {
+        service.deleteBike(bikeId)
+        return ResponseEntity(HttpStatus.OK)
     }
 
     override fun getBikes(): ResponseEntity<List<Bike>> {

@@ -14,7 +14,10 @@ enum class ErrorCodesDomain(
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 
-    PREVIOUS_RELATION_NOT_FOUND(201, 400, "Previous relation to finalize not found");
+    PREVIOUS_RELATION_NOT_FOUND(201, 400, "Previous relation to finalize not found"),
+
+    BIKE_NOT_FOUND(300, 404, "Bike not found"),
+    BIKE_NOT_PERISTED(301, 404, "Unable to persist bike");
 
     override val reason: String?
         get() = description
