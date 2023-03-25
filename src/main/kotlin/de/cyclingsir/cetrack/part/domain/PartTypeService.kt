@@ -2,6 +2,8 @@ package de.cyclingsir.cetrack.part.domain
 
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.part.storage.PartTypeDomain2StorageMapper
 import de.cyclingsir.cetrack.part.storage.PartTypeRepository
 import mu.KotlinLogging
@@ -31,6 +33,24 @@ class PartTypeService(
     fun getPartTypes(): List<DomainPartType> {
         val partTypeEntities = repository.findAll()
         return partTypeEntities.map(partTypeDomain2StorageMapper::map)
+    }
+
+    fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType? {
+        val partTypeEntity = try {
+            assert(partTypeId == partType.id)
+            repository.save(partTypeDomain2StorageMapper.map(partType))
+        } catch (e: Exception) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERISTED, e.message)
+        }
+        return partTypeDomain2StorageMapper.map(partTypeEntity)
+    }
+
+    fun deletePartType(partTypeId: UUID) {
+        try {
+            repository.deleteById(partTypeId)
+        } catch (e: Exception) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND, e.message)
+        }
     }
 
     fun relatePartTypeToBike(partTypeId: UUID, bikeId: UUID): DomainPartType {

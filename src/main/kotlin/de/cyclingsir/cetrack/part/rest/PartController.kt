@@ -39,7 +39,7 @@ class PartController(
         logger.debug("DomainPart: $domainPart")
         val persistedPart = service.modifyPart(partId, domainPart)
         persistedPart?.apply {
-            return ResponseEntity.ok(partMapper.map(persistedPart))
+            return ResponseEntity.ok(partMapper.map(this))
         }
         return ResponseEntity.notFound().build()
     }

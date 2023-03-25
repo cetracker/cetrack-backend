@@ -201,6 +201,44 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+  /partTypes/{partTypeId}:
+    parameters:
+      - $ref: '#/components/parameters/partTypeId'
+    put:
+      operationId: modifyPartType
+      description: modifies an existing partType
+      tags:
+        - PartTypes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartType'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartType'
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+    delete:
+      summary: delete partType
+      operationId: deletePartType
+      description: Deletes the partType with the id from the path
+      tags:
+        - PartTypes
+      responses:
+        '200':
+          description: PartType successfully deleted.
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
   /partTypes/{partTypeId}/action/relate:
     parameters:
       - $ref: '#/components/parameters/partTypeId'

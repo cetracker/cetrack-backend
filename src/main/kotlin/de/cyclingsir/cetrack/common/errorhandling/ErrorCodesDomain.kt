@@ -9,6 +9,8 @@ enum class ErrorCodesDomain(
     private val description: String
 ) : ServiceError {
     PART_NOT_FOUND(100, 404, "Part not found"),
+    PART_TYPE_NOT_FOUND(101, 404, "PartType not found"),
+    PART_TYPE_NOT_PERISTED(102, 404, "PartType not found"),
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 
