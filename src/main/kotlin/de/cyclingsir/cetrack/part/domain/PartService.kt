@@ -85,6 +85,14 @@ class PartService(
         return partDomain2StorageMapper.map(partEntity)
     }
 
+    fun deletePart(partId: UUID) {
+        try {
+            partRepository.deleteById(partId)
+        } catch (e: Exception) {
+            throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND, e.message)
+        }
+    }
+
     fun getPart(partId: UUID): DomainPart? {
         val part = partRepository.findById(partId)
         return part.let {

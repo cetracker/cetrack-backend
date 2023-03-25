@@ -7,6 +7,7 @@ import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
 import jakarta.validation.Valid
 import mu.KotlinLogging
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
@@ -41,6 +42,11 @@ class PartController(
             return ResponseEntity.ok(partMapper.map(persistedPart))
         }
         return ResponseEntity.notFound().build()
+    }
+
+    override fun deletePart(@PathVariable("partId") partId: UUID) : ResponseEntity<Unit> {
+        service.deletePart(partId)
+        return ResponseEntity(HttpStatus.OK)
     }
 
     override fun getPart(partId: UUID): ResponseEntity<Part> {

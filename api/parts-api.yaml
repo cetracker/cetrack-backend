@@ -122,6 +122,19 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+    delete:
+      summary: delete part
+      operationId: deletePart
+      description: Deletes the part with the id from the path
+      tags:
+        - Parts
+      responses:
+        '200':
+          description: Part successfully deleted.
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
   /parts/{partId}/action/relate:
     parameters:
       - $ref: '#/components/parameters/partId'
