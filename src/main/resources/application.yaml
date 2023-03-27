@@ -1,6 +1,8 @@
 spring:
   profiles:
     active: default
+    group:
+      demo: h2db, demo-data
 
 # Actuator Endpoints
 # management.endpoints.web.exposure.include=*
@@ -107,6 +109,7 @@ spring:
 #        format_sql: true
   datasource:
     url: jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=false
+#    url: jdbc:h2:tcp//localhost:9092/./testDB2;DB_CLOSE_ON_EXIT=false
     username: sa
     driver-class-name: org.h2.Driver
   h2:
@@ -122,3 +125,14 @@ spring:
       platform: h2
   flyway:
     enabled: false
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: demo-data
+  sql:
+    init:
+      mode: always
+      platform: demo
