@@ -54,8 +54,7 @@ class TourService(
             id = UUID.randomUUID(),
             mtTourId = mtTour.MTTOURID,
             title = mtTour.TITLE,
-            // MyTourBook stores tour distance in centimeters
-            distance = mtTour.DISTANCE / 10,
+            distance = mtTour.DISTANCE,
             durationMoving = mtTour.DURATIONMOVING,
             startedAt = instantStarted,
             bike = DomainBike("", null, mtTour.bikeId, null, null),
