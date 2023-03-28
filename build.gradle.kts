@@ -12,7 +12,7 @@ plugins {
     checkstyle
     idea
 
-    id("com.bmuschko.docker-remote-api") version "9.2.1"
+    id("com.bmuschko.docker-remote-api") version "9.3.0"
 
     kotlin("jvm") version "1.8.10"
     kotlin("plugin.spring") version "1.8.10"
