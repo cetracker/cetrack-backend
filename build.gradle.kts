@@ -4,7 +4,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.0.4"
+    id("org.springframework.boot") version "3.0.5"
     id("io.spring.dependency-management") version "1.1.0"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
     id("com.google.devtools.ksp") version "1.8.10-1.0.9" // /for kmapper
@@ -12,7 +12,7 @@ plugins {
     checkstyle
     idea
 
-    id("com.bmuschko.docker-remote-api") version "9.2.1"
+    id("com.bmuschko.docker-remote-api") version "9.3.0"
 
     kotlin("jvm") version "1.8.10"
     kotlin("plugin.spring") version "1.8.10"
