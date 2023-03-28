@@ -45,11 +45,10 @@ kotlinLombok {
 */
 
 group = "de.cyclingsir"
-version = "0.0.1-SNAPSHOT"
+version = "0.1.0-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
-//    maven( url="https://s01.oss.sonatype.org/content/repositories/snapshots" )
     mavenCentral()
 //    mavenLocal()
 }
