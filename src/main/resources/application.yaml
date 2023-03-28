@@ -1,11 +1,18 @@
 spring:
   profiles:
-    active: default
     group:
       demo: h2db, demo-data
+    active: default
+  devtools:
+    add-properties: false
+server:
+  port: 8080
+logging:
+  level:
+    root: WARN
+    org.springframework: INFO
 
 # Actuator Endpoints
-# management.endpoints.web.exposure.include=*
 management:
   endpoint:
     health:
@@ -21,14 +28,9 @@ management:
 spring:
   config:
     activate:
-      on-profile: default
-  servlet:
-    multipart:
-      max-file-size: 512KB
-      max-request-size: 512KB
-server:
-  port: 8080
-
+      on-profile: debug-log
+  devtools:
+    add-properties: on
 logging:
   level:
     root: WARN
@@ -44,6 +46,10 @@ spring:
   config:
     activate:
       on-profile: local
+  servlet:
+    multipart:
+      max-file-size: 512KB
+      max-request-size: 512KB
   flyway:
     enabled: true
     baseline-version: 0.1
@@ -131,8 +137,4 @@ spring:
 spring:
   config:
     activate:
-      on-profile: demo-data
-  sql:
-    init:
-      mode: always
-      platform: demo
+      on-profile: demo

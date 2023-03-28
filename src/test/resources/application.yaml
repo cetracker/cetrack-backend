@@ -1,6 +1,8 @@
 spring:
   profiles:
-    active: default, h2db
+    active: h2db
+  flyway:
+    enabled: false
 
 management:
   endpoints:
@@ -8,12 +10,6 @@ management:
       exposure:
         include: health,info
 
----
-
-spring:
-  config:
-    activate:
-      on-profile: default
 server:
   port: 8080
   servlet:
