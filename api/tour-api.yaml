@@ -161,6 +161,8 @@ components:
        - title
        - distance
        - durationMoving
+       - altUp
+       - altDown
        - startedAt
       properties:
         id:
@@ -178,6 +180,14 @@ components:
           type: integer
           format: int64
           minimum: 0
+        altUp:
+          type: integer
+          minimum: 0
+          description: tour's summed up elevation in meters
+        altDown:
+          type: integer
+          minimum: 0
+          description: tour's summed up descent in meters
         startedAt:
           type: string
           format: date-time
@@ -193,6 +203,8 @@ components:
         - TITLE
         - DISTANCE
         - DURATIONMOVING
+        - TOURALTUP
+        - TOURALTDOWN
         - STARTYEAR
         - STARTMONTH
         - STARTDAY
@@ -228,6 +240,14 @@ components:
           format: int64
           minimum: 1
           description: tour's start time in unix epoch
+        TOURALTUP:
+          type: integer
+          minimum: 0
+          description: tour's summed up elevation in meters
+        TOURALTDOWN:
+          type: integer
+          minimum: 0
+          description: tour's summed up descent in meters
         bikeId:
           type: string
           format: uuid

@@ -56,6 +56,8 @@ class TourService(
             title = mtTour.TITLE,
             distance = mtTour.DISTANCE,
             durationMoving = mtTour.DURATIONMOVING,
+            altUp = mtTour.TOURALTUP,
+            altDown = mtTour.TOURALTDOWN,
             startedAt = instantStarted,
             bike = DomainBike("", null, mtTour.bikeId, null, null),
             createdAt = null
