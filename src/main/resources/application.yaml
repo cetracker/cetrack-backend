@@ -137,4 +137,8 @@ spring:
 spring:
   config:
     activate:
-      on-profile: demo
+      on-profile: demo-data
+  sql:
+    init:
+      mode: always
+      platform: demo
