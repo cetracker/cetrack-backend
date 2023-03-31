@@ -15,5 +15,7 @@ data class DomainBike(
 
     val boughtAt: Instant?,
 
+    val retiredAt: Instant?,
+
     val createdAt: Instant?
 )

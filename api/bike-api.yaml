@@ -144,6 +144,9 @@ components:
         boughtAt:
           type: string
           format: date-time
+        retiredAt:
+          type: string
+          format: date-time
         createdAt:
           type: string
           format: date-time

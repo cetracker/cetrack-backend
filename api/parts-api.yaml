@@ -300,6 +300,9 @@ components:
         boughtAt:
           type: string
           format: date-time
+        retiredAt:
+          type: string
+          format: date-time
         partTypeRelations:
           type: array
           items:
@@ -317,13 +320,13 @@ components:
        - name
       properties:
         id:
-            type: string
-            format: uuid
-            description: the part type id
-            readOnly: true
+          type: string
+          format: uuid
+          description: the part type id
+          readOnly: true
         name:
-            type: string
-            description: part type name
+          type: string
+          description: part type name
         bike:
           $ref: './bike-api.yaml#/components/schemas/Bike'
         createdAt:

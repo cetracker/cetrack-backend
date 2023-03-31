@@ -31,6 +31,8 @@ class BikeEntity(
 
     var boughtAt: Instant? = null,
 
+    var retiredAt: Instant? = null,
+
     @CreatedDate
     var createdAt: Instant? = null
 )
