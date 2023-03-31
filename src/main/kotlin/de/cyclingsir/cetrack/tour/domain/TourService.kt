@@ -60,6 +60,9 @@ class TourService(
             altDown = mtTour.TOURALTDOWN,
             powerTotal = mtTour.POWERTOTAL,
             startedAt = instantStarted,
+            startYear = mtTour.STARTYEAR,
+            startMonth = mtTour.STARTMONTH,
+            startDay = mtTour.STARTDAY,
             bike = DomainBike("", null, mtTour.bikeId, null, null, null),
             createdAt = null
         )

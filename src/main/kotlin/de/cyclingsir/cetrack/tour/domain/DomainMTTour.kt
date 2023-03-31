@@ -28,6 +28,12 @@ data class DomainMTTour(
 
     val STARTTIMESTAMP: Long,
 
+    val STARTYEAR: Int,
+
+    val STARTMONTH: Int,
+
+    val STARTDAY: Int,
+
     val TOURALTUP: Int,
 
     val TOURALTDOWN: Int,
