@@ -26,12 +26,26 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+### jpa plugin
+.jpb/**
+
+### Vi
+*.swp
+
+### Debug Data
+src/main/resources/data-h2.sql
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
+
+### Derby
+derby.log
+### Exports
+tours_*
 
 ### VS Code ###
 .vscode/
