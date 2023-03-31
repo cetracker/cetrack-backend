@@ -165,6 +165,9 @@ components:
        - altDown
        - powerTotal
        - startedAt
+       - startYear
+       - startMonth
+       - startDay
       properties:
         id:
           type: string
@@ -197,6 +200,19 @@ components:
         startedAt:
           type: string
           format: date-time
+        startYear:
+          type: integer
+          description: The year, the tour was started
+        startMonth:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: The month, the tour was started
+        startDay:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: The day of month, the tour was started
         bike:
           $ref: './bike-api.yaml#/components/schemas/Bike'
         createdAt:
@@ -247,6 +263,19 @@ components:
           format: int64
           minimum: 1
           description: tour's start time in unix epoch
+        STARTYEAR:
+          type: integer
+          description: The year, the tour was started
+        STARTMONTH:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: The month, the tour was started
+        STARTDAY:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: The day of month, the tour was started
         TOURALTUP:
           type: integer
           minimum: 0

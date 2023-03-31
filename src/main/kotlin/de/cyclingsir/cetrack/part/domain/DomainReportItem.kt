@@ -6,6 +6,8 @@ package de.cyclingsir.cetrack.part.domain
 data class DomainReportItem(
     val part: String,
     val distance: Long,
-    val durationMoving: Long
+    val durationMoving: Long,
+    val altUp: Long,
+    val altDown: Long,
     val totalPower: Long,
 )
