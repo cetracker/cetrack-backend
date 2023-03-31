@@ -8,12 +8,10 @@ import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapp
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
-import de.cyclingsir.cetrack.part.storage.ReportProjection
 import de.cyclingsir.cetrack.part.storage.ReportProjectionComplete
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.Instant
-import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
@@ -38,22 +36,15 @@ class PartService(
     fun getReport() : List<DomainReportItem>{
         var reportList : List<DomainReportItem> = mutableListOf();
         try {
-            val report: Collection<ReportProjection> = partRepository.getReport()
-            report.forEach { r ->
-                logger.info { "${r.partName} | ${r.partType} | ${r.validFrom.atOffset(ZoneOffset.UTC)} | ${r.validUntil?.atOffset(ZoneOffset.UTC)}" }
-            }
-            logger.info("$report")
-        } catch (e: Exception) {
-            logger.warn { e }
-            e.printStackTrace()
-        }
-        try {
             val report: Collection<ReportProjectionComplete> = partRepository.getCompleteReport()
             report.forEach { r ->
-                logger.info { "${r.partName} | ${r.meterTotal} | ${r.secondsTotal}" }
+                logger.debug { "${r.partName} | ${r.meterTotal} | ${r.secondsTotal} | ${r.powerTotal}" }
             }
             logger.info("$report")
-            reportList = report.map { r -> (DomainReportItem(r.partName, r.meterTotal.toLong(), r.secondsTotal)) }
+            reportList = report.map { r ->
+                DomainReportItem(r.partName, r.meterTotal.toLong(), r.secondsTotal,
+                    r.altUpTotal.toLong(), r.altDownTotal.toLong(), r.powerTotal)
+            }
         } catch (e: Exception) {
             logger.warn { e }
             e.printStackTrace()

@@ -16,4 +16,5 @@ interface ReportProjectionComplete {
     var partName: String
     var meterTotal: Int
     var secondsTotal: Long
+    var powerTotal: Long
 }

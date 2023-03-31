@@ -7,4 +7,5 @@ data class DomainReportItem(
     val part: String,
     val distance: Long,
     val durationMoving: Long
+    val totalPower: Long,
 )

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `bike`
   `manufacturer`    VARCHAR(255)  NOT NULL,
   `model`           VARCHAR(255)  NOT NULL,
   `bought_at`       DATETIME(3)   NULL,
+  `retired_at`      DATETIME(3)   NULL,
   `created_at`      DATETIME(3)   NOT NULL,
   PRIMARY KEY (`id`)
 )

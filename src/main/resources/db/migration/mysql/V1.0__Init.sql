@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `part`
   `created_at`      DATETIME(3)   NOT NULL,
   `bought_at`       DATETIME(3)   NULL,
   `first_used_date` DATETIME      NULL,
-  `retired_date`    DATETIME      NULL,
+  `retired_at`      DATETIME      NULL,
   PRIMARY KEY (`id`)
 /*
   INDEX `fk_part_part_type_idx` (`part_type_id` ASC)

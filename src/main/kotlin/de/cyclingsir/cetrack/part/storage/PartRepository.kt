@@ -28,7 +28,8 @@ GROUP BY p.name
 ORDER BY p.name  DESC
      */
     @Query("""
-        SELECT p.name AS partName, sum(t.distance) AS meterTotal, sum(t.durationMoving) AS secondsTotal
+        SELECT p.name AS partName, sum(t.distance) AS meterTotal, sum(t.durationMoving) AS secondsTotal,
+        sum(t.altUp) AS altUpTotal, sum(t.altDown) AS altDownTotal, sum(t.powerTotal) as powerTotal
         FROM part p
         LEFT JOIN part_part_types ppt ON  p.id = ppt.partId
         LEFT JOIN part_type pt ON ppt.partTypeId = pt.id
