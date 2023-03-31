@@ -11,6 +11,7 @@ logging:
   level:
     root: WARN
     org.springframework: INFO
+    de.cyclingsir: INFO
 
 # Actuator Endpoints
 management:
