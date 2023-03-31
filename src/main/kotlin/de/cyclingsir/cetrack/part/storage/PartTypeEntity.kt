@@ -28,6 +28,8 @@ class PartTypeEntity(
     @Column(length = 255)
     var name: @NotNull String,
 
+    var mandatory: Boolean,
+
     @ManyToOne var bike: BikeEntity? = null,
 
     @CreatedDate

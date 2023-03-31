@@ -11,5 +11,6 @@ import java.util.UUID
 data class DomainPartType(
     val id: UUID?,
     val name: @NotNull String,
+    val mandatory: Boolean,
     val bike: DomainBike?,
     val createdAt: Instant?)

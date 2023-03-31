@@ -318,6 +318,7 @@ components:
       type: object
       required:
        - name
+       - mandatory
       properties:
         id:
           type: string
@@ -327,6 +328,9 @@ components:
         name:
           type: string
           description: part type name
+        mandatory:
+          type: boolean
+          description: Can the bike not be riden, without this type of part? Like a handlebar?
         bike:
           $ref: './bike-api.yaml#/components/schemas/Bike'
         createdAt:
