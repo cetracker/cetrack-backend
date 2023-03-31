@@ -163,6 +163,7 @@ components:
        - durationMoving
        - altUp
        - altDown
+       - powerTotal
        - startedAt
       properties:
         id:
@@ -188,6 +189,11 @@ components:
           type: integer
           minimum: 0
           description: tour's summed up descent in meters
+        powerTotal:
+          type: integer
+          format: int64
+          minimum: 0
+          description: tour's summed up power values in Watt
         startedAt:
           type: string
           format: date-time
@@ -205,6 +211,7 @@ components:
         - DURATIONMOVING
         - TOURALTUP
         - TOURALTDOWN
+        - POWERTOTAL
         - STARTYEAR
         - STARTMONTH
         - STARTDAY
@@ -248,6 +255,11 @@ components:
           type: integer
           minimum: 0
           description: tour's summed up descent in meters
+        POWERTOTAL:
+          type: integer
+          format: int64
+          minimum: 0
+          description: tour's summed up power values in Watt
         bikeId:
           type: string
           format: uuid

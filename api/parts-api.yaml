@@ -379,3 +379,15 @@ components:
           type: integer
           format: int64
           description: Total time of usage (moving) in seconds
+        altUp:
+          type: integer
+          format: int64
+          description: Total altitude climbed in m
+        altDown:
+          type: integer
+          format: int64
+          description: Accumulated descent in m
+        totalPower:
+          type: integer
+          format: int64
+          description: Total power in W

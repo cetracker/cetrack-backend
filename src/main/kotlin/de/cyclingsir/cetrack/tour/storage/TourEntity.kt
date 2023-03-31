@@ -39,9 +39,17 @@ class TourEntity(
 
     var startedAt: Instant,
 
+    var startYear: Int,
+
+    var startMonth: Int,
+
+    var startDay: Int,
+
     var altUp: Int,
 
     var altDown: Int,
+
+    var powerTotal: Long,
 
     @CreatedDate
     var createdAt: Instant? = null

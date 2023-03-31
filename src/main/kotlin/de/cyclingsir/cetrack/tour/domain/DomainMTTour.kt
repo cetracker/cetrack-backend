@@ -32,5 +32,7 @@ data class DomainMTTour(
 
     val TOURALTDOWN: Int,
 
+    val POWERTOTAL: Long,
+
     val bikeId: UUID?
 )

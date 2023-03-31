@@ -15,6 +15,7 @@ data class DomainTour(
     val durationMoving: Long,
     val altUp: Int,
     val altDown: Int,
+    val powerTotal: Long,
     val bike: DomainBike?,
     val startedAt: Instant,
     val createdAt: Instant?
