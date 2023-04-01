@@ -41,6 +41,13 @@ class PartTypeController(
         return ResponseEntity(HttpStatus.OK)
     }
 
+    override fun getPartType(partTypeId: UUID): ResponseEntity<PartType> {
+        val partType = service.getPartType(partTypeId)
+        partType?.apply {
+            return ResponseEntity.ok(mapper.map(partType))
+        }
+        return ResponseEntity.notFound().build()
+    }
 
     override fun getPartTypes(): ResponseEntity<List<PartType>> {
         val domainPartTypes = service.getPartTypes()

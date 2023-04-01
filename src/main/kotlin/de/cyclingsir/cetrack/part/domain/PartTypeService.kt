@@ -53,6 +53,13 @@ class PartTypeService(
         }
     }
 
+    fun getPartType(partTypeId: UUID): DomainPartType? {
+        val part = repository.findById(partTypeId)
+        return part.let {
+            mapper.map(it.get())
+        }
+    }
+
     fun relatePartTypeToBike(partTypeId: UUID, bikeId: UUID): DomainPartType {
         val domainBike = bikeService.getBike(bikeId)
         val partTypeEntity = repository.findById(partTypeId).get()

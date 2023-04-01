@@ -204,6 +204,22 @@ paths:
   /partTypes/{partTypeId}:
     parameters:
       - $ref: '#/components/parameters/partTypeId'
+    get:
+      operationId: getPartType
+      description: returns details of a single part type
+      tags:
+        - PartTypes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartType'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
     put:
       operationId: modifyPartType
       description: modifies an existing partType
