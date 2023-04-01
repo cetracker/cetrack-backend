@@ -20,7 +20,7 @@ import java.util.UUID
 @RestController
 class PartTypeController(
     val service: PartTypeService,
-    val mapper: PartTypeDomain2ApiMapper
+    val mapper: PartApiMapper
 ) : PartTypesApi {
 
     override fun createPartType(@Valid @RequestBody partType: PartType): ResponseEntity<PartType> {

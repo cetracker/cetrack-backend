@@ -4,7 +4,7 @@ import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
-import de.cyclingsir.cetrack.part.storage.PartTypeDomain2StorageMapper
+import de.cyclingsir.cetrack.part.storage.PartStorageMapper
 import de.cyclingsir.cetrack.part.storage.PartTypeRepository
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -18,31 +18,31 @@ private val logger = KotlinLogging.logger {}
 @Service
 class PartTypeService(
     private val repository: PartTypeRepository,
-    private val partTypeDomain2StorageMapper: PartTypeDomain2StorageMapper,
+    private val mapper: PartStorageMapper,
     private val bikeMapper: BikeDomain2StorageMapper,
     private val bikeService: BikeService
 ) {
     fun addPartType(partType: DomainPartType): DomainPartType {
-        val partTypeEntity = repository.save(partTypeDomain2StorageMapper.map(partType))
+        val partTypeEntity = repository.save(mapper.map(partType))
         logger.info { "Added Entity: ${partTypeEntity.createdAt?.toString()}, ${partTypeEntity.name}" }
-        val domainPart = partTypeDomain2StorageMapper.map(partTypeEntity)
+        val domainPart = mapper.map(partTypeEntity)
         logger.info { "Domain PartType (mapped) ${domainPart.createdAt?.toString()}" }
         return domainPart
     }
 
     fun getPartTypes(): List<DomainPartType> {
         val partTypeEntities = repository.findAll()
-        return partTypeEntities.map(partTypeDomain2StorageMapper::map)
+        return partTypeEntities.map(mapper::map)
     }
 
     fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType? {
         val partTypeEntity = try {
             assert(partTypeId == partType.id)
-            repository.save(partTypeDomain2StorageMapper.map(partType))
+            repository.save(mapper.map(partType))
         } catch (e: Exception) {
             throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERISTED, e.message)
         }
-        return partTypeDomain2StorageMapper.map(partTypeEntity)
+        return mapper.map(partTypeEntity)
     }
 
     fun deletePartType(partTypeId: UUID) {
@@ -63,6 +63,6 @@ class PartTypeService(
             logger.warn { "Add bike to part ${e.message}" }
             throw e
         }
-        return partTypeDomain2StorageMapper.map(modifiedEntity)
+        return mapper.map(modifiedEntity)
     }
 }

@@ -35,7 +35,11 @@ class PartPartTypeRelationEntity(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("partTypeId")
-    var partType: PartTypeEntity? = null)
+    var partType: PartTypeEntity,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("partId")
+    var part: PartEntity)
 
 @Embeddable
 class CompositeKey(

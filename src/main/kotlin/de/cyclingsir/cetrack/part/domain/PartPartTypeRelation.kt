@@ -16,5 +16,6 @@ data class DomainPartPartTypeRelation(
     val partTypeId: UUID,
     val validFrom: OffsetDateTime,
     val validUntil: OffsetDateTime?,
-    val partType: DomainPartType?
+    val part: DomainPart,
+    val partType: DomainPartType
 )

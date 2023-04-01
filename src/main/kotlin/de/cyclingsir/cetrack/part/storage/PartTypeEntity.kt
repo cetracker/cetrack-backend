@@ -7,6 +7,7 @@ import jakarta.persistence.EntityListeners
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
@@ -31,6 +32,13 @@ class PartTypeEntity(
     var mandatory: Boolean,
 
     @ManyToOne var bike: BikeEntity? = null,
+
+    @OneToMany(
+        targetEntity = PartPartTypeRelationEntity::class,
+        mappedBy = "partType",
+        orphanRemoval = true
+    )
+    var partTypeRelations: List<PartPartTypeRelationEntity>?,
 
     @CreatedDate
     var createdAt: Instant? = null

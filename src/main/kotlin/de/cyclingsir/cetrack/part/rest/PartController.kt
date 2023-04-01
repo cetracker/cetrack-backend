@@ -22,24 +22,23 @@ private val logger = KotlinLogging.logger {}
 @RestController
 class PartController(
     val service: PartService,
-    val partMapper: PartDomain2ApiMapper,
-    val relationMapper: PartPartTypeRelationDomain2ApiMapper,
+    val mapper: PartApiMapper,
     val reportMapper: ReportDomain2ApiMapper
 ) : PartsApi {
 
 //    @CrossOrigin
     override fun createPart(@Valid @RequestBody part: Part): ResponseEntity<Part> {
-        val addedPart = service.addPart(partMapper.map(part))
-        return ResponseEntity.ok(partMapper.map(addedPart))
+        val addedPart = service.addPart(mapper.map(part))
+        return ResponseEntity.ok(mapper.map(addedPart))
     }
 
     override fun modifyPart(@PathVariable("partId") partId: UUID, @Valid @RequestBody part: Part): ResponseEntity<Part> {
         logger.debug("API Part: $part")
-        val domainPart = partMapper.map(part)
+        val domainPart = mapper.map(part)
         logger.debug("DomainPart: $domainPart")
         val persistedPart = service.modifyPart(partId, domainPart)
         persistedPart?.apply {
-            return ResponseEntity.ok(partMapper.map(this))
+            return ResponseEntity.ok(mapper.map(this))
         }
         return ResponseEntity.notFound().build()
     }
@@ -52,14 +51,14 @@ class PartController(
     override fun getPart(partId: UUID): ResponseEntity<Part> {
         val part = service.getPart(partId)
         part?.apply {
-            return ResponseEntity.ok(partMapper.map(part))
+            return ResponseEntity.ok(mapper.map(part))
         }
         return ResponseEntity.notFound().build()
     }
 
     override fun getParts(): ResponseEntity<List<Part>> {
         val domainParts = service.getParts()
-        val restParts = domainParts.map(partMapper::map)
+        val restParts = domainParts.map(mapper::map)
         return ResponseEntity.ok(restParts);
     }
 
@@ -73,8 +72,8 @@ class PartController(
         @PathVariable("partId") partId: UUID,
         @Valid @RequestBody partPartTypeRelation: PartPartTypeRelation
     ): ResponseEntity<Part> {
-        val domainPart = service.createPartPartTypeRelation(relationMapper.map(partPartTypeRelation))
-        return ResponseEntity.ok(partMapper.map(domainPart))
+        val domainPart = service.createPartPartTypeRelation(mapper.map(partPartTypeRelation))
+        return ResponseEntity.ok(mapper.map(domainPart))
     }
 
 }

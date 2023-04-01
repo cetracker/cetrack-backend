@@ -2,12 +2,11 @@ package de.cyclingsir.cetrack.part.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
-import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapper
 import de.cyclingsir.cetrack.part.storage.PartEntity
-import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapper
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
+import de.cyclingsir.cetrack.part.storage.PartStorageMapper
 import de.cyclingsir.cetrack.part.storage.ReportProjectionComplete
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -24,13 +23,12 @@ private val logger = KotlinLogging.logger {}
 class PartService(
     private val partRepository: PartRepository,
     private val partParTypRelationRepository: PartPartTypeRelationRepository,
-    private val partDomain2StorageMapper: PartDomain2StorageMapper,
-    private val partPartTypeRelationMapper: PartPartTypeRelationDomain2StorageMapper,
+    private val mapper: PartStorageMapper
 ) {
 
     fun getParts(): List<DomainPart> {
         val partEntities = partRepository.findAll()
-        return partEntities.map(partDomain2StorageMapper::map)
+        return partEntities.map(mapper::map)
     }
 
     fun getReport() : List<DomainReportItem>{
@@ -53,9 +51,9 @@ class PartService(
     }
 
     fun addPart(part: DomainPart): DomainPart {
-        val partEntity = partRepository.save(partDomain2StorageMapper.map(part))
+        val partEntity = partRepository.save(mapper.map(part))
         logger.info { "Added Entity: ${partEntity.createdAt?.toString()}, ${partEntity.name}" }
-        val domainPart = partDomain2StorageMapper.map(partEntity)
+        val domainPart = mapper.map(partEntity)
         logger.info { "Domain Part (mapped) ${domainPart.createdAt?.toString()}" }
         return domainPart
     }
@@ -64,7 +62,7 @@ class PartService(
         logger.debug("Modify Part for part $part was called!")
         assert(partId == part.id)
         logger.debug("DomainPart: $part")
-        val entity = partDomain2StorageMapper.map(part)
+        val entity = mapper.map(part)
         logger.debug("Mapped Entity: $entity")
 
         val partEntity = try {
@@ -73,7 +71,7 @@ class PartService(
             throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message)
         }
         logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.name} - ${partEntity.partTypeRelations?.size}" }
-        return partDomain2StorageMapper.map(partEntity)
+        return mapper.map(partEntity)
     }
 
     fun deletePart(partId: UUID) {
@@ -87,7 +85,7 @@ class PartService(
     fun getPart(partId: UUID): DomainPart? {
         val part = partRepository.findById(partId)
         return part.let {
-            partDomain2StorageMapper.map(it.get())
+            mapper.map(it.get())
         }
     }
 
@@ -126,7 +124,7 @@ class PartService(
                 // relation already present - do nothing (a potential different validFrom will be ignored)
                 logger.debug("Open-ended relation with same part and part type found");
                 val partEntity = partRepository.findById(partId);
-                partDomain2StorageMapper.map(partEntity.get())
+                mapper.map(partEntity.get())
             } else {
                 throw ServiceException(
                     ErrorCodesDomain.PREVIOUS_RELATION_NOT_FOUND,
@@ -152,17 +150,11 @@ class PartService(
 
     private fun createNewRelationForPart(relation: DomainPartPartTypeRelation): DomainPart {
         logger.debug("Going to persist relation $relation")
-        val relationEntity = partPartTypeRelationMapper.map(relation)
+        val relationEntity = mapper.map(relation)
         val createdRelation: PartPartTypeRelationEntity = partParTypRelationRepository.save(relationEntity)
         val part: PartEntity = partRepository.findById(createdRelation.partId).get()
         logger.info("Newly related part: ${part.id} ${part.name} with ${part.partTypeRelations?.size} PartTypeRelations")
-        return partDomain2StorageMapper.map(part)
-    }
-
-    private fun endOpenEndedRelationForPartAtDate(partId: UUID, validUntil: Instant) {
-        val openEndedRelation: PartPartTypeRelationEntity? =
-            partParTypRelationRepository.findFirstByPartIdAndValidUntilIsNull(partId)
-        modifyRelation(validUntil, openEndedRelation)
+        return mapper.map(part)
     }
 
     /**

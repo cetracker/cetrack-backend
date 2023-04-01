@@ -6,6 +6,8 @@ import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapp
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
+import de.cyclingsir.cetrack.part.storage.PartStorageMapper
+import de.cyclingsir.cetrack.part.storage.PartTypeDomain2StorageMapperImpl
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
@@ -43,7 +45,14 @@ class PartServiceTest {
   @MockK
   private lateinit var relationRepository: PartPartTypeRelationRepository
 
-  private val partDomain2StorageMapper = PartDomain2StorageMapperImpl()
+  @MockK
+  private lateinit var domainPartA: DomainPart
+  @MockK
+  private lateinit var domainPartTypeCrank: DomainPartType
+
+  private val partStorageMapper =
+    PartStorageMapper(PartDomain2StorageMapperImpl(), PartTypeDomain2StorageMapperImpl(),
+      PartPartTypeRelationDomain2StorageMapperImpl())
   private val partPartTypeRelationMapper = PartPartTypeRelationDomain2StorageMapperImpl()
 
   private lateinit var partService: PartService
@@ -51,20 +60,20 @@ class PartServiceTest {
   @BeforeEach
   fun init() {
     partService =
-      PartService(partRepository, relationRepository, partDomain2StorageMapper, partPartTypeRelationMapper)
+      PartService(partRepository, relationRepository, partStorageMapper)
   }
 
   @Test
   fun `when no relation is defined then a new relation is persisted`() {
     val relation =
-      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, OffsetDateTime.now(), null, null)
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, OffsetDateTime.now(), null, domainPartA, domainPartTypeCrank)
 
-    val relationEntity = partPartTypeRelationMapper.map(relation)
+    val relationEntity = partStorageMapper.map(relation)
 
     every { relationRepository.countByPartId(UUID_PART_A) } returns 0
     every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
     every { relationRepository.save(any()) } returns relationEntity
-    every { partRepository.findById(UUID_PART_A) } returns Optional.of(PartEntity(UUID_PART_A, "A"))
+    every { partRepository.findById(UUID_PART_A) } returns Optional.of(PartEntity(UUID_PART_A, "A", null))
 
     val partRelationWasAddedTo = partService.createPartPartTypeRelation(relation)
 
@@ -74,11 +83,20 @@ class PartServiceTest {
 
   @Test
   fun `test offset date time to instance calculations conversions`() {
-    val validFrom = OffsetDateTime.parse("2022-03-01T13:10:23+01")
-    val validUntilExpected = OffsetDateTime.parse("2022-02-28T23:59:59+01")
-    val validUntilExpectedUTC = OffsetDateTime.parse("2022-02-28T22:59:59Z")
+    var validFrom = OffsetDateTime.parse("2022-03-01T13:10:23+01")
+    var validUntilExpected = OffsetDateTime.parse("2022-02-28T23:59:59+01")
+    var validUntilExpectedUTC = OffsetDateTime.parse("2022-02-28T22:59:59Z")
 
-    val validUntilCalculated = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)
+    var validUntilCalculated = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)
+
+    Assertions.assertEquals(validUntilExpected, validUntilCalculated)
+    Assertions.assertEquals(validUntilExpectedUTC, validUntilCalculated.toInstant().atOffset(ZoneOffset.UTC))
+
+    validFrom = OffsetDateTime.parse("2022-03-01T00:00:00+01")
+    validUntilExpected = OffsetDateTime.parse("2022-02-28T23:59:59+01")
+    validUntilExpectedUTC = OffsetDateTime.parse("2022-02-28T22:59:59Z")
+
+    validUntilCalculated = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS)
 
     Assertions.assertEquals(validUntilExpected, validUntilCalculated)
     Assertions.assertEquals(validUntilExpectedUTC, validUntilCalculated.toInstant().atOffset(ZoneOffset.UTC))
@@ -87,15 +105,16 @@ class PartServiceTest {
 
   @Test
   fun `when open ended relation B to Crank exists then A to Crank then B to Crank is terminated `() {
-    OffsetDateTime.parse("2022-03-01T13:10:23+01")
-    val validFrom = OffsetDateTime.parse("2022-03-01T13:10:23+01")
-    val expectedValidUntil = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS).toInstant()
+    val validFrom = OffsetDateTime.parse("2022-03-01T00:00:00+01")
+    val expectedValidUntil = OffsetDateTime.parse("2022-02-28T22:59:59Z").toInstant()
+//    val expectedValidUntil = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS).toInstant()
     val relationA =
-      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, validFrom.minus(10, ChronoUnit.DAYS), null, null)
-    val relationEntityA = partPartTypeRelationMapper.map(relationA)
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK,
+        validFrom.minus(10, ChronoUnit.DAYS), null, domainPartA, domainPartTypeCrank)
+    val relationEntityA = partStorageMapper.map(relationA)
     val relationB =
-      DomainPartPartTypeRelation(UUID_PART_B, UUID_PART_TYPE_CRANK, validFrom, null, null)
-    val partEntityB = PartEntity(UUID_PART_B, "B")
+      DomainPartPartTypeRelation(UUID_PART_B, UUID_PART_TYPE_CRANK, validFrom, null, domainPartA, domainPartTypeCrank)
+    val partEntityB = PartEntity(UUID_PART_B, "B", null)
 
     val savedEntitySlot = slot<PartPartTypeRelationEntity>()
     val savedEntities : MutableList<PartPartTypeRelationEntity> = mutableListOf();

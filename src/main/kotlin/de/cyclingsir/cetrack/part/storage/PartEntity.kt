@@ -29,11 +29,12 @@ class PartEntity(
     var name: @NotNull String,
 
     @OneToMany(
-        mappedBy = "partId",
+        targetEntity = PartPartTypeRelationEntity::class,
+        mappedBy = "part",
         cascade = [CascadeType.ALL],
         orphanRemoval = true,
     )
-    var partTypeRelations: MutableList<PartPartTypeRelationEntity>? = mutableListOf(),
+    var partTypeRelations: List<PartPartTypeRelationEntity>?,
 
     var boughtAt: Instant? = null,
 

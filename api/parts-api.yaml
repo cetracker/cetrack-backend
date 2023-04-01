@@ -330,7 +330,11 @@ components:
           description: part type name
         mandatory:
           type: boolean
-          description: Can the bike not be riden, without this type of part? Like a handlebar?
+          description: Can the bike not be ridden, without this type of part? Like a handlebar?
+        partTypeRelations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartPartTypeRelation'
         bike:
           $ref: './bike-api.yaml#/components/schemas/Bike'
         createdAt:
@@ -346,6 +350,8 @@ components:
        - partId
        - partTypeId
        - validFrom
+       - part
+       - partType
       properties:
         partId:
           type: string
@@ -363,6 +369,8 @@ components:
           type: string
           format: date-time
           description: the last date, the relation is valid
+        part:
+          $ref: '#/components/schemas/Part'
         partType:
           $ref: '#/components/schemas/PartType'
     Report:
