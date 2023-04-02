@@ -26,20 +26,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run Gradle Wrapper
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: wrapper
           arguments: |
             build
-            -x test
+            -x test -x check
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker meta
         id: meta
