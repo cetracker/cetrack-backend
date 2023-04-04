@@ -3,8 +3,10 @@ package de.cyclingsir.cetrack.bike.domain
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import mu.KotlinLogging
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -39,7 +41,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
             assert(bikeId == bike.id)
             repository.save(mapper.map(bike))
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.BIKE_NOT_PERISTED, e.message)
+            throw ServiceException(ErrorCodesDomain.BIKE_NOT_PERSISTED, e.message)
         }
         return mapper.map(bikeEntity)
     }
@@ -47,6 +49,15 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     fun deleteBike(bikeId: UUID) {
         try {
             repository.deleteById(bikeId)
+        } catch (e: DataIntegrityViolationException) {
+            e.message?.let { message ->
+                if (message.contains("PART_TYPE"))
+                    throw ServiceException(ErrorCodesDomain.BIKE_HAS_FOREIGN_KEY_CONSTRAINT, "Bike is connected to a part type. Delete this first.")
+                if (message.contains("TOUR"))
+                    throw ServiceException(ErrorCodesDomain.BIKE_HAS_FOREIGN_KEY_CONSTRAINT, "Bike is connected to at least one tour. Delete this first.")
+
+                throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR)
+            }
         } catch (e: Exception) {
             throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND, e.message)
         }

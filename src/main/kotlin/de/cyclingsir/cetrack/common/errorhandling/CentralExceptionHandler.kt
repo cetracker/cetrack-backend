@@ -22,7 +22,7 @@ class CentralExceptionHandler : ResponseEntityExceptionHandler() {
 
             ErrorDetails(ex.getError().code,
                 ex.javaClass.name,
-                "${ex.getError().reason}: $ex.?message",
+                "${ex.getError().reason}: ${ex.message}",
                 wr.contextPath,
                 ex.getError().httpStatus)
         }

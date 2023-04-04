@@ -12,7 +12,8 @@ import java.util.function.Supplier
  *
  * Meant to be implemented by an enum which defines error conditions.
  *
- * @see TechnicalError
+ * @see ErrorCodesDomain
+ * @see ErrorCodesService
  */
 interface ServiceError : Supplier<ServiceException> {
     /**

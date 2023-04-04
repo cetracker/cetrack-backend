@@ -40,7 +40,7 @@ class PartTypeService(
             assert(partTypeId == partType.id)
             repository.save(mapper.map(partType))
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERISTED, e.message)
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED, e.message)
         }
         return mapper.map(partTypeEntity)
     }
