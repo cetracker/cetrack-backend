@@ -16,18 +16,18 @@ INSERT INTO PART (id, name, created_at, bought_at) VALUES('ca68d5a1-cb85-4e4a-a7
       ('80bbc300-5475-4932-8296-c00aaeaa9e5f', 'Rear Wheel Campa Zonda', LOCALTIMESTAMP(), null),
       ('5fce029f-1e0d-47d0-b220-e604cafc5451', 'Saddle Selle Italia', LOCALTIMESTAMP(), null);
 
-INSERT INTO PART_TYPE(id, bike_id, name, created_at)
-VALUES('6296981d-92e4-45d3-b26c-331a58284e21', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Chain', LOCALTIMESTAMP()),
-      ('59143611-6a57-4e92-8fc6-de7e1a434625', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Saddle', LOCALTIMESTAMP()),
-      ('821f1d71-2515-47d7-b771-2badb3ffa2f9', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Front Derailleur', LOCALTIMESTAMP()),
-      ('33905c08-a045-4e43-aefa-2c2963ffe582', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Rear Derailleur', LOCALTIMESTAMP()),
-      ('12b6f43b-af8f-4d2d-8ae4-2d5a98c825a6', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Sprocket', LOCALTIMESTAMP()),
-      ('6dd6d551-9449-4766-8efb-ddab90812702', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Front Wheel', LOCALTIMESTAMP()),
-      ('3d7ffc2f-ff86-4697-bbb1-86298cdd7e37', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Rear Wheel', LOCALTIMESTAMP()),
-      ('3f403402-4a49-4b8e-b35a-d9a365615fc4', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Front Tire', LOCALTIMESTAMP()),
-      ('3d5576df-756b-465c-998d-a8f166540d35', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Rear Tire', LOCALTIMESTAMP()),
-      ('c47e51e6-0f07-4b4b-8390-9b065e59e197', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Front Rimbrake', LOCALTIMESTAMP()),
-      ('24996c8c-c559-45a2-8e4a-116f1a8f33ae', '70556a9d-bf01-42eb-b882-b5938fff7023', 'Rear Rimbrake', LOCALTIMESTAMP());
+INSERT INTO PART_TYPE(id, bike_id, mandatory, name, created_at)
+VALUES('6296981d-92e4-45d3-b26c-331a58284e21', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Chain', LOCALTIMESTAMP()),
+      ('59143611-6a57-4e92-8fc6-de7e1a434625', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Saddle', LOCALTIMESTAMP()),
+      ('821f1d71-2515-47d7-b771-2badb3ffa2f9', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Front Derailleur', LOCALTIMESTAMP()),
+      ('33905c08-a045-4e43-aefa-2c2963ffe582', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Rear Derailleur', LOCALTIMESTAMP()),
+      ('12b6f43b-af8f-4d2d-8ae4-2d5a98c825a6', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Sprocket', LOCALTIMESTAMP()),
+      ('6dd6d551-9449-4766-8efb-ddab90812702', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Front Wheel', LOCALTIMESTAMP()),
+      ('3d7ffc2f-ff86-4697-bbb1-86298cdd7e37', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Rear Wheel', LOCALTIMESTAMP()),
+      ('3f403402-4a49-4b8e-b35a-d9a365615fc4', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Front Tire', LOCALTIMESTAMP()),
+      ('3d5576df-756b-465c-998d-a8f166540d35', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Rear Tire', LOCALTIMESTAMP()),
+      ('c47e51e6-0f07-4b4b-8390-9b065e59e197', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Front Rimbrake', LOCALTIMESTAMP()),
+      ('24996c8c-c559-45a2-8e4a-116f1a8f33ae', '70556a9d-bf01-42eb-b882-b5938fff7023', '1', 'Rear Rimbrake', LOCALTIMESTAMP());
 
 INSERT INTO PART_PART_TYPES(part_id, part_type_id, valid_from, valid_until)
 VALUES('75efe2d4-bc85-430b-af26-1deb58409b43', '6296981d-92e4-45d3-b26c-331a58284e21', '2006-06-15 14:00:00', null ),
