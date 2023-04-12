@@ -34,6 +34,7 @@ out/
 
 ### Debug Data
 src/main/resources/data-h2.sql
+src/main/resources/data-mysql.sql
 
 ### NetBeans ###
 /nbproject/private/
