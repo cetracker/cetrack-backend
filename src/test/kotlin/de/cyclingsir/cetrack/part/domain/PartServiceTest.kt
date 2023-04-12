@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack.part.domain;
 
+import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapperImpl
@@ -37,6 +38,7 @@ class PartServiceTest {
     val UUID_PART_TYPE_CRANK = UUID.randomUUID()
     val UUID_PART_TYPE_FRONT_TIRE = UUID.randomUUID()
     val UUID_PART_TYPE_REAR_TIRE = UUID.randomUUID()
+    val UUID_BIKE = UUID.randomUUID()
   }
 
   @MockK
@@ -45,15 +47,13 @@ class PartServiceTest {
   @MockK
   private lateinit var relationRepository: PartPartTypeRelationRepository
 
-  @MockK
-  private lateinit var domainPartA: DomainPart
-  @MockK
-  private lateinit var domainPartTypeCrank: DomainPartType
+  private var bike =  DomainBike("Bike", "Manufacturer", UUID_BIKE, null, null, null)
+  private var domainPartA = DomainPart(UUID_PART_A, "A", null, null, emptyList(), null)
+  private var domainPartTypeCrank = DomainPartType(UUID_PART_TYPE_CRANK, "Crank", true, emptyList(), bike, null)
 
   private val partStorageMapper =
     PartStorageMapper(PartDomain2StorageMapperImpl(), PartTypeDomain2StorageMapperImpl(),
       PartPartTypeRelationDomain2StorageMapperImpl())
-  private val partPartTypeRelationMapper = PartPartTypeRelationDomain2StorageMapperImpl()
 
   private lateinit var partService: PartService
 
@@ -107,7 +107,7 @@ class PartServiceTest {
   fun `when open ended relation B to Crank exists then A to Crank then B to Crank is terminated `() {
     val validFrom = OffsetDateTime.parse("2022-03-01T00:00:00+01")
     val expectedValidUntil = OffsetDateTime.parse("2022-02-28T22:59:59Z").toInstant()
-//    val expectedValidUntil = validFrom.truncatedTo(ChronoUnit.DAYS).minus(1, ChronoUnit.SECONDS).toInstant()
+
     val relationA =
       DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK,
         validFrom.minus(10, ChronoUnit.DAYS), null, domainPartA, domainPartTypeCrank)
