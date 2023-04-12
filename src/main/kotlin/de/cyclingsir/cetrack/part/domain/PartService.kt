@@ -190,7 +190,7 @@ class PartService(
                     relation.validUntil = validUntil
                     partParTypRelationRepository.save(relation)
                 } else {
-                    logger.debug("Terminate open ended relation for ${relation.partId} to ${relation.partTypeId} (${relation.partType?.name}) at $validUntil ")
+                    logger.debug("Terminate open ended relation for ${relation.partId} to ${relation.partTypeId} (${relation.partType.name}) at $validUntil ")
                     relation.validUntil = validUntil
                     partParTypRelationRepository.save(relation)
                 }
