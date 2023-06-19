@@ -16,7 +16,7 @@ plugins {
 
     kotlin("jvm") version "1.8.22"
     kotlin("plugin.spring") version "1.8.21"
-    kotlin("plugin.jpa") version "1.8.21"
+    kotlin("plugin.jpa") version "1.8.22"
     kotlin("plugin.allopen") version "1.8.22" // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
     kotlin("plugin.lombok") version "1.8.0"
