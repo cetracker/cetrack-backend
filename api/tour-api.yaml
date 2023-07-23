@@ -202,14 +202,17 @@ components:
           format: date-time
         startYear:
           type: integer
+          format: int16
           description: The year, the tour was started
         startMonth:
           type: integer
+          format: int16
           minimum: 1
           maximum: 12
           description: The month, the tour was started
         startDay:
           type: integer
+          format: int16
           minimum: 1
           maximum: 31
           description: The day of month, the tour was started
@@ -265,14 +268,17 @@ components:
           description: tour's start time in unix epoch
         STARTYEAR:
           type: integer
+          format: int16
           description: The year, the tour was started
         STARTMONTH:
           type: integer
+          format: int16
           minimum: 1
           maximum: 12
           description: The month, the tour was started
         STARTDAY:
           type: integer
+          format: int16
           minimum: 1
           maximum: 31
           description: The day of month, the tour was started

@@ -18,8 +18,8 @@ data class DomainTour(
     val powerTotal: Long,
     val bike: DomainBike?,
     val startedAt: Instant,
-    val startYear: Int,
-    val startMonth: Int,
-    val startDay: Int,
+    val startYear: Short,
+    val startMonth: Short,
+    val startDay: Short,
     val createdAt: Instant?
 )

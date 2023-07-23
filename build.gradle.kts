@@ -89,6 +89,11 @@ openapiSpecs.forEach {
 //            "hideGenerationTimestamp" to "true"
             )
         )
+        typeMappings.set(
+            mapOf(
+                "integer+int16" to "kotlin.Short"
+            )
+        )
 
 //        sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).java.srcDir("$buildDir/generated/openapi/src")
     }

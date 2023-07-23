@@ -39,11 +39,11 @@ class TourEntity(
 
     var startedAt: Instant,
 
-    var startYear: Int,
+    var startYear: Short,
 
-    var startMonth: Int,
+    var startMonth: Short,
 
-    var startDay: Int,
+    var startDay: Short,
 
     var altUp: Int,
 
