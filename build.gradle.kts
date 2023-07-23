@@ -4,7 +4,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.1.0"
+    id("org.springframework.boot") version "3.1.1"
     id("io.spring.dependency-management") version "1.1.0"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
     id("com.google.devtools.ksp") version "1.9.0-1.0.11" // /for kmapper
@@ -14,10 +14,10 @@ plugins {
 
     id("com.bmuschko.docker-remote-api") version "9.3.1"
 
-    kotlin("jvm") version "1.8.22"
-    kotlin("plugin.spring") version "1.8.21"
-    kotlin("plugin.jpa") version "1.8.21"
-    kotlin("plugin.allopen") version "1.8.22" // https://spring.io/guides/tutorials/spring-boot-kotlin/
+    kotlin("jvm") version "1.9.0"
+    kotlin("plugin.spring") version "1.9.0"
+    kotlin("plugin.jpa") version "1.9.0"
+    kotlin("plugin.allopen") version "1.9.0" // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
     kotlin("plugin.lombok") version "1.8.0"
     id("io.freefair.lombok") version "5.3.0"
