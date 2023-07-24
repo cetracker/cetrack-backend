@@ -4,7 +4,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.1.1"
+    id("org.springframework.boot") version "3.1.2"
     id("io.spring.dependency-management") version "1.1.0"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
     id("com.google.devtools.ksp") version "1.9.0-1.0.11" // /for kmapper
