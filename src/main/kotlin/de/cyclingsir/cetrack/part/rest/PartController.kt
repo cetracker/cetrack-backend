@@ -33,9 +33,9 @@ class PartController(
     }
 
     override fun modifyPart(@PathVariable("partId") partId: UUID, @Valid @RequestBody part: Part): ResponseEntity<Part> {
-        logger.debug("API Part: $part")
+        logger.debug("API Part: {}", part)
         val domainPart = mapper.map(part)
-        logger.debug("DomainPart: $domainPart")
+        logger.debug("DomainPart: {}", domainPart)
         val persistedPart = service.modifyPart(partId, domainPart)
         persistedPart?.apply {
             return ResponseEntity.ok(mapper.map(this))

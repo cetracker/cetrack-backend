@@ -8,6 +8,7 @@ class MainApplicationTests {
 
 	@Test
 	fun contextLoads() {
+		// This is empty on purpose
 	}
 
 }

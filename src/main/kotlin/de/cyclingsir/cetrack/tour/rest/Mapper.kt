@@ -37,6 +37,6 @@ interface TourDomain2ApiMapper : TourDomain2ApiMapperSupport {
 }
 
 @Mapper
-interface MTTourDomain2ApiMapper  {
+fun interface MTTourDomain2ApiMapper  {
     fun map(rest: MTTour) : DomainMTTour
 }

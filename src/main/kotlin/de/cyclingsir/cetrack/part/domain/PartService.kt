@@ -59,11 +59,11 @@ class PartService(
     }
 
     fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
-        logger.debug("Modify Part for part $part was called!")
+        logger.debug("Modify Part for part {} was called!", part)
         assert(partId == part.id)
-        logger.debug("DomainPart: $part")
+        logger.debug("DomainPart: {}", part)
         val entity = mapper.map(part)
-        logger.debug("Mapped Entity: $entity")
+        logger.debug("Mapped Entity: {}", entity)
 
         val partEntity = try {
             partRepository.save(entity)
@@ -117,10 +117,10 @@ class PartService(
         val endOfPreviousDay = relation.validFrom
             .truncatedTo(ChronoUnit.DAYS)
             .minus(1, ChronoUnit.SECONDS).toInstant();
-        logger.debug("Will set previous relation to end at: $endOfPreviousDay");
+        logger.debug("Will set previous relation to end at: {}", endOfPreviousDay);
 
-        if (partParTypRelationRepository.countByPartIdAndValidUntilIsNull(partId) > 0) {
-            return if (partParTypRelationRepository.countByPartIdAndPartTypeIdAndValidUntilIsNull(partId, partTypeId) > 0) {
+        return if (partParTypRelationRepository.countByPartIdAndValidUntilIsNull(partId) > 0) {
+            if (partParTypRelationRepository.countByPartIdAndPartTypeIdAndValidUntilIsNull(partId, partTypeId) > 0) {
                 // relation already present - do nothing (a potential different validFrom will be ignored)
                 logger.debug("Open-ended relation with same part and part type found");
                 val partEntity = partRepository.findById(partId);
@@ -136,20 +136,20 @@ class PartService(
                     partParTypRelationRepository.findFirstByPartTypeIdAndValidUntilIsNull(partTypeId)
                 modifyRelation(endOfPreviousDay,currentActiveRelation, )
 
-                return createNewRelationForPart(relation);
+                createNewRelationForPart(relation);
             } else {
                 logger.warn("Most recent relation was not open-ended!");
                 // set to one day before the new relation starts
                 // ToDo is this desirable??
                 modifyValidityOfYoungestRelationForPartAtDate(partId, endOfPreviousDay);
 
-                return createNewRelationForPart(relation);
+                createNewRelationForPart(relation);
             }
         }
     }
 
     private fun createNewRelationForPart(relation: DomainPartPartTypeRelation): DomainPart {
-        logger.debug("Going to persist relation $relation")
+        logger.debug("Going to persist relation {}", relation)
         val relationEntity = mapper.map(relation)
         val createdRelation: PartPartTypeRelationEntity = partParTypRelationRepository.save(relationEntity)
         val part: PartEntity = partRepository.findById(createdRelation.partId).get()
@@ -190,12 +190,18 @@ class PartService(
                     relation.validUntil = validUntil
                     partParTypRelationRepository.save(relation)
                 } else {
-                    logger.debug("Terminate open ended relation for ${relation.partId} to ${relation.partTypeId} (${relation.partType.name}) at $validUntil ")
+                    logger.debug(
+                        "Terminate open ended relation for {} to {} ({}) at {} ",
+                        relation.partId,
+                        relation.partTypeId,
+                        relation.partType.name,
+                        validUntil
+                    )
                     relation.validUntil = validUntil
                     partParTypRelationRepository.save(relation)
                 }
             } catch (ex: Exception) {
-                logger.debug("Persisting failed: $ex")
+                logger.debug("Persisting failed: {}", ex.message)
                 throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, ex)
             }
         }

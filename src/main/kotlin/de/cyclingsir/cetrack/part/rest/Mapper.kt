@@ -45,7 +45,7 @@ interface PartTypeDomain2ApiMapper : PartDomain2ApiMapperSupport {
 }
 
 @Mapper
-interface ReportDomain2ApiMapper {
+fun interface ReportDomain2ApiMapper {
     fun map(domain: DomainReportItem): ReportItem
 }
 

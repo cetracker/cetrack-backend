@@ -12,6 +12,7 @@ import java.util.UUID
  * @param timeRecordedDevice recorded movement by device
  * @param startTimestamp tour's start time in unix epoch
  */
+@Suppress("kotlin:S117")
 data class DomainMTTour(
 
     val MTTOURID: String,
