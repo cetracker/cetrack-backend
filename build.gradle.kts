@@ -4,7 +4,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.1.4"
+    id("org.springframework.boot") version "3.1.5"
     id("io.spring.dependency-management") version "1.1.3"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
     id("com.google.devtools.ksp") version "1.9.10-1.0.13" // /for kmapper
@@ -12,7 +12,7 @@ plugins {
     checkstyle
     idea
 
-    id("com.bmuschko.docker-remote-api") version "9.3.4"
+    id("com.bmuschko.docker-remote-api") version "9.3.6"
 
     kotlin("jvm") version "1.9.10"
     kotlin("plugin.spring") version "1.9.10"
@@ -148,8 +148,8 @@ dependencies {
 
     implementation("io.github.microutils:kotlin-logging:3.0.5")
 
-    implementation("io.swagger.core.v3:swagger-annotations:2.2.16")
-    implementation("io.swagger.core.v3:swagger-models:2.2.16")
+    implementation("io.swagger.core.v3:swagger-annotations:2.2.18")
+    implementation("io.swagger.core.v3:swagger-models:2.2.18")
 
     // (data) classes mapper - https://github.com/s0nicyouth/kmapper
     implementation("io.github.s0nicyouth:processor_annotations:$kMapperVersion")
