@@ -7,17 +7,17 @@ plugins {
     id("org.springframework.boot") version "3.1.5"
     id("io.spring.dependency-management") version "1.1.3"
     id("com.gorylenko.gradle-git-properties") version "2.4.1"
-    id("com.google.devtools.ksp") version "1.9.10-1.0.13" // /for kmapper
+    id("com.google.devtools.ksp") version "1.9.21-1.0.15" // /for kmapper
     id("org.openapi.generator") version "7.0.1"
     checkstyle
     idea
 
     id("com.bmuschko.docker-remote-api") version "9.3.6"
 
-    kotlin("jvm") version "1.9.10"
-    kotlin("plugin.spring") version "1.9.10"
-    kotlin("plugin.jpa") version "1.9.10"
-    kotlin("plugin.allopen") version "1.9.10" // https://spring.io/guides/tutorials/spring-boot-kotlin/
+    kotlin("jvm") version "1.9.21"
+    kotlin("plugin.spring") version "1.9.21"
+    kotlin("plugin.jpa") version "1.9.21"
+    kotlin("plugin.allopen") version "1.9.21" // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
     kotlin("plugin.lombok") version "1.8.0"
     id("io.freefair.lombok") version "5.3.0"
