@@ -15,8 +15,8 @@ updates:
       interval: "monthly"
   - package-ecosystem: "docker" # See documentation for possible values
     directory: "/" 
-    update-types:
-    - "minor"
-    - "patch"
     schedule:
       interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
