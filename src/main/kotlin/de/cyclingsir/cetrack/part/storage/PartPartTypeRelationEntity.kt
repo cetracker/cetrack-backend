@@ -34,11 +34,11 @@ class PartPartTypeRelationEntity(
     var validUntil: Instant? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("partTypeId")
+    @MapsId
     var partType: PartTypeEntity,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("partId")
+    @MapsId
     var part: PartEntity)
 
 @Embeddable
