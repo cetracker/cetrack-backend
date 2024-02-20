@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.6_10-jre-jammy
+FROM eclipse-temurin:20.0.2_9-jre-jammy
 
 ADD /build/libs/cetrack-*.jar /app/service.jar
 WORKDIR /app
