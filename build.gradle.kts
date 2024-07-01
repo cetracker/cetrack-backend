@@ -24,7 +24,7 @@ plugins {
     */
 }
 
-val kMapperVersion = "1.1.0"
+val kMapperVersion = "1.2.0"
 
 gitProperties {
     keys = listOf("git.branch","git.commit.id","git.commit.time","git.commit.message.short","git.tags","git.commit.user.email")
