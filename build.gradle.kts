@@ -46,7 +46,7 @@ kotlinLombok {
 
 group = "de.cyclingsir"
 version = "v0.2.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_17
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
@@ -70,7 +70,7 @@ openapiSpecs.forEach {
         generateModelTests.set(false)
         generateModelDocumentation.set(true)
         inputSpec.set("$rootDir/${it.value}")
-        outputDir.set("$buildDir/generated")
+        outputDir.set("${layout.buildDirectory.get()}/generated")
         apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
         modelPackage.set("de.cyclingsir.cetrack.infrastructure.api.model")
         configOptions.set(
@@ -126,6 +126,7 @@ kotlin {
     sourceSets.test {
         kotlin.srcDir("build/generated/ksp/test/kotlin")
     }
+    jvmToolchain(21)
 }
 
 
@@ -165,9 +166,8 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions {
+    compilerOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "17"
         // useK2 = true
     }
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
