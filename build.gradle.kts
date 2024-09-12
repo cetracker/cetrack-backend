@@ -62,7 +62,9 @@ val openapiSpecs = mapOf(
 )
 openapiSpecs.forEach {
     println("$rootDir/${it.value}")
-    tasks.create("openApiGenerate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
+    tasks.register("openApiGenerate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
+        group = "apiGeneration"
+        description = "generating files for an api spec"
         generatorName.set("kotlin-spring")
         library.set("spring-boot")
         generateApiTests.set(false)
@@ -97,12 +99,14 @@ openapiSpecs.forEach {
 
 //        sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).java.srcDir("$buildDir/generated/openapi/src")
     }
-    tasks.create("openApiValidate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.ValidateTask::class) {
+    tasks.register("openApiValidate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.ValidateTask::class) {
+        group = "apiValidation"
+        description = "validate the api"
         inputSpec.set("$rootDir/${it.value}")
     }
 }
-tasks.register("openApiGenerateAll") { dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" }) }
-tasks.register("openApiValidateAll") { dependsOn(openapiSpecs.keys.map { "openApiValidate-$it" }) }
+tasks.register("openApiGenerateAll") { group = "apiGeneration"; description = "generating all api files"; dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" }) }
+tasks.register("openApiValidateAll") { group = "apiValidation"; description = "validating all api files"; dependsOn(openapiSpecs.keys.map { "openApiValidate-$it" }) }
 /* not working yet
 openApiValidate {
     inputSpec.set("$rootDir/api/parts-api.yaml")
@@ -178,7 +182,9 @@ tasks.withType<KotlinCompile> {
  - https://bmuschko.github.io/gradle-docker-plugin/current/user-guide/#introduction
  - https://plugins.gradle.org/plugin/org.jetbrains.gradle.docker
  */
-tasks.create("docker", DockerBuildImage::class) {
+tasks.register("docker", DockerBuildImage::class) {
+    group = "docker"
+    description = "build container image"
     inputDir.set(file("."))
     images.add("ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}")
     images.add("ghcr.io/cetracker/cetrack-backend:latest")
@@ -190,11 +196,15 @@ tasks.create("docker", DockerBuildImage::class) {
         "org.opencontainers.image.description" to "CETracker backend container image",
         "org.opencontainers.image.licenses" to "GPLv3"))
 }
-tasks.create("dockerPushRelease", DockerPushImage::class) {
+tasks.register("dockerPushRelease", DockerPushImage::class) {
+    group = "docker"
+    description = "push container image"
     images.add("ghcr.io/cetracker/cetrack-backend:${version.toString().replace("-SNAPSHOT", "")}")
     dependsOn(tasks.getByName("docker"))
 }
-tasks.create("dockerBuildSnapshot", DockerBuildImage::class) {
+tasks.register("dockerBuildSnapshot", DockerBuildImage::class) {
+    group = "docker"
+    description = "build container snapshot image"
     inputDir.set(file("."))
     images.add("ghcr.io/cetracker/cetrack-backend:${version.toString()}")
     files(tasks.bootJar.get().archiveFile)
@@ -204,7 +214,9 @@ tasks.create("dockerBuildSnapshot", DockerBuildImage::class) {
         "org.opencontainers.image.description" to "CETracker backend container image SNAPSHOT",
         "org.opencontainers.image.licenses" to "GPLv3"))
 }
-tasks.create("dockerPushSnapshot", DockerPushImage::class) {
+tasks.register("dockerPushSnapshot", DockerPushImage::class) {
+    group = "docker"
+    description = "push container snapshot image"
     images.add("ghcr.io/cetracker/cetrack-backend:${version.toString()}")
     dependsOn(tasks.getByName("dockerBuildSnapshot"))
 }
