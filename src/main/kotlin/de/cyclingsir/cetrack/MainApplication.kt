@@ -11,5 +11,5 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 class MainApplication
 
 fun main(args: Array<String>) {
-	runApplication<MainApplication>(*args)
+    runApplication<MainApplication>(*args)
 }

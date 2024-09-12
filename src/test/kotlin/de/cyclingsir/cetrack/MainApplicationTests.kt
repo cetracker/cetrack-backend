@@ -6,9 +6,9 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest
 class MainApplicationTests {
 
-	@Test
-	fun contextLoads() {
-		// This is empty on purpose
-	}
+    @Test
+    fun contextLoads() {
+        // This is empty on purpose
+    }
 
 }
