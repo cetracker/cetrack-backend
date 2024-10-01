@@ -15,7 +15,7 @@ plugins {
     id("com.bmuschko.docker-remote-api") version "9.4.0"
 
     kotlin("jvm") version "2.0.0"
-    kotlin("plugin.spring") version "2.0.0"
+    kotlin("plugin.spring") version "2.0.20"
     kotlin("plugin.jpa") version "2.0.20"
     kotlin("plugin.allopen") version "2.0.20" // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
