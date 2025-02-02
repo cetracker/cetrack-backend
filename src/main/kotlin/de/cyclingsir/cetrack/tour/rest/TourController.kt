@@ -4,10 +4,10 @@ import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.infrastructure.api.rest.ToursApi
 import de.cyclingsir.cetrack.tour.domain.TourService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotNull
-import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable

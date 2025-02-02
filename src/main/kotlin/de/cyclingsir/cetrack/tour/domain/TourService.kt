@@ -6,7 +6,7 @@ import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.storage.TourDomain2StorageMapper
 import de.cyclingsir.cetrack.tour.storage.TourRepository
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID

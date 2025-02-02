@@ -3,8 +3,8 @@ package de.cyclingsir.cetrack.bike.rest
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.infrastructure.api.model.Bike
 import de.cyclingsir.cetrack.infrastructure.api.rest.BikesApi
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
-import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable

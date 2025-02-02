@@ -5,8 +5,8 @@ import de.cyclingsir.cetrack.infrastructure.api.model.PartPartTypeRelation
 import de.cyclingsir.cetrack.infrastructure.api.model.ReportItem
 import de.cyclingsir.cetrack.infrastructure.api.rest.PartsApi
 import de.cyclingsir.cetrack.part.domain.PartService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
-import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable

@@ -1,6 +1,6 @@
 package de.cyclingsir.cetrack.configuration
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.context.annotation.Configuration
 import org.springframework.ui.ModelMap
 import org.springframework.web.context.request.ServletWebRequest

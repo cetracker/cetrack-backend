@@ -151,10 +151,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.github.microutils:kotlin-logging:3.0.5")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
 
-    implementation("io.swagger.core.v3:swagger-annotations:2.2.23")
-    implementation("io.swagger.core.v3:swagger-models:2.2.23")
+    implementation("io.swagger.core.v3:swagger-annotations:2.2.28")
+    implementation("io.swagger.core.v3:swagger-models:2.2.28")
 
     // (data) classes mapper - https://github.com/s0nicyouth/kmapper
     implementation("io.github.s0nicyouth:processor_annotations:$kMapperVersion")
@@ -166,7 +166,7 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("io.mockk:mockk:1.13.16")
 }
 
 tasks.withType<KotlinCompile> {

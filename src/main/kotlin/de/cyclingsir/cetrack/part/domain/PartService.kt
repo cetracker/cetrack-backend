@@ -8,7 +8,7 @@ import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
 import de.cyclingsir.cetrack.part.storage.PartStorageMapper
 import de.cyclingsir.cetrack.part.storage.ReportProjectionComplete
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.time.temporal.ChronoUnit
