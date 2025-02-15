@@ -151,7 +151,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
 
     implementation("io.swagger.core.v3:swagger-annotations:2.2.28")
     implementation("io.swagger.core.v3:swagger-models:2.2.28")
