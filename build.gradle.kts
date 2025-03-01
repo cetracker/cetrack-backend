@@ -7,7 +7,7 @@ plugins {
     id("org.springframework.boot") version "3.4.2"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.gorylenko.gradle-git-properties") version "2.4.2"
-    id("com.google.devtools.ksp") version "2.1.20-Beta2-1.0.30" // /for kmapper
+    id("com.google.devtools.ksp") version "2.1.20-RC-1.0.31" // /for kmapper
     id("org.openapi.generator") version "7.11.0"
     checkstyle
     idea
