@@ -30,7 +30,7 @@ class TourController(
 ) : ToursApi {
 
     override fun createTour(@Valid @RequestBody tour: Tour): ResponseEntity<Tour> {
-        logger.debug("Add tour with title ${tour.title}")
+        logger.debug{ "Add tour with title ${tour.title}" }
         val addedTour = service.addTour(mapper.map(tour))
         return ResponseEntity.ok(/* body = */ mapper.map(addedTour))
     }

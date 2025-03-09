@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger {}
 class BikeController(private val service: BikeService, private val mapper: BikeDomain2ApiMapper) : BikesApi {
 
     override fun createBike(@Valid @RequestBody bike: Bike): ResponseEntity<Bike> {
-        logger.debug("Add bike bought at {}", bike.boughtAt)
+        logger.debug{ "Add bike bought at ${bike.boughtAt}" }
         val addedBike = service.addBike(mapper.map(bike))
         return ResponseEntity.ok(/* body = */ mapper.map(addedBike))
     }
