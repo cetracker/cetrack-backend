@@ -45,27 +45,27 @@ class CorsConfiguration {
 class Interceptor: WebRequestInterceptor {
     override fun preHandle(request: WebRequest) {
         if( request is ServletWebRequest ) {
-            logger.info("uri: ${request.request.requestURI}")
+            logger.info { "uri: ${request.request.requestURI}" }
         }
-        logger.info("contextPath: ${request.contextPath}")
-        logger.info("-------- HEADER ----------------------")
+        logger.info { "contextPath: ${request.contextPath}" }
+        logger.info { "-------- HEADER ----------------------" }
         request.headerNames.forEach {
-            logger.info( "$it : ${request.getHeader(it)}" )
+            logger.info {  " $it : ${request.getHeader(it)}" }
         }
-        logger.info("-------- PARAMETER ----------------------")
+        logger.info { "-------- PARAMETER ----------------------" }
         request.parameterNames.forEach {
-            logger.info( "$it : ${request.getParameter(it)}" )
+            logger.info {  "$it : ${request.getParameter(it)}" }
         }
-        logger.info("-----------------------------------------")
+        logger.info { "-----------------------------------------" }
     }
 
     override fun postHandle(request: WebRequest, model: ModelMap?) {
-        logger.info("postHandle")
-        logger.info("model keys: ${model?.keys}")
+        logger.debug { "postHandle" }
+        logger.info { "model keys: ${model?.keys}" }
     }
 
     override fun afterCompletion(request: WebRequest, ex: Exception?) {
-        logger.info("afterCompletion")
+        logger.debug { "afterCompletion" }
     }
 
 }
