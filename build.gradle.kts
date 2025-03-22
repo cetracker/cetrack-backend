@@ -14,6 +14,8 @@ plugins {
 
     id("com.bmuschko.docker-remote-api") version "9.4.0"
 
+    id("com.ryandens.javaagent-test") version "0.5.1"
+
     kotlin("jvm") version "2.1.10"
     kotlin("plugin.spring") version "2.1.20-Beta2"
     kotlin("plugin.jpa") version "2.1.20-Beta2"
@@ -167,6 +169,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.mockk:mockk:1.13.17")
+    testJavaagent("net.bytebuddy:byte-buddy-agent:1.14.15")
 }
 
 tasks.withType<KotlinCompile> {
