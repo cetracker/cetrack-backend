@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.bike.domain
 
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
@@ -31,8 +32,9 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         return mapper.map(jpa = bikeEntity);
     }
 
+    @SuppressWarnings("BC_BAD_CAST_TO_ABSTRACT_COLLECTION")
     fun getBikes(): List<DomainBike> {
-        val bikeEntities = repository.findAll()
+        val bikeEntities: List<BikeEntity> = repository.findAll()
         return bikeEntities.map(mapper::map)
     }
 

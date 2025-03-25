@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.storage.TourDomain2StorageMapper
+import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -38,7 +39,7 @@ class TourService(
     }
 
     fun getTours(): List<DomainTour> {
-        val tourEntities = repository.findAll()
+        val tourEntities: List<TourEntity> = repository.findAll()
         return tourEntities.map(mapper::map)
     }
 

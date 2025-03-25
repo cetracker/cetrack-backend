@@ -17,28 +17,25 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 class CentralExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler
-    fun handleServiceException(ex: ServiceException, req: WebRequest?) : ResponseEntity<Any> {
-        return req?.let{ wr ->
-
-            ErrorDetails(ex.getError().code,
-                ex.javaClass.name,
-                "${ex.getError().reason}: ${ex.message}",
-                wr.contextPath,
-                ex.getError().httpStatus)
+    fun handleServiceException(serviceException: ServiceException, webRequest: WebRequest?) : ResponseEntity<Any> {
+        if (webRequest == null) {
+            throw serviceException
         }
-        .let {ed ->
-            letSpringHandlePreparedError(ed!!, ex, req!!)
+        return ErrorDetails(serviceException.getError().code,
+            serviceException.javaClass.name,
+            "${serviceException.getError().reason}: ${serviceException.message}",
+            webRequest.contextPath,
+            serviceException.getError().httpStatus)
+        .let {errorDetails ->
+            letSpringHandlePreparedError(errorDetails, serviceException, webRequest)
         }
-        ?: throw ex
-
+        ?: throw serviceException // in case handleExceptionInternal returned null
     }
 
     /*
    * @see ResponseEntityExceptionHandler#handleExceptionInternal
    */
-    private fun letSpringHandlePreparedError(
-        ed: ErrorDetails, ex: Exception, req: WebRequest
-    ): ResponseEntity<Any>? {
+    private fun letSpringHandlePreparedError(ed: ErrorDetails, ex: Exception, req: WebRequest): ResponseEntity<Any>? {
         return handleExceptionInternal(
             ex, ed, supplyHeaders(), HttpStatus.valueOf(ed.status), req
         )

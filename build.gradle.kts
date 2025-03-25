@@ -1,6 +1,7 @@
 
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.github.spotbugs.snom.Effort
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -9,6 +10,7 @@ plugins {
     id("com.gorylenko.gradle-git-properties") version "2.4.2"
     id("com.google.devtools.ksp") version "2.1.20-RC-1.0.31" // /for kmapper
     id("org.openapi.generator") version "7.12.0"
+    id("com.github.spotbugs") version "6.1.7"
     checkstyle
     idea
 
@@ -31,6 +33,21 @@ val kMapperVersion = "1.2.0"
 gitProperties {
     keys = listOf("git.branch","git.commit.id","git.commit.time","git.commit.message.short","git.tags","git.commit.user.email")
 }
+
+spotbugs {
+    effort = Effort.DEFAULT
+    reportsDir = file(layout.buildDirectory.file("reports/spotbugs"))
+    excludeFilter = file(layout.projectDirectory.file("config/spotbugs/exclude.xml"))
+}
+
+tasks.spotbugsMain {
+    reports.create("html") {
+        required = true
+        outputLocation = file(layout.buildDirectory.file("reports/spotbugs/spotbugs.html"))
+        setStylesheet("fancy-hist.xsl")
+    }
+}
+
 
 allOpen {
     // https://spring.io/guides/tutorials/spring-boot-kotlin/

@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.part.storage.PartStorageMapper
+import de.cyclingsir.cetrack.part.storage.PartTypeEntity
 import de.cyclingsir.cetrack.part.storage.PartTypeRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -31,7 +32,7 @@ class PartTypeService(
     }
 
     fun getPartTypes(): List<DomainPartType> {
-        val partTypeEntities = repository.findAll()
+        val partTypeEntities: List<PartTypeEntity> = repository.findAll()
         return partTypeEntities.map(mapper::map)
     }
 

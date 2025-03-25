@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration
  * Initially created on 3/23/23.
  */
 @Configuration
-class JacksonConfiguration(val objectMapper: ObjectMapper) {
+class JacksonConfiguration(objectMapper: ObjectMapper) {
 
     init {
         /*

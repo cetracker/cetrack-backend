@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Package name="~de.cyclingsir.cetrack.infrastructure.api.model.*" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+<!-- https://stackoverflow.com/questions/72394653/how-to-ignore-ei-expose-rep2-in-case-of-spring-autowired-components
+     e.g. a @Service with a method like addPart, setPart suggesting (falsely) modification used in a @RestController's
+      constructor will be flagged.
+      The service however isn't modified by the method, the database is but this doesn't harm the controller.
+       -->
+        <Method name="&lt;init&gt;"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="~de.cyclingsir.cetrack.part.domain.DomainPart.*" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="~.*\.storage\..*" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="~.*\.storage\..*" />
+        <Method name="~set.*" />
+        <Bug pattern="EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="~.*\.storage\..*" />
+        <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR" />
+    </Match>
+    <Match>
+        <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION" />
+    </Match>
+    <!-- lateinit -> false positive in Test classes-->
+    <Match>
+        <Clas name="~.*Test" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH" />
+    </Match>
+    <Match>
+        <Clas name="~.*Test" />
+        <Bug pattern="NP_NULL_PARAM_DEREF" />
+    </Match>
+    <Match>
+        <Clas name="~.*Test" />
+        <Bug pattern="UWF_UNWRITTEN_FIELD" />
+    </Match>
+</FindBugsFilter>

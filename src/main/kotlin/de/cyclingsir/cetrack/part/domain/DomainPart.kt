@@ -7,6 +7,7 @@ import java.util.UUID
 /**
  * Initially created on 1/28/23.
  */
+@SuppressWarnings("EI_EXPOSE_REP")
 data class DomainPart(
     val id: UUID?,
     val name: @NotNull String,

@@ -46,8 +46,8 @@ class TourController(
     }
 
     override fun relateBikeToTour(
-        @Parameter(required = true) @PathVariable("tourId") tourId: java.util.UUID,
-        @NotNull @Parameter(required = true) @Valid @RequestParam(value = "bikeId", required = true) bikeId: java.util.UUID
+        @Parameter(required = true) @PathVariable("tourId") tourId: UUID,
+        @NotNull @Parameter(required = true) @Valid @RequestParam(value = "bikeId", required = true) bikeId: UUID
     ): ResponseEntity<Tour> {
         val modifiedTour = service.relateTourToBike(tourId, bikeId)
         return ResponseEntity.ok(mapper.map(modifiedTour))

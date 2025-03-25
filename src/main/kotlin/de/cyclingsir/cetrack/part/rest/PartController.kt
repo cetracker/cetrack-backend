@@ -21,9 +21,9 @@ private val logger = KotlinLogging.logger {}
 
 @RestController
 class PartController(
-    val service: PartService,
-    val mapper: PartApiMapper,
-    val reportMapper: ReportDomain2ApiMapper
+    private val service: PartService,
+    private val mapper: PartApiMapper,
+    private val reportMapper: ReportDomain2ApiMapper
 ) : PartsApi {
 
 //    @CrossOrigin
@@ -57,14 +57,12 @@ class PartController(
     }
 
     override fun getParts(): ResponseEntity<List<Part>> {
-        val domainParts = service.getParts()
-        val restParts = domainParts.map(mapper::map)
+        val restParts = service.getParts().map(mapper::map)
         return ResponseEntity.ok(restParts);
     }
 
     override fun getReport(): ResponseEntity<List<ReportItem>> {
-        val domainReport = service.getReport()
-        val restReport = domainReport.map(reportMapper::map)
+        val restReport = service.getReport().map(reportMapper::map)
         return ResponseEntity.ok(restReport)
     }
 

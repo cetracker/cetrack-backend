@@ -44,7 +44,6 @@ class BikeController(private val service: BikeService, private val mapper: BikeD
     }
 
     override fun getBikes(): ResponseEntity<List<Bike>> {
-        val domainBikes = service.getBikes()
-        return ResponseEntity.ok(/* body = */ domainBikes.map(mapper::map))
+        return ResponseEntity.ok(/* body = */ service.getBikes().map(mapper::map))
     }
 }

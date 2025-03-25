@@ -19,8 +19,8 @@ import java.util.UUID
  */
 @RestController
 class PartTypeController(
-    val service: PartTypeService,
-    val mapper: PartApiMapper
+    private val service: PartTypeService,
+    private val mapper: PartApiMapper
 ) : PartTypesApi {
 
     override fun createPartType(@Valid @RequestBody partType: PartType): ResponseEntity<PartType> {
@@ -56,9 +56,9 @@ class PartTypeController(
     }
 
     override fun relatePartTypeToBike(
-        @Parameter(required = true) @PathVariable("partTypeId") partTypeId: java.util.UUID,
+        @Parameter(required = true) @PathVariable("partTypeId") partTypeId: UUID,
         @NotNull @Parameter(required = true)
-        @Valid @RequestParam(value = "bikeId", required = true) bikeId: java.util.UUID
+        @Valid @RequestParam(value = "bikeId", required = true) bikeId: UUID
     ): ResponseEntity<PartType> {
         val modifiedPartType = service.relatePartTypeToBike(partTypeId, bikeId)
         return ResponseEntity.ok(mapper.map(modifiedPartType))

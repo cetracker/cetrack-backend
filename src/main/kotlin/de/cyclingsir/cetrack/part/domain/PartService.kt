@@ -20,7 +20,7 @@ import java.util.UUID
 private val logger = KotlinLogging.logger {}
 
 @Service
-class PartService(
+final class PartService(
     private val partRepository: PartRepository,
     private val partParTypRelationRepository: PartPartTypeRelationRepository,
     private val mapper: PartStorageMapper

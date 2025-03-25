@@ -9,6 +9,7 @@ import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
 import de.cyclingsir.cetrack.part.storage.PartRepository
 import de.cyclingsir.cetrack.part.storage.PartStorageMapper
 import de.cyclingsir.cetrack.part.storage.PartTypeDomain2StorageMapperImpl
+import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
@@ -59,8 +60,8 @@ class PartServiceTest {
 
   @BeforeEach
   fun init() {
-    partService =
-      PartService(partRepository, relationRepository, partStorageMapper)
+    MockKAnnotations.init(this)
+    partService = PartService(partRepository, relationRepository, partStorageMapper)
   }
 
   @Test
@@ -103,8 +104,9 @@ class PartServiceTest {
 
   }
 
+  // when open-ended relation B to type Crank exists, relating A to type Crank shall terminate relation B to type Crank
   @Test
-  fun `when open ended relation B to Crank exists then A to Crank then B to Crank is terminated `() {
+  fun `when open-ended relation B to Crank exists then A to Crank then B to Crank is terminated `() {
     val validFrom = OffsetDateTime.parse("2022-03-01T00:00:00+01")
     val expectedValidUntil = OffsetDateTime.parse("2022-02-28T22:59:59Z").toInstant()
 
@@ -132,6 +134,7 @@ class PartServiceTest {
     }
     every { partRepository.findById(UUID_PART_B) } returns Optional.of(partEntityB)
 
+    @SuppressWarnings("NP_NULL_ON_SOME_PATH") // lateinit -> false positive
     val partRelationWasAddedTo = partService.createPartPartTypeRelation(relationB)
 
     verify (exactly = 2) { relationRepository.save(ofType(PartPartTypeRelationEntity::class)) }
@@ -141,7 +144,7 @@ class PartServiceTest {
     Assertions.assertEquals(expectedValidUntil, persistedRelationEntityPartA?.validUntil)
     Assertions.assertEquals(UUID_PART_B, partRelationWasAddedTo.id)
     Assertions.assertNotNull(persistedRelationEntityPartB)
-    Assertions.assertNull(persistedRelationEntityPartB?.validUntil)
+    Assertions.assertNull(persistedRelationEntityPartB!!.validUntil)
 
   }
 
@@ -152,7 +155,7 @@ class PartServiceTest {
  */
 private fun mockSavePart(partEntity: PartEntity) : PartEntity {
   with(partEntity) {
-    var creationDate = createdAt ?: Instant.now()
+    val creationDate = createdAt ?: Instant.now()
     return PartEntity(id, name, partTypeRelations, boughtAt, creationDate)
   }
 }
