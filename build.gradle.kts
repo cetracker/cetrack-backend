@@ -2,13 +2,14 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 import com.github.spotbugs.snom.Effort
+import com.google.devtools.ksp.gradle.KspAATask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.gorylenko.gradle-git-properties") version "2.5.0"
-    id("com.google.devtools.ksp") version "2.1.20-1.0.32" // /for kmapper
+    id("com.google.devtools.ksp") version "2.1.20-2.0.0" // /for kmapper
     id("org.openapi.generator") version "7.12.0"
     id("com.github.spotbugs") version "6.1.7"
     checkstyle
@@ -194,6 +195,10 @@ tasks.withType<KotlinCompile> {
         freeCompilerArgs = listOf("-Xjsr305=strict")
         // useK2 = true
     }
+    dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
+}
+
+tasks.withType<KspAATask> {
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
 }
 
