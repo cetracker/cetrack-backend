@@ -6,7 +6,7 @@ import com.google.devtools.ksp.gradle.KspAATask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.4.3"
+    id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.gorylenko.gradle-git-properties") version "2.5.0"
     id("com.google.devtools.ksp") version "2.1.20-2.0.0" // /for kmapper
@@ -19,17 +19,16 @@ plugins {
 
     id("com.ryandens.javaagent-test") version "0.5.1"
 
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.spring") version "2.1.20"
-    kotlin("plugin.jpa") version "2.1.20"
-    kotlin("plugin.allopen") version "2.1.20" // https://spring.io/guides/tutorials/spring-boot-kotlin/
+    val kotlinVersion = "2.1.20"
+    kotlin("jvm") version kotlinVersion
+    kotlin("plugin.spring") version kotlinVersion
+    kotlin("plugin.jpa") version kotlinVersion
+    kotlin("plugin.allopen") version kotlinVersion // https://spring.io/guides/tutorials/spring-boot-kotlin/
     /* lombok https://kotlinlang.org/docs/lombok.html
     kotlin("plugin.lombok") version "1.8.0"
     id("io.freefair.lombok") version "5.3.0"
     */
 }
-
-val kMapperVersion = "1.2.0"
 
 gitProperties {
     keys = listOf("git.branch","git.commit.id","git.commit.time","git.commit.message.short","git.tags","git.commit.user.email")
@@ -154,6 +153,12 @@ kotlin {
 }
 
 
+val kMapperVersion = "1.2.0"
+val kotlinLoggingVersion = "7.0.4"
+val swaggerVersion = "2.2.29"
+val mockKVersion = "1.13.17"
+val byeBuddyVersion = "1.14.15"
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -171,10 +176,10 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation(kotlin("stdlib-jdk8"))
 
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
+    implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingVersion")
 
-    implementation("io.swagger.core.v3:swagger-annotations:2.2.29")
-    implementation("io.swagger.core.v3:swagger-models:2.2.28")
+    implementation("io.swagger.core.v3:swagger-annotations:$swaggerVersion")
+    implementation("io.swagger.core.v3:swagger-models:$swaggerVersion")
 
     // (data) classes mapper - https://github.com/s0nicyouth/kmapper
     implementation("io.github.s0nicyouth:processor_annotations:$kMapperVersion")
@@ -186,8 +191,8 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.mockk:mockk:1.13.17")
-    testJavaagent("net.bytebuddy:byte-buddy-agent:1.14.15")
+    testImplementation("io.mockk:mockk:$mockKVersion")
+    testJavaagent("net.bytebuddy:byte-buddy-agent:$byeBuddyVersion")
 }
 
 tasks.withType<KotlinCompile> {
