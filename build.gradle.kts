@@ -17,7 +17,7 @@ plugins {
 
     id("com.bmuschko.docker-remote-api") version "9.4.0"
 
-    id("com.ryandens.javaagent-test") version "0.5.1"
+    id("com.ryandens.javaagent-test") version "0.8.0"
 
     val kotlinVersion = "2.1.20"
     kotlin("jvm") version kotlinVersion
