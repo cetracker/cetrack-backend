@@ -64,7 +64,7 @@ kotlinLombok {
 */
 
 group = "de.cyclingsir"
-version = "v0.2.4-SNAPSHOT"
+version = "v0.2.6"
 java.sourceCompatibility = JavaVersion.VERSION_21
 
 repositories {
