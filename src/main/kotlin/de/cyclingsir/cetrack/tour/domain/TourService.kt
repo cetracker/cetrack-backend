@@ -52,7 +52,7 @@ class TourService(
     private fun mapMTTour2Tour(mtTour: DomainMTTour) : DomainTour {
         val instantStarted = Instant.ofEpochMilli(mtTour.STARTTIMESTAMP)
         return DomainTour(
-            id = UUID.randomUUID(),
+            id = null, // @GeneratedValue(strategy = GenerationType.UUID) don't tamper with the generator
             mtTourId = mtTour.MTTOURID,
             title = mtTour.TITLE,
             distance = mtTour.DISTANCE,
