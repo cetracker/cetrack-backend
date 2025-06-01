@@ -19,7 +19,7 @@ plugins {
 
     id("com.ryandens.javaagent-test") version "0.8.0"
 
-    val kotlinVersion = "2.1.20"
+    val kotlinVersion = "2.1.21"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
