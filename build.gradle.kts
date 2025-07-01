@@ -11,7 +11,7 @@ plugins {
     id("com.gorylenko.gradle-git-properties") version "2.5.0"
     id("com.google.devtools.ksp") version "2.1.20-2.0.0" // /for kmapper
     id("org.openapi.generator") version "7.12.0"
-    id("com.github.spotbugs") version "6.1.10"
+    id("com.github.spotbugs") version "6.2.1"
     checkstyle
     idea
 
