@@ -8,8 +8,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.google.devtools.ksp") version "2.1.20-2.0.0" // /for kmapper
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
+    id("com.google.devtools.ksp") version "2.2.0-2.0.2" // /for kmapper
     id("org.openapi.generator") version "7.14.0"
     id("com.github.spotbugs") version "6.2.3"
     checkstyle
@@ -19,7 +19,7 @@ plugins {
 
     id("com.ryandens.javaagent-test") version "0.8.0"
 
-    val kotlinVersion = "2.1.21"
+    val kotlinVersion = "2.2.0"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
@@ -196,10 +196,8 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    compilerOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-        // useK2 = true
-    }
+    // avoid param waring. see: https://youtrack.jetbrains.com/issue/KT-73255
+    kotlin.compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict", "-Xannotation-default-target=param-property")
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
 }
 
