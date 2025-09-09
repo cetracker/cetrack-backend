@@ -155,7 +155,7 @@ kotlin {
 
 val kMapperVersion = "1.2.0"
 val kotlinLoggingVersion = "7.0.13"
-val swaggerVersion = "2.2.32"
+val swaggerVersion = "2.2.36"
 val mockKVersion = "1.13.17"
 val byeBuddyVersion = "1.17.5"
 
