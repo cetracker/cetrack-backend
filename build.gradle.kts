@@ -153,7 +153,7 @@ kotlin {
 }
 
 
-val kMapperVersion = "1.2.0"
+val kMapperVersion = "1.3.0"
 val kotlinLoggingVersion = "7.0.13"
 val swaggerVersion = "2.2.32"
 val mockKVersion = "1.13.17"
