@@ -157,7 +157,7 @@ val kMapperVersion = "1.3.0"
 val kotlinLoggingVersion = "7.0.13"
 val swaggerVersion = "2.2.36"
 val mockKVersion = "1.13.17"
-val byeBuddyVersion = "1.17.5"
+val byeBuddyVersion = "1.17.7"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
