@@ -6,7 +6,7 @@ import com.google.devtools.ksp.gradle.KspAATask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.5.4"
+    id("org.springframework.boot") version "4.0.4"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
     id("com.google.devtools.ksp") version "2.2.0-2.0.2" // /for kmapper
@@ -65,7 +65,7 @@ kotlinLombok {
 
 group = "de.cyclingsir"
 version = "v0.2.7"
-java.sourceCompatibility = JavaVersion.VERSION_21
+java.sourceCompatibility = JavaVersion.VERSION_25
 
 repositories {
     mavenCentral()
@@ -149,7 +149,7 @@ kotlin {
     sourceSets.test {
         kotlin.srcDir("build/generated/ksp/test/kotlin")
     }
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 
