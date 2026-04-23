@@ -9,9 +9,9 @@ plugins {
     id("org.springframework.boot") version "4.0.4"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
-    id("com.google.devtools.ksp") version "2.2.0-2.0.2" // /for kmapper
+    id("com.google.devtools.ksp") version "2.3.7" // /for kmapper
     id("org.openapi.generator") version "7.14.0"
-    id("com.github.spotbugs") version "6.2.3"
+    id("com.github.spotbugs") version "6.5.1"
     checkstyle
     idea
 
@@ -19,7 +19,7 @@ plugins {
 
     id("com.ryandens.javaagent-test") version "0.9.1"
 
-    val kotlinVersion = "2.2.10"
+    val kotlinVersion = "2.3.21"
     kotlin("jvm") version kotlinVersion
     kotlin("plugin.spring") version kotlinVersion
     kotlin("plugin.jpa") version kotlinVersion
