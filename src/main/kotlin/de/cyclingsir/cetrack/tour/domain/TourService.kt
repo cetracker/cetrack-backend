@@ -3,6 +3,8 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.storage.TourDomain2StorageMapper
 import de.cyclingsir.cetrack.tour.storage.TourEntity
@@ -26,6 +28,12 @@ class TourService(
 ) {
 
     fun addTour(tour: DomainTour): DomainTour {
+        if (repository.existsByStartedAtAndDistanceAndDurationMoving(tour.startedAt, tour.distance, tour.durationMoving)) {
+            throw ServiceException(
+                ErrorCodesDomain.TOUR_DUPLICATE,
+                "Tour starting at ${tour.startedAt} with distance ${tour.distance}m and duration ${tour.durationMoving}s already exists"
+            )
+        }
         val tourEntity = repository.save(mapper.map(tour))
         logger.info { "Added Entity = mtTour., ${tourEntity.title}" }
         val domainTour = mapper.map(tourEntity)
@@ -44,7 +52,16 @@ class TourService(
     }
 
     fun importTours(tours: List<DomainMTTour>) {
-
+        val duplicates = tours.filter {
+            val startedAt = Instant.ofEpochMilli(it.STARTTIMESTAMP)
+            repository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, it.DISTANCE, it.DURATIONMOVING)
+        }
+        if (duplicates.isNotEmpty()) {
+            throw ServiceException(
+                ErrorCodesDomain.TOUR_DUPLICATE,
+                "Duplicate tours detected: ${duplicates.joinToString { it.MTTOURID }}"
+            )
+        }
         val domainTours = tours.map(this::mapMTTour2Tour)
         repository.saveAll(domainTours.map(mapper::map))
     }

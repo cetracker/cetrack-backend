@@ -18,7 +18,9 @@ enum class ErrorCodesDomain(
 
     BIKE_NOT_FOUND(300, 400, "Bike not found"),
     BIKE_NOT_PERSISTED(301, 404, "Unable to persist bike"),
-    BIKE_HAS_FOREIGN_KEY_CONSTRAINT(302, 400, "Bike can't be deleted.");
+    BIKE_HAS_FOREIGN_KEY_CONSTRAINT(302, 400, "Bike can't be deleted."),
+
+    TOUR_DUPLICATE(400, 409, "Tour already exists");
 
     override val reason: String?
         get() = description
