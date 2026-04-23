@@ -5,6 +5,9 @@ spring:
     active: default
   devtools:
     add-properties: false
+  jackson:
+    deserialization:
+      adjust-dates-to-context-time-zone: false
 server:
   port: 8080
   servlet:
