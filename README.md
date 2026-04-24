@@ -13,7 +13,7 @@ A specification first approach is used for the API. Code is being generated with
 For mapping the data on it's journey through the onion layers [kmapper](https://stackoverflow.com/a/74864762/2664521) is being used.  
 Setting up database schema on MySQL compatible databases is done with [Flyway scripts](https://flywaydb.org/).
 
-A JDK of Java 17 is needed for building the project.
+A JDK of Java 25 is needed for building the project.
 
 ### Building
 
