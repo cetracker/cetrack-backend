@@ -6,16 +6,16 @@ import com.google.devtools.ksp.gradle.KspAATask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "4.0.4"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.gorylenko.gradle-git-properties") version "2.5.2"
+    id("com.gorylenko.gradle-git-properties") version "2.5.7"
     id("com.google.devtools.ksp") version "2.3.7" // /for kmapper
-    id("org.openapi.generator") version "7.14.0"
+    id("org.openapi.generator") version "7.21.0"
     id("com.github.spotbugs") version "6.5.1"
     checkstyle
     idea
 
-    id("com.bmuschko.docker-remote-api") version "9.4.0"
+    id("com.bmuschko.docker-remote-api") version "10.0.0"
 
     id("com.ryandens.javaagent-test") version "0.9.1"
 
@@ -79,6 +79,18 @@ val openapiSpecs = mapOf(
     "bike" to "api/bike-api.yaml",
     "tour" to "api/tour-api.yaml"
 )
+// The first spec key "owns" the shared generated files: supporting files (ApiUtil.kt,
+// Exceptions.kt, SpringDocConfiguration.kt) and any models that the generator emits for
+// multiple specs (e.g. Bike.kt which is referenced via $ref from several specs). For every
+// non-owning spec those duplicated files are deleted after generation so the Kotlin compiler
+// doesn't see redeclarations.
+val openApiOwningSpec = openapiSpecs.keys.first()
+val openApiSharedFiles = listOf(
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/rest/ApiUtil.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/rest/Exceptions.kt",
+    "src/main/kotlin/org/openapitools/SpringDocConfiguration.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/Bike.kt"
+)
 openapiSpecs.forEach {
     println("$rootDir/${it.value}")
     tasks.register("openApiGenerate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
@@ -91,7 +103,7 @@ openapiSpecs.forEach {
         generateModelTests.set(false)
         generateModelDocumentation.set(true)
         inputSpec.set("$rootDir/${it.value}")
-        outputDir.set("${layout.buildDirectory.get()}/generated")
+        outputDir.set("${layout.buildDirectory.get()}/generated/openapi/${it.key}")
         apiPackage.set("de.cyclingsir.cetrack.infrastructure.api.rest")
         modelPackage.set("de.cyclingsir.cetrack.infrastructure.api.model")
         configOptions.set(
@@ -116,12 +128,25 @@ openapiSpecs.forEach {
             )
         )
 
+        if (it.key != openApiOwningSpec) {
+            val specKey = it.key
+            val outDir = layout.buildDirectory.dir("generated/openapi/$specKey")
+            val sharedFiles = openApiSharedFiles
+            doLast {
+                sharedFiles.forEach { rel ->
+                    val f = outDir.get().file(rel).asFile
+                    if (f.exists()) f.delete()
+                }
+            }
+        }
+
 //        sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).java.srcDir("$buildDir/generated/openapi/src")
     }
     tasks.register("openApiValidate-${it.key}", org.openapitools.generator.gradle.plugin.tasks.ValidateTask::class) {
         group = "apiValidation"
         description = "validate the api"
         inputSpec.set("$rootDir/${it.value}")
+        inputs.file("$rootDir/${it.value}")
     }
 }
 tasks.register("openApiGenerateAll") { group = "apiGeneration"; description = "generating all api files"; dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" }) }
@@ -144,7 +169,10 @@ tasks.withType<org.openapitools.generator.gradle.plugin.tasks.ValidateTask> {
 // for kMapper and openApiGenerator
 kotlin {
     sourceSets.main {
-        kotlin.srcDirs("build/generated/ksp/main/kotlin", "build/generated/src/main")
+        kotlin.srcDirs(
+            "build/generated/ksp/main/kotlin",
+            *openapiSpecs.keys.map { "build/generated/openapi/$it/src/main/kotlin" }.toTypedArray()
+        )
     }
     sourceSets.test {
         kotlin.srcDir("build/generated/ksp/test/kotlin")
@@ -154,10 +182,10 @@ kotlin {
 
 
 val kMapperVersion = "1.3.0"
-val kotlinLoggingVersion = "7.0.13"
-val swaggerVersion = "2.2.36"
-val mockKVersion = "1.13.17"
-val byeBuddyVersion = "1.17.5"
+val kotlinLoggingVersion = "8.0.01"
+val swaggerVersion = "2.2.48"
+val mockKVersion = "1.14.9"
+val byeBuddyVersion = "1.18.8"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
