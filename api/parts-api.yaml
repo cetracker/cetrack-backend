@@ -302,17 +302,45 @@ components:
   schemas:
     Part:
       type: object
-      required:
-       - name
+      description: >
+        A physical part. A part must have at least one of `label` or `model`
+        non-empty so it is always identifiable; this rule is enforced by domain
+        validation (400 Bad Request), not by the schema. The displayed identity
+        is composed by the client (label, else manufacturer + model + serialNumber).
       properties:
         id:
-            type: string
-            format: uuid
-            description: the created part
-            readOnly: true
-        name:
-            type: string
-            description: the created part
+          type: string
+          format: uuid
+          description: the part's id
+          readOnly: true
+        label:
+          type: string
+          description: free-text display label; optional if model is given
+        manufacturer:
+          type: string
+          description: part manufacturer (who made it)
+        model:
+          type: string
+          description: part model name
+        serialNumber:
+          type: string
+          description: manufacturer serial number, disambiguates identical parts
+        vendor:
+          type: string
+          description: where the part was purchased (distinct from manufacturer)
+        purchasePrice:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+          description: purchase price as a decimal-formatted string (e.g. "10.57"); display-only
+        purchasePriceCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code for purchasePrice (e.g. "EUR")
+        firstUsedDate:
+          type: string
+          format: date-time
         boughtAt:
           type: string
           format: date-time
@@ -395,10 +423,22 @@ components:
         $ref: '#/components/schemas/ReportItem'
     ReportItem:
       type: object
+      description: >
+        A report row. Carries the part's raw identity fields so the client
+        composes the display identity with the same rule used elsewhere.
       properties:
-        part:
+        label:
           type: string
-          description: The part's name
+          description: the part's label, if any
+        manufacturer:
+          type: string
+          description: part manufacturer
+        model:
+          type: string
+          description: part model name
+        serialNumber:
+          type: string
+          description: manufacturer serial number
         distance:
           type: integer
           format: int64

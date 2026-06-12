@@ -11,6 +11,7 @@ enum class ErrorCodesDomain(
     PART_NOT_FOUND(100, 404, "Part not found"),
     PART_TYPE_NOT_FOUND(101, 404, "PartType not found"),
     PART_TYPE_NOT_PERSISTED(102, 404, "PartType not found"),
+    PART_NOT_IDENTIFIABLE(103, 400, "A part must have at least a label or a model"),
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 

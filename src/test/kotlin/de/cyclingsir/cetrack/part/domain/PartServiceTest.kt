@@ -1,6 +1,8 @@
 package de.cyclingsir.cetrack.part.domain;
 
 import de.cyclingsir.cetrack.bike.domain.DomainBike
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapperImpl
@@ -49,7 +51,10 @@ class PartServiceTest {
   private lateinit var relationRepository: PartPartTypeRelationRepository
 
   private var bike =  DomainBike("Bike", "Manufacturer", UUID_BIKE, null, null, null)
-  private var domainPartA = DomainPart(UUID_PART_A, "A", null, null, emptyList(), null)
+  private var domainPartA = DomainPart(
+    id = UUID_PART_A, label = "A", manufacturer = null, model = null, serialNumber = null,
+    vendor = null, purchasePrice = null, purchasePriceCurrency = null, firstUsedDate = null,
+    boughtAt = null, retiredAt = null, partTypeRelations = emptyList(), createdAt = null)
   private var domainPartTypeCrank = DomainPartType(UUID_PART_TYPE_CRANK, "Crank", true, emptyList(), bike, null)
 
   private val partStorageMapper =
@@ -80,6 +85,32 @@ class PartServiceTest {
 
     verify(exactly = 1) { relationRepository.save(any()) }
     Assertions.assertEquals(UUID_PART_A, partRelationWasAddedTo.id)
+  }
+
+  private fun partWith(label: String?, model: String?) = DomainPart(
+    id = null, label = label, manufacturer = null, model = model, serialNumber = null,
+    vendor = null, purchasePrice = null, purchasePriceCurrency = null, firstUsedDate = null,
+    boughtAt = null, retiredAt = null, partTypeRelations = emptyList(), createdAt = null)
+
+  @Test
+  fun `addPart rejects a part with neither label nor model`() {
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.addPart(partWith(label = "  ", model = null))
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_NOT_IDENTIFIABLE.code, ex.getError().code)
+    verify(exactly = 0) { partRepository.save(any()) }
+  }
+
+  @Test
+  fun `addPart accepts a part identified by model only`() {
+    val part = partWith(label = null, model = "GP5000")
+    val savedEntity = partStorageMapper.map(part).apply { id = UUID_PART_A }
+    every { partRepository.save(any()) } returns savedEntity
+
+    val result = partService.addPart(part)
+
+    Assertions.assertEquals(UUID_PART_A, result.id)
+    verify(exactly = 1) { partRepository.save(any()) }
   }
 
   @Test
@@ -156,6 +187,7 @@ class PartServiceTest {
 private fun mockSavePart(partEntity: PartEntity) : PartEntity {
   with(partEntity) {
     val creationDate = createdAt ?: Instant.now()
-    return PartEntity(id, name, partTypeRelations, boughtAt, creationDate)
+    return PartEntity(id = id, label = label, partTypeRelations = partTypeRelations,
+      boughtAt = boughtAt, createdAt = creationDate)
   }
 }

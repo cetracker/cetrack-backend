@@ -16,7 +16,14 @@ class DomainPartTest {
     fun init() {
         domainPart = DomainPart(
             UUID.randomUUID(),
-            name = "wheel A",
+            label = "wheel A",
+            manufacturer = null,
+            model = null,
+            serialNumber = null,
+            vendor = null,
+            purchasePrice = null,
+            purchasePriceCurrency = null,
+            firstUsedDate = null,
             boughtAt = null,
             retiredAt = null,
             partTypeRelations = emptyList(),
