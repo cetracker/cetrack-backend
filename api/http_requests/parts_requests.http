@@ -10,7 +10,13 @@ POST http://{{host}}:{{port}}/api/parts
 Content-Type: application/json
 
 {
-  "name": "Campagnolo AFS 03 Bremsscheibe 160mm original vorn"
+  "label": "Bremsscheibe original vorn",
+  "manufacturer": "Campagnolo",
+  "model": "AFS 03 160mm",
+  "serialNumber": "5I00318",
+  "vendor": "Bike-Discount",
+  "purchasePrice": "59.90",
+  "purchasePriceCurrency": "EUR"
 }
 > {%
     client.test("Response content-type is json", function() {

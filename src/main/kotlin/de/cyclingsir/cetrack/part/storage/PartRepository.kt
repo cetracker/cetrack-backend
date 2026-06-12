@@ -30,14 +30,15 @@ GROUP BY p.name
 ORDER BY p.name  DESC
      */
     @Query("""
-        SELECT p.name AS partName, sum(t.distance) AS meterTotal, sum(t.durationMoving) AS secondsTotal,
+        SELECT p.label AS label, p.manufacturer AS manufacturer, p.model AS model, p.serialNumber AS serialNumber,
+        sum(t.distance) AS meterTotal, sum(t.durationMoving) AS secondsTotal,
         sum(t.altUp) AS altUpTotal, sum(t.altDown) AS altDownTotal, sum(t.powerTotal) as powerTotal
         FROM part p
         LEFT JOIN part_part_types ppt ON  p.id = ppt.partId
         LEFT JOIN part_type pt ON ppt.partTypeId = pt.id
         LEFT JOIN bike b ON  pt.bike.id = b.id
-        INNER JOIN tour t ON  t.bike.id = b.id AND ppt.validFrom <= t.startedAt AND (t.startedAt <= ppt.validUntil OR ppt.validUntil IS NULL) 
-        GROUP BY p.name
+        INNER JOIN tour t ON  t.bike.id = b.id AND ppt.validFrom <= t.startedAt AND (t.startedAt <= ppt.validUntil OR ppt.validUntil IS NULL)
+        GROUP BY p.id, p.label, p.manufacturer, p.model, p.serialNumber
     """)
     fun getCompleteReport() : Collection<ReportProjectionComplete>
 }

@@ -2,7 +2,7 @@ INSERT INTO BIKE (id, manufacturer, model, bought_at, created_at) VALUES
       ('70556a9d-bf01-42eb-b882-b5938fff7023', 'Vaust', 'Fragola', '2006-06-15 14:00:00', LOCALTIMESTAMP()),
       ('99a133db-4f9b-4a5b-b6f9-8a5ec96d9db7', 'Cycle', 'TT', '2010-08-15 12:00:00', LOCALTIMESTAMP());
 
-INSERT INTO PART (id, name, created_at, bought_at) VALUES
+INSERT INTO PART (id, label, created_at, bought_at) VALUES
       ('ca68d5a1-cb85-4e4a-a719-4aa380b76325', 'Rimebreak Campa Veloce front', LOCALTIMESTAMP(), null),
       ('f8d98a1d-ab33-4df1-b6c5-eefdf4aa3dca', 'Rimbreak Campa Veloce rear', LOCALTIMESTAMP(), null),
       ('f351b44c-a49b-4871-bd0f-50f7af790b8c', 'Derailleur Campa Chorus front', LOCALTIMESTAMP(), null),

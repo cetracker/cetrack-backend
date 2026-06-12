@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
-import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
@@ -26,7 +25,7 @@ class PartEntity(
     var id: UUID?,
 
     @Column(length = 255)
-    var name: @NotNull String,
+    var label: String?,
 
     @OneToMany(
         targetEntity = PartPartTypeRelationEntity::class,
@@ -35,6 +34,22 @@ class PartEntity(
         orphanRemoval = true,
     )
     var partTypeRelations: List<PartPartTypeRelationEntity>?,
+
+    var manufacturer: String? = null,
+
+    var model: String? = null,
+
+    var serialNumber: String? = null,
+
+    var vendor: String? = null,
+
+    @Column(length = 30)
+    var purchasePrice: String? = null,
+
+    @Column(length = 3)
+    var purchasePriceCurrency: String? = null,
+
+    var firstUsedDate: Instant? = null,
 
     var boughtAt: Instant? = null,
 

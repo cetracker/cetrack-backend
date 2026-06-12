@@ -13,7 +13,10 @@ interface ReportProjection {
 */
 
 interface ReportProjectionComplete {
-    var partName: String
+    var label: String?
+    var manufacturer: String?
+    var model: String?
+    var serialNumber: String?
     var meterTotal: Int
     var secondsTotal: Long
     var altUpTotal: Int

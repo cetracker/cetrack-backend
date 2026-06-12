@@ -37,11 +37,12 @@ final class PartService(
         try {
             val report: Collection<ReportProjectionComplete> = partRepository.getCompleteReport()
             report.forEach { r ->
-                logger.debug { "${r.partName} | ${r.meterTotal} | ${r.secondsTotal} | ${r.powerTotal}" }
+                logger.debug { "${r.label} | ${r.meterTotal} | ${r.secondsTotal} | ${r.powerTotal}" }
             }
             logger.info {"$report"}
             reportList = report.map { r ->
-                DomainReportItem(r.partName, r.meterTotal.toLong(), r.secondsTotal,
+                DomainReportItem(r.label, r.manufacturer, r.model, r.serialNumber,
+                    r.meterTotal.toLong(), r.secondsTotal,
                     r.altUpTotal.toLong(), r.altDownTotal.toLong(), r.powerTotal)
             }
         } catch (e: Exception) {
@@ -52,16 +53,28 @@ final class PartService(
     }
 
     fun addPart(part: DomainPart): DomainPart {
+        requireIdentifiable(part)
         val partEntity = partRepository.save(mapper.map(part))
-        logger.info { "Added Entity: ${partEntity.createdAt?.toString()}, ${partEntity.name}" }
+        logger.info { "Added Entity: ${partEntity.createdAt?.toString()}, ${partEntity.label}" }
         val domainPart = mapper.map(partEntity)
         logger.info { "Domain Part (mapped) ${domainPart.createdAt?.toString()}" }
         return domainPart
     }
 
+    /**
+     * A part must be identifiable by at least a label or a model; otherwise the
+     * composed display identity would be empty.
+     */
+    private fun requireIdentifiable(part: DomainPart) {
+        if (part.label.isNullOrBlank() && part.model.isNullOrBlank()) {
+            throw ServiceException(ErrorCodesDomain.PART_NOT_IDENTIFIABLE)
+        }
+    }
+
     fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
         logger.debug { "Modify Part for part ${part} was called!" }
         assert(partId == part.id)
+        requireIdentifiable(part)
         logger.debug { "DomainPart: ${part}" }
         val entity = mapper.map(part)
         logger.debug { "Mapped Entity: ${entity}" }
@@ -71,7 +84,7 @@ final class PartService(
         } catch (e: Exception) {
             throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message)
         }
-        logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.name} - ${partEntity.partTypeRelations?.size}" }
+        logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.label} - ${partEntity.partTypeRelations?.size}" }
         return mapper.map(partEntity)
     }
 
@@ -154,7 +167,7 @@ final class PartService(
         val relationEntity = mapper.map(relation)
         val createdRelation: PartPartTypeRelationEntity = partParTypRelationRepository.save(relationEntity)
         val part: PartEntity = partRepository.findById(createdRelation.partId).get()
-        logger.info {"Newly related part: ${part.id} ${part.name} with ${part.partTypeRelations?.size} PartTypeRelations"}
+        logger.info {"Newly related part: ${part.id} ${part.label} with ${part.partTypeRelations?.size} PartTypeRelations"}
         return mapper.map(part)
     }
 
