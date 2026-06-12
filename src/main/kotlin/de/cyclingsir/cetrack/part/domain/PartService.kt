@@ -42,8 +42,8 @@ final class PartService(
             logger.info {"$report"}
             reportList = report.map { r ->
                 DomainReportItem(r.label, r.manufacturer, r.model, r.serialNumber,
-                    r.meterTotal.toLong(), r.secondsTotal,
-                    r.altUpTotal.toLong(), r.altDownTotal.toLong(), r.powerTotal)
+                    (r.meterTotal ?: 0).toLong(), r.secondsTotal ?: 0L,
+                    (r.altUpTotal ?: 0).toLong(), (r.altDownTotal ?: 0).toLong(), r.powerTotal ?: 0L)
             }
         } catch (e: Exception) {
             logger.warn { e }
@@ -54,6 +54,7 @@ final class PartService(
 
     fun addPart(part: DomainPart): DomainPart {
         requireIdentifiable(part)
+        requirePricePair(part)
         val partEntity = partRepository.save(mapper.map(part))
         logger.info { "Added Entity: ${partEntity.createdAt?.toString()}, ${partEntity.label}" }
         val domainPart = mapper.map(partEntity)
@@ -71,10 +72,19 @@ final class PartService(
         }
     }
 
+    private fun requirePricePair(part: DomainPart) {
+        val hasPrice = !part.purchasePrice.isNullOrBlank()
+        val hasCurrency = !part.purchasePriceCurrency.isNullOrBlank()
+        if (hasPrice != hasCurrency) {
+            throw ServiceException(ErrorCodesDomain.PART_PRICE_CURRENCY_MISMATCH)
+        }
+    }
+
     fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
         logger.debug { "Modify Part for part ${part} was called!" }
         assert(partId == part.id)
         requireIdentifiable(part)
+        requirePricePair(part)
         logger.debug { "DomainPart: ${part}" }
         val entity = mapper.map(part)
         logger.debug { "Mapped Entity: ${entity}" }

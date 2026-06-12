@@ -17,9 +17,9 @@ interface ReportProjectionComplete {
     var manufacturer: String?
     var model: String?
     var serialNumber: String?
-    var meterTotal: Int
-    var secondsTotal: Long
-    var altUpTotal: Int
-    var altDownTotal: Int
-    var powerTotal: Long
+    var meterTotal: Int?
+    var secondsTotal: Long?
+    var altUpTotal: Int?
+    var altDownTotal: Int?
+    var powerTotal: Long?
 }
