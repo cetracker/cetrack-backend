@@ -12,6 +12,7 @@ enum class ErrorCodesDomain(
     PART_TYPE_NOT_FOUND(101, 404, "PartType not found"),
     PART_TYPE_NOT_PERSISTED(102, 404, "PartType not found"),
     PART_NOT_IDENTIFIABLE(103, 400, "A part must have at least a label or a model"),
+    PART_PRICE_CURRENCY_MISMATCH(104, 400, "Purchase price and currency code must be provided together"),
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 
