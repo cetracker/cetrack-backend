@@ -72,6 +72,9 @@ management:
     web:
       exposure:
         include: health,info,metrics,loggers,prometheus
+logging:
+  level:
+    org.flywaydb: DEBUG
 
 ---
 
@@ -95,6 +98,7 @@ spring:
       hibernate:
         dialect: ${MYSQL_DIALECT:org.hibernate.dialect.MySQLDialect}
   flyway:
+    validate-on-migrate: false
     enabled: true
     baseline-version: 0.1
     baseline-on-migrate: true
