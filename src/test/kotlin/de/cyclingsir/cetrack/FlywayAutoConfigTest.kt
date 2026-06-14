@@ -14,7 +14,7 @@ class FlywayAutoConfigTest {
     // In Spring Boot 4.x FlywayAutoConfiguration lives in a separate spring-boot-flyway module
     // that is NOT a transitive dependency of spring-boot-starter-data-jpa.
     @Test
-    fun `FlywayAutoConfiguration creates Flyway bean when starter is present`() {
+    fun `test FlywayAutoConfiguration creates Flyway bean when starter is present`() {
         ApplicationContextRunner()
             .withConfiguration(
                 AutoConfigurations.of(
