@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.dao.DataIntegrityViolationException
 import java.util.UUID
 
 @ExtendWith(MockKExtension::class)
@@ -122,6 +123,16 @@ class PartTypeServiceTest {
     val ex = Assertions.assertThrows(ServiceException::class.java) { partTypeService.deletePartType(id) }
     Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_NOT_FOUND.code, ex.getError().code)
     verify(exactly = 0) { repository.deleteById(any()) }
+  }
+
+  @Test
+  fun `deletePartType maps constraint violation to FK error not not-found`() {
+    val id = UUID_PART_TYPE_A
+    every { repository.existsById(id) } returns true
+    every { repository.deleteById(id) } throws DataIntegrityViolationException("FK_PART_TYPE_RELATION")
+    val ex = Assertions.assertThrows(ServiceException::class.java) { partTypeService.deletePartType(id) }
+    Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_HAS_FOREIGN_KEY_CONSTRAINT.code, ex.getError().code)
+    Assertions.assertEquals(400, ex.getError().httpStatus)
   }
 
   @Test

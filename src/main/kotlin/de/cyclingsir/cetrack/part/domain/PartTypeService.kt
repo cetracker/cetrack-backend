@@ -3,7 +3,9 @@ package de.cyclingsir.cetrack.part.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
+import org.springframework.dao.DataIntegrityViolationException
 import de.cyclingsir.cetrack.part.storage.PartStorageMapper
 import de.cyclingsir.cetrack.part.storage.PartTypeEntity
 import de.cyclingsir.cetrack.part.storage.PartTypeRepository
@@ -57,8 +59,11 @@ class PartTypeService(
         if (!repository.existsById(partTypeId)) throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND)
         try {
             repository.deleteById(partTypeId)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_HAS_FOREIGN_KEY_CONSTRAINT,
+                "PartType is referenced by a part relation. Remove it first.")
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND, e.message)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR)
         }
     }
 

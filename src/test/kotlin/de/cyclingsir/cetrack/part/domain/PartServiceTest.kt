@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.dao.DataIntegrityViolationException
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -300,6 +301,16 @@ class PartServiceTest {
     val ex = Assertions.assertThrows(ServiceException::class.java) { partService.deletePart(id) }
     Assertions.assertEquals(ErrorCodesDomain.PART_NOT_FOUND.code, ex.getError().code)
     verify(exactly = 0) { partRepository.deleteById(any()) }
+  }
+
+  @Test
+  fun `deletePart maps constraint violation to FK error not not-found`() {
+    val id = UUID_PART_A
+    every { partRepository.existsById(id) } returns true
+    every { partRepository.deleteById(id) } throws DataIntegrityViolationException("FK_PART_RELATION")
+    val ex = Assertions.assertThrows(ServiceException::class.java) { partService.deletePart(id) }
+    Assertions.assertEquals(ErrorCodesDomain.PART_HAS_FOREIGN_KEY_CONSTRAINT.code, ex.getError().code)
+    Assertions.assertEquals(400, ex.getError().httpStatus)
   }
 
 }

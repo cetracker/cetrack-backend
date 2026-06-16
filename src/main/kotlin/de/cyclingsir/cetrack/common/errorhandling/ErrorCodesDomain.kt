@@ -15,6 +15,8 @@ enum class ErrorCodesDomain(
     PART_PRICE_CURRENCY_MISMATCH(104, 400, "Purchase price and currency code must be provided together"),
     PART_ID_MISMATCH(105, 400, "Path id does not match the part id in the body"),
     PART_TYPE_ID_MISMATCH(106, 400, "Path id does not match the part type id in the body"),
+    PART_HAS_FOREIGN_KEY_CONSTRAINT(107, 400, "Part can't be deleted."),
+    PART_TYPE_HAS_FOREIGN_KEY_CONSTRAINT(108, 400, "PartType can't be deleted."),
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 
