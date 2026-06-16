@@ -82,17 +82,23 @@ final class PartService(
 
     fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
         logger.debug { "Modify Part for part ${part} was called!" }
-        assert(partId == part.id)
+        if (part.id != null && part.id != partId) {
+            throw ServiceException(ErrorCodesDomain.PART_ID_MISMATCH)
+        }
+        if (!partRepository.existsById(partId)) {
+            throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND)
+        }
         requireIdentifiable(part)
         requirePricePair(part)
         logger.debug { "DomainPart: ${part}" }
         val entity = mapper.map(part)
+        entity.id = partId
         logger.debug { "Mapped Entity: ${entity}" }
 
         val partEntity = try {
             partRepository.save(entity)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message)
+            throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message ?: "Persisting failed", e)
         }
         logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.label} - ${partEntity.partTypeRelations?.size}" }
         return mapper.map(partEntity)

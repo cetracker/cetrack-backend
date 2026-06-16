@@ -13,14 +13,17 @@ enum class ErrorCodesDomain(
     PART_TYPE_NOT_PERSISTED(102, 404, "PartType not found"),
     PART_NOT_IDENTIFIABLE(103, 400, "A part must have at least a label or a model"),
     PART_PRICE_CURRENCY_MISMATCH(104, 400, "Purchase price and currency code must be provided together"),
+    PART_ID_MISMATCH(105, 400, "Path id does not match the part id in the body"),
+    PART_TYPE_ID_MISMATCH(106, 400, "Path id does not match the part type id in the body"),
 
     RELATION_NOT_VALID(200, 400, "Relation not valid"),
 
     PREVIOUS_RELATION_NOT_FOUND(201, 400, "Previous relation to finalize not found"),
 
-    BIKE_NOT_FOUND(300, 400, "Bike not found"),
+    BIKE_NOT_FOUND(300, 404, "Bike not found"),
     BIKE_NOT_PERSISTED(301, 404, "Unable to persist bike"),
     BIKE_HAS_FOREIGN_KEY_CONSTRAINT(302, 400, "Bike can't be deleted."),
+    BIKE_ID_MISMATCH(303, 400, "Path id does not match the bike id in the body"),
 
     TOUR_DUPLICATE(400, 409, "Tour already exists");
 
