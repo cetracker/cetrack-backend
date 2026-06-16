@@ -85,14 +85,14 @@ final class PartService(
         if (part.id != null && part.id != partId) {
             throw ServiceException(ErrorCodesDomain.PART_ID_MISMATCH)
         }
-        if (!partRepository.existsById(partId)) {
-            throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND)
-        }
+        val existing = partRepository.findById(partId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.PART_NOT_FOUND) }
         requireIdentifiable(part)
         requirePricePair(part)
         logger.debug { "DomainPart: ${part}" }
         val entity = mapper.map(part)
         entity.id = partId
+        entity.partTypeRelations = existing.partTypeRelations
         logger.debug { "Mapped Entity: ${entity}" }
 
         val partEntity = try {
