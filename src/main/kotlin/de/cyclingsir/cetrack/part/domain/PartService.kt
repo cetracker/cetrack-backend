@@ -105,6 +105,7 @@ final class PartService(
     }
 
     fun deletePart(partId: UUID) {
+        if (!partRepository.existsById(partId)) throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND)
         try {
             partRepository.deleteById(partId)
         } catch (e: Exception) {

@@ -135,6 +135,8 @@ paths:
           description: Part successfully deleted.
         '400':
           description: Bad Request
+        '404':
+          description: Not Found
         '500':
           description: Internal Server Error
   /parts/{partId}/action/relate:
@@ -257,6 +259,8 @@ paths:
           description: PartType successfully deleted.
         '400':
           description: Bad Request
+        '404':
+          description: Not Found
         '500':
           description: Internal Server Error
   /partTypes/{partTypeId}/action/relate:
