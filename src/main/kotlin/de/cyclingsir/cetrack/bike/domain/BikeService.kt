@@ -56,6 +56,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     fun deleteBike(bikeId: UUID) {
+        if (!repository.existsById(bikeId)) throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND)
         try {
             repository.deleteById(bikeId)
         } catch (e: DataIntegrityViolationException) {

@@ -15,6 +15,8 @@ import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.just
+import io.mockk.Runs
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions
@@ -288,6 +290,16 @@ class PartServiceTest {
     Assertions.assertNotNull(persistedRelationEntityPartB)
     Assertions.assertNull(persistedRelationEntityPartB!!.validUntil)
 
+  }
+
+  @Test
+  fun `deletePart throws not found when part does not exist`() {
+    val id = UUID_PART_A
+    every { partRepository.existsById(id) } returns false
+    every { partRepository.deleteById(id) } just Runs
+    val ex = Assertions.assertThrows(ServiceException::class.java) { partService.deletePart(id) }
+    Assertions.assertEquals(ErrorCodesDomain.PART_NOT_FOUND.code, ex.getError().code)
+    verify(exactly = 0) { partRepository.deleteById(any()) }
   }
 
 }

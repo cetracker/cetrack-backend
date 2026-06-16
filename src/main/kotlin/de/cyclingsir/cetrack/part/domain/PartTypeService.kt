@@ -54,6 +54,7 @@ class PartTypeService(
     }
 
     fun deletePartType(partTypeId: UUID) {
+        if (!repository.existsById(partTypeId)) throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND)
         try {
             repository.deleteById(partTypeId)
         } catch (e: Exception) {
