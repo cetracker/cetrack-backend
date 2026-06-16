@@ -166,6 +166,44 @@ class PartServiceTest {
   }
 
   @Test
+  fun `modifyPart preserves existing relations when body clears them`() {
+    val pathId = UUID_PART_A
+    val relation = DomainPartPartTypeRelation(
+      UUID_PART_A, UUID_PART_TYPE_CRANK, OffsetDateTime.now(), null, domainPartA, domainPartTypeCrank)
+    val existingEntity = PartEntity(UUID_PART_A, "A", listOf(partStorageMapper.map(relation)))
+    val body = partWith(label = "Tire", model = null)
+    val savedSlot = slot<PartEntity>()
+
+    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
+    every { partRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+    partService.modifyPart(pathId, body)
+
+    Assertions.assertEquals(1, savedSlot.captured.partTypeRelations?.size)
+    Assertions.assertEquals(UUID_PART_TYPE_CRANK, savedSlot.captured.partTypeRelations?.first()?.partTypeId)
+  }
+
+  @Test
+  fun `modifyPart preserves existing relations when body omits partTypeRelations`() {
+    val pathId = UUID_PART_A
+    val relation = DomainPartPartTypeRelation(
+      UUID_PART_A, UUID_PART_TYPE_CRANK, OffsetDateTime.now(), null, domainPartA, domainPartTypeCrank)
+    val existingEntity = PartEntity(UUID_PART_A, "A", listOf(partStorageMapper.map(relation)))
+    val body = partWith(label = "Tire", model = null).copy(partTypeRelations = null)
+    val savedSlot = slot<PartEntity>()
+
+    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
+    every { partRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+
+    partService.modifyPart(pathId, body)
+
+    Assertions.assertEquals(1, savedSlot.captured.partTypeRelations?.size)
+    Assertions.assertEquals(UUID_PART_TYPE_CRANK, savedSlot.captured.partTypeRelations?.first()?.partTypeId)
+  }
+
+  @Test
   fun `addPart rejects a part with neither label nor model`() {
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.addPart(partWith(label = "  ", model = null))
