@@ -136,6 +136,20 @@ class PartTypeServiceTest {
   }
 
   @Test
+  fun `modifyPartType maps persistence failure to server error not not-found`() {
+    val pathId = UUID_PART_TYPE_A
+    val partType = partTypeWith(name = "Crank")
+    every { repository.existsById(pathId) } returns true
+    every { repository.save(any()) } throws RuntimeException("db down")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partTypeService.modifyPartType(pathId, partType)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED.code, ex.getError().code)
+    Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
+  @Test
   fun `modifyPartType accepts matching body id and path id`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank", id = pathId)
