@@ -37,11 +37,18 @@ class PartTypeService(
     }
 
     fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType? {
+        if (partType.id != null && partType.id != partTypeId) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_ID_MISMATCH)
+        }
+        if (!repository.existsById(partTypeId)) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND)
+        }
+        val entity = mapper.map(partType)
+        entity.id = partTypeId
         val partTypeEntity = try {
-            assert(partTypeId == partType.id)
-            repository.save(mapper.map(partType))
+            repository.save(entity)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED, e.message)
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED, e.message ?: "Persisting failed", e)
         }
         return mapper.map(partTypeEntity)
     }

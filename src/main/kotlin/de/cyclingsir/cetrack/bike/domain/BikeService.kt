@@ -39,11 +39,18 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     fun modifyBike(bikeId: UUID, bike: DomainBike): DomainBike? {
+        if (bike.id != null && bike.id != bikeId) {
+            throw ServiceException(ErrorCodesDomain.BIKE_ID_MISMATCH)
+        }
+        if (!repository.existsById(bikeId)) {
+            throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND)
+        }
+        val entity = mapper.map(bike)
+        entity.id = bikeId
         val bikeEntity = try {
-            assert(bikeId == bike.id)
-            repository.save(mapper.map(bike))
+            repository.save(entity)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.BIKE_NOT_PERSISTED, e.message)
+            throw ServiceException(ErrorCodesDomain.BIKE_NOT_PERSISTED, e.message ?: "Persisting failed", e)
         }
         return mapper.map(bikeEntity)
     }

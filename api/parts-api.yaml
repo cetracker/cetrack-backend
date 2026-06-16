@@ -120,6 +120,8 @@ paths:
                 $ref: '#/components/schemas/Part'
         '400':
           description: Bad Request
+        '404':
+          description: Not Found
         '500':
           description: Internal Server Error
     delete:
@@ -240,6 +242,8 @@ paths:
                 $ref: '#/components/schemas/PartType'
         '400':
           description: Bad Request
+        '404':
+          description: Not Found
         '500':
           description: Internal Server Error
     delete:

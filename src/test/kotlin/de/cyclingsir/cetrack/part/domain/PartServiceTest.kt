@@ -93,6 +93,79 @@ class PartServiceTest {
     boughtAt = null, retiredAt = null, partTypeRelations = emptyList(), createdAt = null)
 
   @Test
+  fun `modifyPart rejects when body id does not match path id`() {
+    val pathId = UUID_PART_A
+    val mismatchedBodyId = UUID_PART_B
+    val part = partWith(label = "Tire", model = null).copy(id = mismatchedBodyId)
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.modifyPart(pathId, part)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_ID_MISMATCH.code, ex.getError().code)
+    verify(exactly = 0) { partRepository.save(any()) }
+  }
+
+  @Test
+  fun `modifyPart returns not found when part does not exist even if body is unidentifiable`() {
+    val pathId = UUID_PART_A
+    val unidentifiablePart = partWith(label = null, model = null)
+
+    every { partRepository.existsById(pathId) } returns false
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.modifyPart(pathId, unidentifiablePart)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_NOT_FOUND.code, ex.getError().code)
+    verify(exactly = 0) { partRepository.save(any()) }
+  }
+
+  @Test
+  fun `modifyPart returns not found when part does not exist`() {
+    val pathId = UUID_PART_A
+    val part = partWith(label = "Tire", model = null)
+
+    every { partRepository.existsById(pathId) } returns false
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.modifyPart(pathId, part)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_NOT_FOUND.code, ex.getError().code)
+    verify(exactly = 0) { partRepository.save(any()) }
+  }
+
+  @Test
+  fun `modifyPart saves entity with path id when body id is null`() {
+    val pathId = UUID_PART_A
+    val part = partWith(label = "Tire", model = null)
+    val savedEntitySlot = slot<PartEntity>()
+    val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
+
+    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.save(capture(savedEntitySlot)) } returns savedEntity
+
+    val result = partService.modifyPart(pathId, part)
+
+    Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
+    Assertions.assertEquals(pathId, result?.id)
+    verify(exactly = 1) { partRepository.save(any()) }
+  }
+
+  @Test
+  fun `modifyPart accepts matching body id and path id`() {
+    val pathId = UUID_PART_A
+    val part = partWith(label = "Tire", model = null).copy(id = pathId)
+    val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
+
+    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.save(any()) } returns savedEntity
+
+    val result = partService.modifyPart(pathId, part)
+
+    Assertions.assertEquals(pathId, result?.id)
+    verify(exactly = 1) { partRepository.save(any()) }
+  }
+
+  @Test
   fun `addPart rejects a part with neither label nor model`() {
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.addPart(partWith(label = "  ", model = null))
