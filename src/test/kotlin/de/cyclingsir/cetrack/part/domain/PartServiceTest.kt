@@ -110,7 +110,7 @@ class PartServiceTest {
     val pathId = UUID_PART_A
     val unidentifiablePart = partWith(label = null, model = null)
 
-    every { partRepository.existsById(pathId) } returns false
+    every { partRepository.findById(pathId) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.modifyPart(pathId, unidentifiablePart)
@@ -124,7 +124,7 @@ class PartServiceTest {
     val pathId = UUID_PART_A
     val part = partWith(label = "Tire", model = null)
 
-    every { partRepository.existsById(pathId) } returns false
+    every { partRepository.findById(pathId) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.modifyPart(pathId, part)
@@ -140,7 +140,7 @@ class PartServiceTest {
     val savedEntitySlot = slot<PartEntity>()
     val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
 
-    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.findById(pathId) } returns Optional.of(PartEntity(pathId, "A", emptyList()))
     every { partRepository.save(capture(savedEntitySlot)) } returns savedEntity
 
     val result = partService.modifyPart(pathId, part)
@@ -156,7 +156,7 @@ class PartServiceTest {
     val part = partWith(label = "Tire", model = null).copy(id = pathId)
     val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
 
-    every { partRepository.existsById(pathId) } returns true
+    every { partRepository.findById(pathId) } returns Optional.of(PartEntity(pathId, "A", emptyList()))
     every { partRepository.save(any()) } returns savedEntity
 
     val result = partService.modifyPart(pathId, part)
