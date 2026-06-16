@@ -1,7 +1,9 @@
 package de.cyclingsir.cetrack.part.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
+import org.springframework.dao.DataIntegrityViolationException
 import de.cyclingsir.cetrack.part.storage.PartEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
@@ -108,8 +110,11 @@ final class PartService(
         if (!partRepository.existsById(partId)) throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND)
         try {
             partRepository.deleteById(partId)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.PART_HAS_FOREIGN_KEY_CONSTRAINT,
+                "Part is referenced by a relation. Remove it first.")
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.PART_NOT_FOUND, e.message)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR)
         }
     }
 
