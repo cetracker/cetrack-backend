@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.part.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationDomain2StorageMapperImpl
@@ -136,7 +137,7 @@ class PartTypeServiceTest {
   }
 
   @Test
-  fun `modifyPartType maps persistence failure to server error not not-found`() {
+  fun `modifyPartType maps technical failure to server error`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank")
     every { repository.existsById(pathId) } returns true
@@ -145,8 +146,22 @@ class PartTypeServiceTest {
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partTypeService.modifyPartType(pathId, partType)
     }
-    Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED.code, ex.getError().code)
+    Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
     Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `modifyPartType maps constraint violation to data invalid not server error`() {
+    val pathId = UUID_PART_TYPE_A
+    val partType = partTypeWith(name = "Crank")
+    every { repository.existsById(pathId) } returns true
+    every { repository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partTypeService.modifyPartType(pathId, partType)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_DATA_INVALID.code, ex.getError().code)
+    Assertions.assertEquals(400, ex.getError().httpStatus)
   }
 
   @Test

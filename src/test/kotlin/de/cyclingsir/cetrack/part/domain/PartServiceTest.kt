@@ -2,6 +2,7 @@ package de.cyclingsir.cetrack.part.domain;
 
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.part.storage.PartDomain2StorageMapperImpl
 import de.cyclingsir.cetrack.part.storage.PartEntity
@@ -291,6 +292,76 @@ class PartServiceTest {
     Assertions.assertNotNull(persistedRelationEntityPartB)
     Assertions.assertNull(persistedRelationEntityPartB!!.validUntil)
 
+  }
+
+  @Test
+  fun `modifyPart maps constraint violation to data invalid not server error`() {
+    val pathId = UUID_PART_A
+    val part = partWith(label = "Tire", model = null)
+    val existingEntity = PartEntity(pathId, "A", emptyList())
+    every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
+    every { partRepository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.modifyPart(pathId, part)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.PART_DATA_INVALID.code, ex.getError().code)
+    Assertions.assertEquals(400, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `modifyPart maps technical failure to server error`() {
+    val pathId = UUID_PART_A
+    val part = partWith(label = "Tire", model = null)
+    val existingEntity = PartEntity(pathId, "A", emptyList())
+    every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
+    every { partRepository.save(any()) } throws RuntimeException("db down")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.modifyPart(pathId, part)
+    }
+    Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
+    Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `createPartPartTypeRelation maps relation constraint violation to relation not valid`() {
+    val validFrom = OffsetDateTime.now()
+    val relation = DomainPartPartTypeRelation(UUID_PART_B, UUID_PART_TYPE_CRANK, validFrom, null, domainPartA, domainPartTypeCrank)
+    val existingOpenRelation = partStorageMapper.map(
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, validFrom.minus(10, ChronoUnit.DAYS), null, domainPartA, domainPartTypeCrank))
+
+    every { relationRepository.countByPartId(UUID_PART_B) } returns 0
+    every { relationRepository.countByPartIdAndValidUntilIsNull(UUID_PART_B) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 1
+    every { relationRepository.findFirstByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns existingOpenRelation
+    every { relationRepository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.createPartPartTypeRelation(relation)
+    }
+    Assertions.assertEquals(ErrorCodesDomain.RELATION_NOT_VALID.code, ex.getError().code)
+    Assertions.assertEquals(400, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `createPartPartTypeRelation maps technical failure when modifying relation to server error`() {
+    val validFrom = OffsetDateTime.now()
+    val relation = DomainPartPartTypeRelation(UUID_PART_B, UUID_PART_TYPE_CRANK, validFrom, null, domainPartA, domainPartTypeCrank)
+    val existingOpenRelation = partStorageMapper.map(
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, validFrom.minus(10, ChronoUnit.DAYS), null, domainPartA, domainPartTypeCrank))
+
+    every { relationRepository.countByPartId(UUID_PART_B) } returns 0
+    every { relationRepository.countByPartIdAndValidUntilIsNull(UUID_PART_B) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 1
+    every { relationRepository.findFirstByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns existingOpenRelation
+    every { relationRepository.save(any()) } throws RuntimeException("db down")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      partService.createPartPartTypeRelation(relation)
+    }
+    Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
+    Assertions.assertEquals(500, ex.getError().httpStatus)
   }
 
   @Test
