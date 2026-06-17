@@ -4,7 +4,9 @@ import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
+import de.cyclingsir.cetrack.part.domain.PartTypeServiceTest.Companion.UUID_PART_TYPE_A
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -13,6 +15,7 @@ import io.mockk.just
 import io.mockk.Runs
 import io.mockk.slot
 import io.mockk.verify
+import net.bytebuddy.matcher.ElementMatchers.any
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -117,4 +120,21 @@ class BikeServiceTest {
     Assertions.assertEquals(pathId, result?.id)
     verify(exactly = 1) { repository.save(any()) }
   }
+
+  @Test
+  fun `modifyBike maps technical failure to server error not not-found`() {
+    val pathId = UUID_BIKE_A
+    val bike = bikeWith(model = "Daytona", id = pathId)
+    val savedEntity = BikeEntity(id = pathId, model = "Daytona")
+    every { repository.existsById(pathId) } returns true
+    every { mapper.map(bike) } returns savedEntity
+    every { repository.save(any()) } throws RuntimeException("db down")
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      bikeService.modifyBike(pathId, bike)
+    }
+    Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
+    Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
 }

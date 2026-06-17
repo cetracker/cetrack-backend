@@ -50,7 +50,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         val bikeEntity = try {
             repository.save(entity)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.BIKE_NOT_PERSISTED, e.message ?: "Persisting failed", e)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }
         return mapper.map(bikeEntity)
     }
