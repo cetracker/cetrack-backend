@@ -8,14 +8,14 @@ import org.junit.jupiter.api.function.Executable
 class ErrorCodesRangeTest {
 
     @Test
-    fun `domain error codes are client-side statuses below 500`() {
+    fun `domain error codes are client-side statuses in the 4xx range`() {
         assertAll(
             ErrorCodesDomain.entries.map { code ->
                 Executable {
                     assertTrue(
-                        code.httpStatus < 500,
-                        "${code.name} has technical httpStatus=${code.httpStatus}; " +
-                            "technical errors belong in ErrorCodesService",
+                        code.httpStatus in 400..499,
+                        "${code.name} has httpStatus=${code.httpStatus}; " +
+                            "domain errors must be 4xx; technical errors belong in ErrorCodesService",
                     )
                 }
             },
@@ -23,14 +23,14 @@ class ErrorCodesRangeTest {
     }
 
     @Test
-    fun `service error codes are server-side statuses 500 and above`() {
+    fun `service error codes are server-side statuses in the 5xx range`() {
         assertAll(
             ErrorCodesService.entries.map { code ->
                 Executable {
                     assertTrue(
-                        code.httpStatus >= 500,
-                        "${code.name} has non-technical httpStatus=${code.httpStatus}; " +
-                            "client/domain errors belong in ErrorCodesDomain",
+                        code.httpStatus in 500..599,
+                        "${code.name} has httpStatus=${code.httpStatus}; " +
+                            "technical errors must be 5xx; client/domain errors belong in ErrorCodesDomain",
                     )
                 }
             },
