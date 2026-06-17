@@ -4,6 +4,7 @@ import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.transaction.annotation.Transactional
 import de.cyclingsir.cetrack.part.storage.PartEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationEntity
 import de.cyclingsir.cetrack.part.storage.PartPartTypeRelationRepository
@@ -22,7 +23,7 @@ import java.util.UUID
 private val logger = KotlinLogging.logger {}
 
 @Service
-final class PartService(
+class PartService(
     private val partRepository: PartRepository,
     private val partParTypRelationRepository: PartPartTypeRelationRepository,
     private val mapper: PartStorageMapper
@@ -82,6 +83,7 @@ final class PartService(
         }
     }
 
+    @Transactional
     fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
         logger.debug { "Modify Part for part ${part} was called!" }
         if (part.id != null && part.id != partId) {
@@ -92,13 +94,21 @@ final class PartService(
         requireIdentifiable(part)
         requirePricePair(part)
         logger.debug { "DomainPart: ${part}" }
-        val entity = mapper.map(part)
-        entity.id = partId
-        entity.partTypeRelations = existing.partTypeRelations
-        logger.debug { "Mapped Entity: ${entity}" }
+        val incoming = mapper.map(part)
+        existing.label = incoming.label
+        existing.manufacturer = incoming.manufacturer
+        existing.model = incoming.model
+        existing.serialNumber = incoming.serialNumber
+        existing.vendor = incoming.vendor
+        existing.purchasePrice = incoming.purchasePrice
+        existing.purchasePriceCurrency = incoming.purchasePriceCurrency
+        existing.firstUsedDate = incoming.firstUsedDate
+        existing.boughtAt = incoming.boughtAt
+        existing.retiredAt = incoming.retiredAt
+        logger.debug { "Mapped Entity: ${existing}" }
 
         val partEntity = try {
-            partRepository.save(entity)
+            partRepository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
             throw ServiceException(ErrorCodesDomain.PART_DATA_INVALID, e.message ?: "Invalid part data", e)
         } catch (e: Exception) {

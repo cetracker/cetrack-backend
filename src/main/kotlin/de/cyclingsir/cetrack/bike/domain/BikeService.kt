@@ -9,6 +9,7 @@ import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 /**
@@ -38,17 +39,20 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         return bikeEntities.map(mapper::map)
     }
 
+    @Transactional
     fun modifyBike(bikeId: UUID, bike: DomainBike): DomainBike? {
         if (bike.id != null && bike.id != bikeId) {
             throw ServiceException(ErrorCodesDomain.BIKE_ID_MISMATCH)
         }
-        if (!repository.existsById(bikeId)) {
-            throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND)
-        }
-        val entity = mapper.map(bike)
-        entity.id = bikeId
+        val existing = repository.findById(bikeId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
+        val incoming = mapper.map(bike)
+        existing.model = incoming.model
+        existing.manufacturer = incoming.manufacturer
+        existing.boughtAt = incoming.boughtAt
+        existing.retiredAt = incoming.retiredAt
         val bikeEntity = try {
-            repository.save(entity)
+            repository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
             throw ServiceException(ErrorCodesDomain.BIKE_DATA_INVALID, e.message ?: "Invalid bike data", e)
         } catch (e: Exception) {

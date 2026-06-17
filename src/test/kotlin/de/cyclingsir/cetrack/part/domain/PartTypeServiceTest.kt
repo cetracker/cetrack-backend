@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.dao.DataIntegrityViolationException
+import java.util.Optional
 import java.util.UUID
 
 @ExtendWith(MockKExtension::class)
@@ -76,13 +77,13 @@ class PartTypeServiceTest {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank")
 
-    every { repository.existsById(pathId) } returns false
+    every { repository.findById(pathId) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partTypeService.modifyPartType(pathId, partType)
     }
     Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_NOT_FOUND.code, ex.getError().code)
-    verify(exactly = 0) { repository.save(any()) }
+    verify(exactly = 0) { repository.saveAndFlush(any()) }
   }
 
   @Test
@@ -90,30 +91,32 @@ class PartTypeServiceTest {
     val pathId = UUID_PART_TYPE_A
     val unidentifiablePartType = partTypeWith(name = "")
 
-    every { repository.existsById(pathId) } returns false
+    every { repository.findById(pathId) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partTypeService.modifyPartType(pathId, unidentifiablePartType)
     }
     Assertions.assertEquals(ErrorCodesDomain.PART_TYPE_NOT_FOUND.code, ex.getError().code)
-    verify(exactly = 0) { repository.save(any()) }
+    verify(exactly = 0) { repository.saveAndFlush(any()) }
   }
 
   @Test
   fun `modifyPartType saves entity with path id when body id is null`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank")
+    val existingEntity = PartTypeEntity(id = pathId, name = "OldName", mandatory = false, partTypeRelations = emptyList())
     val savedEntitySlot = slot<PartTypeEntity>()
     val savedEntity = PartTypeEntity(id = pathId, name = "Crank", mandatory = false, partTypeRelations = emptyList())
 
-    every { repository.existsById(pathId) } returns true
-    every { repository.save(capture(savedEntitySlot)) } returns savedEntity
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { repository.saveAndFlush(capture(savedEntitySlot)) } returns savedEntity
 
     val result = partTypeService.modifyPartType(pathId, partType)
 
+    Assertions.assertSame(existingEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { repository.save(any()) }
+    verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 
   @Test
@@ -140,8 +143,9 @@ class PartTypeServiceTest {
   fun `modifyPartType maps technical failure to server error`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank")
-    every { repository.existsById(pathId) } returns true
-    every { repository.save(any()) } throws RuntimeException("db down")
+    val existingEntity = PartTypeEntity(id = pathId, name = "OldName", mandatory = false, partTypeRelations = emptyList())
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { repository.saveAndFlush(any()) } throws RuntimeException("db down")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partTypeService.modifyPartType(pathId, partType)
@@ -154,8 +158,9 @@ class PartTypeServiceTest {
   fun `modifyPartType maps constraint violation to data invalid not server error`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank")
-    every { repository.existsById(pathId) } returns true
-    every { repository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+    val existingEntity = PartTypeEntity(id = pathId, name = "OldName", mandatory = false, partTypeRelations = emptyList())
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { repository.saveAndFlush(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partTypeService.modifyPartType(pathId, partType)
@@ -168,14 +173,15 @@ class PartTypeServiceTest {
   fun `modifyPartType accepts matching body id and path id`() {
     val pathId = UUID_PART_TYPE_A
     val partType = partTypeWith(name = "Crank", id = pathId)
+    val existingEntity = PartTypeEntity(id = pathId, name = "OldName", mandatory = false, partTypeRelations = emptyList())
     val savedEntity = PartTypeEntity(id = pathId, name = "Crank", mandatory = false, partTypeRelations = emptyList())
 
-    every { repository.existsById(pathId) } returns true
-    every { repository.save(any()) } returns savedEntity
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { repository.saveAndFlush(any()) } returns savedEntity
 
     val result = partTypeService.modifyPartType(pathId, partType)
 
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { repository.save(any()) }
+    verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 }
