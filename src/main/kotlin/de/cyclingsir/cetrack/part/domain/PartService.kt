@@ -99,8 +99,10 @@ final class PartService(
 
         val partEntity = try {
             partRepository.save(entity)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.PART_DATA_INVALID, e.message ?: "Invalid part data", e)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, e.message ?: "Persisting failed", e)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }
         logger.info { "Modified Part Entity: ${partEntity.createdAt?.toString()}, ${partEntity.label} - ${partEntity.partTypeRelations?.size}" }
         return mapper.map(partEntity)
@@ -232,9 +234,12 @@ final class PartService(
                     relation.validUntil = validUntil
                     partParTypRelationRepository.save(relation)
                 }
-            } catch (ex: Exception) {
+            } catch (ex: DataIntegrityViolationException) {
                 logger.debug {"Persisting failed: ${ex.message}"}
                 throw ServiceException(ErrorCodesDomain.RELATION_NOT_VALID, ex)
+            } catch (ex: Exception) {
+                logger.debug {"Persisting failed: ${ex.message}"}
+                throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, ex.message ?: "Persisting failed", ex)
             }
         }
     }

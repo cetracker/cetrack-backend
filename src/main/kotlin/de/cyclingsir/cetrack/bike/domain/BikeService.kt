@@ -49,6 +49,8 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         entity.id = bikeId
         val bikeEntity = try {
             repository.save(entity)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.BIKE_DATA_INVALID, e.message ?: "Invalid bike data", e)
         } catch (e: Exception) {
             throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }

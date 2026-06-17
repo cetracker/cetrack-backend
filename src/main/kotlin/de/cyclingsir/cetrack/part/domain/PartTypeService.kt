@@ -49,8 +49,10 @@ class PartTypeService(
         entity.id = partTypeId
         val partTypeEntity = try {
             repository.save(entity)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.PART_TYPE_DATA_INVALID, e.message ?: "Invalid part type data", e)
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_PERSISTED, e.message ?: "Persisting failed", e)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }
         return mapper.map(partTypeEntity)
     }
