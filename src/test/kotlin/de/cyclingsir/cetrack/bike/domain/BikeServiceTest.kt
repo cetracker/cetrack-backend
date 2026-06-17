@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.util.Optional
 import java.util.UUID
 
 @ExtendWith(MockKExtension::class)
@@ -65,33 +66,35 @@ class BikeServiceTest {
     val pathId = UUID_BIKE_A
     val bike = bikeWith(model = "Tarmac")
 
-    every { repository.existsById(pathId) } returns false
+    every { repository.findById(pathId) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       bikeService.modifyBike(pathId, bike)
     }
     Assertions.assertEquals(ErrorCodesDomain.BIKE_NOT_FOUND.code, ex.getError().code)
-    verify(exactly = 0) { repository.save(any()) }
+    verify(exactly = 0) { repository.saveAndFlush(any()) }
   }
 
   @Test
   fun `modifyBike saves entity with path id when body id is null`() {
     val pathId = UUID_BIKE_A
     val bike = bikeWith(model = "Tarmac")
+    val existingEntity = BikeEntity(id = pathId, model = "OldModel")
     val mappedEntity = BikeEntity(id = null, model = "Tarmac")
     val savedEntity = BikeEntity(id = pathId, model = "Tarmac")
     val savedEntitySlot = slot<BikeEntity>()
 
-    every { repository.existsById(pathId) } returns true
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
     every { mapper.map(bike) } returns mappedEntity
-    every { repository.save(capture(savedEntitySlot)) } returns savedEntity
+    every { repository.saveAndFlush(capture(savedEntitySlot)) } returns savedEntity
     every { mapper.map(savedEntity) } returns bikeWith(model = "Tarmac", id = pathId)
 
     val result = bikeService.modifyBike(pathId, bike)
 
+    Assertions.assertSame(existingEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { repository.save(any()) }
+    verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 
   @Test
@@ -108,28 +111,30 @@ class BikeServiceTest {
   fun `modifyBike accepts matching body id and path id`() {
     val pathId = UUID_BIKE_A
     val bike = bikeWith(model = "Tarmac", id = pathId)
+    val existingEntity = BikeEntity(id = pathId, model = "OldModel")
     val mappedEntity = BikeEntity(id = pathId, model = "Tarmac")
     val savedEntity = BikeEntity(id = pathId, model = "Tarmac")
 
-    every { repository.existsById(pathId) } returns true
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
     every { mapper.map(bike) } returns mappedEntity
-    every { repository.save(any()) } returns savedEntity
+    every { repository.saveAndFlush(any()) } returns savedEntity
     every { mapper.map(savedEntity) } returns bikeWith(model = "Tarmac", id = pathId)
 
     val result = bikeService.modifyBike(pathId, bike)
 
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { repository.save(any()) }
+    verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 
   @Test
   fun `modifyBike maps technical failure to server error not not-found`() {
     val pathId = UUID_BIKE_A
     val bike = bikeWith(model = "Daytona", id = pathId)
-    val savedEntity = BikeEntity(id = pathId, model = "Daytona")
-    every { repository.existsById(pathId) } returns true
-    every { mapper.map(bike) } returns savedEntity
-    every { repository.save(any()) } throws RuntimeException("db down")
+    val existingEntity = BikeEntity(id = pathId, model = "OldModel")
+    val mappedEntity = BikeEntity(id = pathId, model = "Daytona")
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { mapper.map(bike) } returns mappedEntity
+    every { repository.saveAndFlush(any()) } throws RuntimeException("db down")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       bikeService.modifyBike(pathId, bike)
@@ -142,10 +147,11 @@ class BikeServiceTest {
   fun `modifyBike maps constraint violation to data invalid not server error`() {
     val pathId = UUID_BIKE_A
     val bike = bikeWith(model = "Daytona", id = pathId)
-    val savedEntity = BikeEntity(id = pathId, model = "Daytona")
-    every { repository.existsById(pathId) } returns true
-    every { mapper.map(bike) } returns savedEntity
-    every { repository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+    val existingEntity = BikeEntity(id = pathId, model = "OldModel")
+    val mappedEntity = BikeEntity(id = pathId, model = "Daytona")
+    every { repository.findById(pathId) } returns Optional.of(existingEntity)
+    every { mapper.map(bike) } returns mappedEntity
+    every { repository.saveAndFlush(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       bikeService.modifyBike(pathId, bike)

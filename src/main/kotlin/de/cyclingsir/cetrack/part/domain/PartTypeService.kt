@@ -11,6 +11,7 @@ import de.cyclingsir.cetrack.part.storage.PartTypeEntity
 import de.cyclingsir.cetrack.part.storage.PartTypeRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 /**
@@ -38,17 +39,19 @@ class PartTypeService(
         return partTypeEntities.map(mapper::map)
     }
 
+    @Transactional
     fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType? {
         if (partType.id != null && partType.id != partTypeId) {
             throw ServiceException(ErrorCodesDomain.PART_TYPE_ID_MISMATCH)
         }
-        if (!repository.existsById(partTypeId)) {
-            throw ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND)
-        }
-        val entity = mapper.map(partType)
-        entity.id = partTypeId
+        val existing = repository.findById(partTypeId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.PART_TYPE_NOT_FOUND) }
+        val incoming = mapper.map(partType)
+        existing.name = incoming.name
+        existing.mandatory = incoming.mandatory
+        existing.bike = incoming.bike
         val partTypeEntity = try {
-            repository.save(entity)
+            repository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
             throw ServiceException(ErrorCodesDomain.PART_TYPE_DATA_INVALID, e.message ?: "Invalid part type data", e)
         } catch (e: Exception) {

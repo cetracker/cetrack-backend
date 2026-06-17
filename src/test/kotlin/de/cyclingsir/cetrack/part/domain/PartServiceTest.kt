@@ -142,16 +142,18 @@ class PartServiceTest {
     val pathId = UUID_PART_A
     val part = partWith(label = "Tire", model = null)
     val savedEntitySlot = slot<PartEntity>()
+    val foundEntity = PartEntity(pathId, "A", emptyList())
     val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
 
-    every { partRepository.findById(pathId) } returns Optional.of(PartEntity(pathId, "A", emptyList()))
-    every { partRepository.save(capture(savedEntitySlot)) } returns savedEntity
+    every { partRepository.findById(pathId) } returns Optional.of(foundEntity)
+    every { partRepository.saveAndFlush(capture(savedEntitySlot)) } returns savedEntity
 
     val result = partService.modifyPart(pathId, part)
 
+    Assertions.assertSame(foundEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { partRepository.save(any()) }
+    verify(exactly = 1) { partRepository.saveAndFlush(any()) }
   }
 
   @Test
@@ -161,12 +163,12 @@ class PartServiceTest {
     val savedEntity = PartEntity(id = pathId, label = "Tire", partTypeRelations = emptyList())
 
     every { partRepository.findById(pathId) } returns Optional.of(PartEntity(pathId, "A", emptyList()))
-    every { partRepository.save(any()) } returns savedEntity
+    every { partRepository.saveAndFlush(any()) } returns savedEntity
 
     val result = partService.modifyPart(pathId, part)
 
     Assertions.assertEquals(pathId, result?.id)
-    verify(exactly = 1) { partRepository.save(any()) }
+    verify(exactly = 1) { partRepository.saveAndFlush(any()) }
   }
 
   @Test
@@ -178,9 +180,8 @@ class PartServiceTest {
     val body = partWith(label = "Tire", model = null)
     val savedSlot = slot<PartEntity>()
 
-    every { partRepository.existsById(pathId) } returns true
     every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
-    every { partRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+    every { partRepository.saveAndFlush(capture(savedSlot)) } answers { savedSlot.captured }
 
     partService.modifyPart(pathId, body)
 
@@ -197,9 +198,8 @@ class PartServiceTest {
     val body = partWith(label = "Tire", model = null).copy(partTypeRelations = null)
     val savedSlot = slot<PartEntity>()
 
-    every { partRepository.existsById(pathId) } returns true
     every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
-    every { partRepository.save(capture(savedSlot)) } answers { savedSlot.captured }
+    every { partRepository.saveAndFlush(capture(savedSlot)) } answers { savedSlot.captured }
 
     partService.modifyPart(pathId, body)
 
@@ -300,7 +300,7 @@ class PartServiceTest {
     val part = partWith(label = "Tire", model = null)
     val existingEntity = PartEntity(pathId, "A", emptyList())
     every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
-    every { partRepository.save(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
+    every { partRepository.saveAndFlush(any()) } throws DataIntegrityViolationException("CONSTRAINT_VIOLATION")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.modifyPart(pathId, part)
@@ -315,7 +315,7 @@ class PartServiceTest {
     val part = partWith(label = "Tire", model = null)
     val existingEntity = PartEntity(pathId, "A", emptyList())
     every { partRepository.findById(pathId) } returns Optional.of(existingEntity)
-    every { partRepository.save(any()) } throws RuntimeException("db down")
+    every { partRepository.saveAndFlush(any()) } throws RuntimeException("db down")
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
       partService.modifyPart(pathId, part)
