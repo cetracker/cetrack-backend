@@ -8,7 +8,7 @@ import java.util.UUID
  * Initially created on 1/24/23.
  */
 interface TourDomain2StorageMapperSupport {
-    fun mapNullableUUIDToUUID(i: UUID?): UUID = i ?: UUID.randomUUID()
+    fun mapNullableUUIDToUUID(i: UUID?): UUID = i ?: UUID.randomUUID()!!
 }
 
 @Mapper

@@ -40,7 +40,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     @Transactional
-    fun modifyBike(bikeId: UUID, bike: DomainBike): DomainBike? {
+    fun modifyBike(bikeId: UUID, bike: DomainBike): DomainBike {
         if (bike.id != null && bike.id != bikeId) {
             throw ServiceException(ErrorCodesDomain.BIKE_ID_MISMATCH)
         }

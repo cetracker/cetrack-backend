@@ -40,7 +40,7 @@ class PartTypeService(
     }
 
     @Transactional
-    fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType? {
+    fun modifyPartType(partTypeId: UUID, partType: DomainPartType): DomainPartType {
         if (partType.id != null && partType.id != partTypeId) {
             throw ServiceException(ErrorCodesDomain.PART_TYPE_ID_MISMATCH)
         }

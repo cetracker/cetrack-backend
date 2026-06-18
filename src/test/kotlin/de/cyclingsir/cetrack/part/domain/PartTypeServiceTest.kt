@@ -31,9 +31,8 @@ import java.util.UUID
 class PartTypeServiceTest {
 
   companion object {
-    val UUID_PART_TYPE_A = UUID.randomUUID()
-    val UUID_PART_TYPE_B = UUID.randomUUID()
-    val UUID_BIKE = UUID.randomUUID()
+    val UUID_PART_TYPE_A = UUID.randomUUID()!!
+    val UUID_PART_TYPE_B = UUID.randomUUID()!!
   }
 
   @MockK
@@ -115,7 +114,7 @@ class PartTypeServiceTest {
 
     Assertions.assertSame(existingEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 
@@ -181,7 +180,7 @@ class PartTypeServiceTest {
 
     val result = partTypeService.modifyPartType(pathId, partType)
 
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 }

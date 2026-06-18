@@ -14,7 +14,7 @@ private const val BIKE_MODEL_II = "gravelBike"
 class BikeEntityTest {
 
     private lateinit var rawBikeEntity: BikeEntity
-    private val id = UUID.randomUUID()
+    private val id = UUID.randomUUID()!!
 
     @BeforeEach
     fun setUp() {

@@ -37,10 +37,7 @@ class PartController(
         val domainPart = mapper.map(part)
         logger.debug {"DomainPart: $domainPart"}
         val persistedPart = service.modifyPart(partId, domainPart)
-        persistedPart?.apply {
-            return ResponseEntity.ok(mapper.map(this))
-        }
-        return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(mapper.map(persistedPart))
     }
 
     override fun deletePart(@PathVariable("partId") partId: UUID) : ResponseEntity<Unit> {

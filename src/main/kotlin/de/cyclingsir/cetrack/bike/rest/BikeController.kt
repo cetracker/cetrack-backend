@@ -31,11 +31,7 @@ class BikeController(private val service: BikeService, private val mapper: BikeD
     override fun modifyBike(@PathVariable("bikeId") bikeId: UUID, @Valid @RequestBody bike: Bike): ResponseEntity<Bike> {
         val domainBike = mapper.map(bike)
         val persistedBike = service.modifyBike(bikeId, domainBike)
-        persistedBike?.apply {
-            return ResponseEntity.ok(mapper.map(this))
-        }
-        return ResponseEntity.notFound().build()
-
+        return ResponseEntity.ok(mapper.map(persistedBike))
     }
 
     override fun deleteBike(@PathVariable("bikeId") bikeId: UUID): ResponseEntity<Unit> {

@@ -84,7 +84,7 @@ class PartService(
     }
 
     @Transactional
-    fun modifyPart(partId: UUID, part: DomainPart): DomainPart? {
+    fun modifyPart(partId: UUID, part: DomainPart): DomainPart {
         logger.debug { "Modify Part for part ${part} was called!" }
         if (part.id != null && part.id != partId) {
             throw ServiceException(ErrorCodesDomain.PART_ID_MISMATCH)

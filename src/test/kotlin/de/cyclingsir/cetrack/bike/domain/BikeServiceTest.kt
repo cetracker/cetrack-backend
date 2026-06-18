@@ -6,7 +6,6 @@ import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
-import de.cyclingsir.cetrack.part.domain.PartTypeServiceTest.Companion.UUID_PART_TYPE_A
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -16,7 +15,6 @@ import io.mockk.Runs
 import org.springframework.dao.DataIntegrityViolationException
 import io.mockk.slot
 import io.mockk.verify
-import net.bytebuddy.matcher.ElementMatchers.any
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,8 +26,8 @@ import java.util.UUID
 class BikeServiceTest {
 
   companion object {
-    val UUID_BIKE_A = UUID.randomUUID()
-    val UUID_BIKE_B = UUID.randomUUID()
+    val UUID_BIKE_A = UUID.randomUUID()!!
+    val UUID_BIKE_B = UUID.randomUUID()!!
   }
 
   @MockK
@@ -93,7 +91,7 @@ class BikeServiceTest {
 
     Assertions.assertSame(existingEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 
@@ -122,7 +120,7 @@ class BikeServiceTest {
 
     val result = bikeService.modifyBike(pathId, bike)
 
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { repository.saveAndFlush(any()) }
   }
 

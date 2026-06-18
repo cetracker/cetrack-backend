@@ -30,10 +30,7 @@ class PartTypeController(
 
     override fun modifyPartType(@PathVariable("partTypeId") partTypeId: UUID, @Valid @RequestBody partType: PartType): ResponseEntity<PartType> {
         val persistedPartType = service.modifyPartType(partTypeId, mapper.map(partType))
-        persistedPartType?.apply {
-            return ResponseEntity.ok(mapper.map(this))
-        }
-        return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(mapper.map(persistedPartType))
     }
 
     override fun deletePartType(partTypeId: UUID): ResponseEntity<Unit> {

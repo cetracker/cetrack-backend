@@ -1,4 +1,4 @@
-package de.cyclingsir.cetrack.part.domain;
+package de.cyclingsir.cetrack.part.domain
 
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
@@ -39,13 +39,10 @@ import java.util.UUID
 class PartServiceTest {
 
   companion object {
-    val UUID_PART_A = UUID.randomUUID()
-    val UUID_PART_B = UUID.randomUUID()
-    val UUID_PART_C = UUID.randomUUID()
-    val UUID_PART_TYPE_CRANK = UUID.randomUUID()
-    val UUID_PART_TYPE_FRONT_TIRE = UUID.randomUUID()
-    val UUID_PART_TYPE_REAR_TIRE = UUID.randomUUID()
-    val UUID_BIKE = UUID.randomUUID()
+    val UUID_PART_A = UUID.randomUUID()!!
+    val UUID_PART_B = UUID.randomUUID()!!
+    val UUID_PART_TYPE_CRANK = UUID.randomUUID()!!
+    val UUID_BIKE = UUID.randomUUID()!!
   }
 
   @MockK
@@ -152,7 +149,7 @@ class PartServiceTest {
 
     Assertions.assertSame(foundEntity, savedEntitySlot.captured)
     Assertions.assertEquals(pathId, savedEntitySlot.captured.id)
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { partRepository.saveAndFlush(any()) }
   }
 
@@ -167,7 +164,7 @@ class PartServiceTest {
 
     val result = partService.modifyPart(pathId, part)
 
-    Assertions.assertEquals(pathId, result?.id)
+    Assertions.assertEquals(pathId, result.id)
     verify(exactly = 1) { partRepository.saveAndFlush(any()) }
   }
 
@@ -265,7 +262,7 @@ class PartServiceTest {
     val partEntityB = PartEntity(UUID_PART_B, "B", null)
 
     val savedEntitySlot = slot<PartPartTypeRelationEntity>()
-    val savedEntities : MutableList<PartPartTypeRelationEntity> = mutableListOf();
+    val savedEntities : MutableList<PartPartTypeRelationEntity> = mutableListOf()
 
     every { relationRepository.countByPartId(UUID_PART_A) } returns 1
     every { relationRepository.countByPartId(UUID_PART_B) } returns 0
