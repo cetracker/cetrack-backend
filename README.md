@@ -23,6 +23,25 @@ To build an artefact, all you  have to do is to run
 ./gradlew build
 ```
 
+### Running tests
+
+The fast unit test suite (H2, no Docker required):
+
+```bash
+./gradlew test
+```
+
+**Integration tests** run Flyway migrations and DB-constraint assertions against a real MySQL
+8 container via Testcontainers. A running Docker (or Podman with a Docker-compatible socket)
+daemon is required:
+
+```bash
+./gradlew integrationTest
+```
+
+CI runs `integrationTest` automatically in the `integration-test` GitHub Actions job on
+`ubuntu-latest`, which ships Docker pre-installed. `./gradlew build` remains Docker-free.
+
 ### Running locally
 
 ```bash
