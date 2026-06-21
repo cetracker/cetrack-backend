@@ -9,14 +9,12 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("mysql-it")
 @Tag("integration")
 abstract class MySQLContainerIT {
     companion object {
-        @Container
         @ServiceConnection
         @JvmStatic
-        val mysql: MySQLContainer = MySQLContainer("mysql:8.0.32")
+        val mysql: MySQLContainer = MySQLContainer("mysql:8.0.32").apply { start() }
     }
 }

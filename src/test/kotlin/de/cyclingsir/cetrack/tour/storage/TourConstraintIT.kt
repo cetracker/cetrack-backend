@@ -17,7 +17,11 @@ class TourConstraintIT : MySQLContainerIT() {
 
     @Test
     fun `uq_tour_started_distance_duration rejects duplicate tour`() {
-        val bike = bikeRepository.saveAndFlush(BikeEntity(id = null, model = "TestBike"))
+        val bike = bikeRepository.saveAndFlush(BikeEntity(
+            id = null,
+            model = "TestBike",
+            manufacturer = "TestMfg"
+        ))
 
         val startedAt = Instant.parse("2024-06-01T10:00:00Z")
         val first = TourEntity(
