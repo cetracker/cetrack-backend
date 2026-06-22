@@ -17,6 +17,8 @@ servers:
 tags:
   - name: Tours
     description: Tour related definitions
+  - name: MyTourbookImport
+    description: Direct import from a MyTourbook Derby database archive
 
 paths:
   /tours:
@@ -98,6 +100,87 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+  /tours/mytourbook/import-sessions:
+    post:
+      operationId: stageMyTourbookImport
+      summary: Stage a MyTourbook Derby database archive for import
+      description: >
+        Upload a compressed MyTourbook Derby database archive (application/octet-stream).
+        Backend unpacks, queries Derby read-only, classifies candidate tours, and persists
+        an import session. Any existing PENDING session is superseded atomically.
+      tags:
+        - MyTourbookImport
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '201':
+          description: Archive staged; import session created
+          headers:
+            Location:
+              description: URL of the created import session
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSession'
+        '400':
+          description: Archive invalid or unreadable (ARCHIVE_INVALID)
+        '422':
+          description: Derby schema incompatible with this backend release (DERBY_SCHEMA_INCOMPATIBLE)
+        '500':
+          description: Internal Server Error
+
+  /tours/mytourbook/import-sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/sessionId'
+    get:
+      operationId: getMyTourbookImportSession
+      summary: Get an import session with candidates, warnings, and drift info
+      tags:
+        - MyTourbookImport
+      responses:
+        '200':
+          description: Import session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSession'
+        '404':
+          description: Session not found (IMPORT_SESSION_NOT_FOUND)
+
+  /tours/mytourbook/import-sessions/{sessionId}/commit:
+    parameters:
+      - $ref: '#/components/parameters/sessionId'
+    post:
+      operationId: commitMyTourbookImport
+      summary: Commit approved candidate tours to the database
+      description: >
+        Persist the approved subset of candidate tours to the database.
+        The session must be PENDING; a SUPERSEDED or COMMITTED session returns 409.
+      tags:
+        - MyTourbookImport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitImportRequest'
+      responses:
+        '201':
+          description: Tours committed successfully
+        '400':
+          description: Bad Request (e.g. approvedMtTourIds not in session candidates)
+        '404':
+          description: Session not found (IMPORT_SESSION_NOT_FOUND)
+        '409':
+          description: Session already superseded or committed (IMPORT_SESSION_SUPERSEDED)
+
   /tours/{tourId}:
     parameters:
       - $ref: '#/components/parameters/tourId'
@@ -142,6 +225,13 @@ components:
   parameters:
     tourId:
       name: tourId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    sessionId:
+      name: sessionId
       in: path
       required: true
       schema:
@@ -307,3 +397,106 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/MTTour'
+    ImportSession:
+      type: object
+      required:
+        - sessionId
+        - status
+        - dbVersion
+        - hasDrift
+        - candidates
+        - warnings
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/ImportSessionStatus'
+        dbVersion:
+          type: integer
+          description: Derby DBVERSION read from the uploaded archive
+        hasDrift:
+          type: boolean
+          description: True if dbVersion differs from the stored drift baseline
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportCandidate'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportWarning'
+    ImportCandidate:
+      type: object
+      required:
+        - mtTourId
+        - title
+        - startedAt
+        - distance
+        - durationMoving
+      properties:
+        mtTourId:
+          type: string
+          description: MyTourbook tour identifier
+        title:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        distance:
+          type: integer
+          minimum: 0
+          description: meters
+        durationMoving:
+          type: integer
+          format: int64
+          minimum: 0
+          description: seconds
+        altUp:
+          type: integer
+          minimum: 0
+        altDown:
+          type: integer
+          minimum: 0
+        powerTotal:
+          type: integer
+          format: int64
+          minimum: 0
+        bikeId:
+          type: string
+          format: uuid
+          description: CETracker bike UUID matched from the Derby tag
+    ImportWarning:
+      type: object
+      required:
+        - type
+        - message
+      properties:
+        type:
+          type: string
+          enum:
+            - AMBIGUOUS_BIKE
+          description: AMBIGUOUS_BIKE — tour tagged with more than one tracked bike UUID (tour skipped, not blocked)
+        mtTourId:
+          type: string
+          description: Identifies the skipped tour
+        message:
+          type: string
+    ImportSessionStatus:
+      type: string
+      enum:
+        - PENDING
+        - SUPERSEDED
+        - COMMITTED
+    CommitImportRequest:
+      type: object
+      required:
+        - approvedMtTourIds
+      properties:
+        approvedMtTourIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          uniqueItems: true
+          description: mtTourIds from the session candidates to persist

@@ -4,6 +4,11 @@ spring:
   flyway:
     enabled: false
 
+app:
+  mytourbook:
+    work-dir: ${java.io.tmpdir}/cetrack-mytourbook-test
+    max-decompressed-bytes: 524288000
+
 management:
   endpoints:
     web:

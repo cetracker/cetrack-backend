@@ -186,6 +186,8 @@ val kotlinLoggingVersion = "8.0.4"
 val swaggerVersion = "2.2.50"
 val mockKVersion = "1.14.11"
 val byeBuddyVersion = "1.18.9"
+val derbyVersion = "10.17.1.0"
+val commonsCompressVersion = "1.27.1"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -217,6 +219,8 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("com.mysql:mysql-connector-j")
+    runtimeOnly("org.apache.derby:derby:$derbyVersion")
+    implementation("org.apache.commons:commons-compress:$commonsCompressVersion")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.mockk:mockk:$mockKVersion")

@@ -26,7 +26,7 @@ class TourEntity(
         @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID?,
 
-    @Column(length = 30)
+    @Column(length = 30, unique = true)
     var mtTourId: String? = null,
 
     @Column(length = 255)

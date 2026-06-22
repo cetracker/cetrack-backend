@@ -11,4 +11,5 @@ import java.util.UUID
 @Repository
 interface TourRepository : JpaRepository<TourEntity, UUID> {
     fun existsByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): Boolean
+    fun existsByMtTourId(mtTourId: String): Boolean
 }
