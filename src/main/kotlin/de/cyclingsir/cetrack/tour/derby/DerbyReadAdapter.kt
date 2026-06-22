@@ -1,5 +1,7 @@
 package de.cyclingsir.cetrack.tour.derby
 
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
@@ -18,12 +20,16 @@ class DerbyReadAdapter {
     fun read(tourBookDir: Path, bikeUuids: List<String>): ReadResult {
         require(bikeUuids.isNotEmpty()) { "bikeUuids must not be empty" }
         val dbUrl = "jdbc:derby:${tourBookDir.toAbsolutePath()};readOnly=true"
-        return try {
-            DriverManager.getConnection(dbUrl).use { conn ->
+        try {
+            return DriverManager.getConnection(dbUrl).use { conn ->
                 val dbVersion = readDbVersion(conn)
                 val rows = readTours(conn, bikeUuids)
                 ReadResult(dbVersion, rows)
             }
+        } catch (e: ServiceException) {
+            throw e
+        } catch (e: Exception) {
+            throw ServiceException(ErrorCodesDomain.DERBY_SCHEMA_INCOMPATIBLE, "Derby read failed: ${e.message}")
         } finally {
             shutdownDerby(tourBookDir)
         }

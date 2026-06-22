@@ -13,14 +13,11 @@ import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
 import java.nio.file.Files
-import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
 
@@ -31,9 +28,9 @@ class MyTourbookImportService(
     private val sessionRepository: ImportSessionRepository,
     private val stateRepository: ImportStateRepository,
     private val derbyAdapter: DerbyReadAdapter,
+    private val archiveExtractor: ArchiveExtractor,
     private val objectMapper: ObjectMapper,
-    @Value("\${app.mytourbook.work-dir}") private val workDir: String,
-    @Value("\${app.mytourbook.max-decompressed-bytes}") private val maxDecompressedBytes: Long
+    @Value("\${app.mytourbook.work-dir}") private val workDir: String
 ) {
 
     @Transactional
@@ -41,7 +38,7 @@ class MyTourbookImportService(
         val sessionId = UUID.randomUUID()
         val tempDir = Files.createTempDirectory("mytourbook-$sessionId")
         return try {
-            val tourBookDir = unpack(inputStream, tempDir)
+            val tourBookDir = archiveExtractor.extract(inputStream, tempDir)
             val bikeUuids = bikeRepository.findAll().mapNotNull { it.id?.toString() }
             val state = stateRepository.findById(IMPORT_STATE_ID)
                 .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
@@ -125,27 +122,6 @@ class MyTourbookImportService(
             powerTotal = mtTour.POWERTOTAL,
             bike = bikeEntity
         )
-    }
-
-    private fun unpack(inputStream: InputStream, destDir: Path): Path {
-        TarArchiveInputStream(BZip2CompressorInputStream(inputStream.buffered())).use { tar ->
-            var entry = tar.nextEntry
-            while (entry != null) {
-                if (!entry.isDirectory) {
-                    val dest = destDir.resolve(entry.name)
-                    if (!dest.normalize().startsWith(destDir.normalize())) {
-                        throw ServiceException(ErrorCodesDomain.ARCHIVE_INVALID, "Path traversal: ${entry.name}")
-                    }
-                    Files.createDirectories(dest.parent)
-                    Files.copy(tar, dest)
-                }
-                entry = tar.nextEntry
-            }
-        }
-        return Files.walk(destDir)
-            .filter { Files.exists(it.resolve("service.properties")) }
-            .findFirst()
-            .orElseThrow { ServiceException(ErrorCodesDomain.ARCHIVE_INVALID, "No Derby database found in archive") }
     }
 
     companion object {
