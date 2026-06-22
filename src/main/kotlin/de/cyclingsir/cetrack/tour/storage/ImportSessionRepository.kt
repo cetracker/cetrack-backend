@@ -5,4 +5,6 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-interface ImportSessionRepository : JpaRepository<ImportSessionEntity, UUID>
+interface ImportSessionRepository : JpaRepository<ImportSessionEntity, UUID> {
+    fun findAllByStatus(status: String): List<ImportSessionEntity>
+}

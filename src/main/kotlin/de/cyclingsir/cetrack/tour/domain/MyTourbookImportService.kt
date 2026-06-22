@@ -47,6 +47,11 @@ class MyTourbookImportService(
             val newCandidates = candidates.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
             val hasDrift = result.dbVersion != state.lastDbVersion
             val payload = objectMapper.writeValueAsString(newCandidates)
+            val pending = sessionRepository.findAllByStatus("PENDING")
+            if (pending.isNotEmpty()) {
+                pending.forEach { it.status = "SUPERSEDED" }
+                sessionRepository.saveAll(pending)
+            }
             sessionRepository.save(ImportSessionEntity(sessionId, "PENDING", result.dbVersion, payload))
             DomainImportSession(sessionId, "PENDING", result.dbVersion, hasDrift, newCandidates, warnings)
         } finally {
