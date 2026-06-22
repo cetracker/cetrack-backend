@@ -28,7 +28,12 @@ enum class ErrorCodesDomain(
     BIKE_HAS_FOREIGN_KEY_CONSTRAINT(302, 400, "Bike can't be deleted."),
     BIKE_ID_MISMATCH(303, 400, "Path id does not match the bike id in the body"),
 
-    TOUR_DUPLICATE(400, 409, "Tour already exists");
+    TOUR_DUPLICATE(400, 409, "Tour already exists"),
+
+    ARCHIVE_INVALID(500, 400, "Archive is invalid or unreadable"),
+    DERBY_SCHEMA_INCOMPATIBLE(501, 422, "Derby schema is incompatible with this backend release"),
+    IMPORT_SESSION_NOT_FOUND(502, 404, "Import session not found"),
+    IMPORT_SESSION_SUPERSEDED(503, 409, "Import session has been superseded or already committed");
 
     override val reason: String?
         get() = description

@@ -19,6 +19,11 @@ logging:
     org.springframework: INFO
     de.cyclingsir: INFO
 
+app:
+  mytourbook:
+    work-dir: ${java.io.tmpdir}/cetrack-mytourbook
+    max-decompressed-bytes: 524288000  # 500 MB
+
 # Actuator Endpoints
 management:
   endpoint:
