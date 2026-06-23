@@ -33,18 +33,38 @@
     <Match>
         <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION" />
     </Match>
-    <!-- lateinit -> false positive in Test classes-->
+    <!-- Kotlin lateinit var @MockK/@Autowired: all NP and UWF are false positives in test/IT classes -->
     <Match>
-        <Clas name="~.*Test" />
-        <Bug pattern="NP_NULL_ON_SOME_PATH" />
+        <Class name="~.*(Test|IT)" />
+        <Bug code="NP" />
     </Match>
     <Match>
-        <Clas name="~.*Test" />
-        <Bug pattern="NP_NULL_PARAM_DEREF" />
-    </Match>
-    <Match>
-        <Clas name="~.*Test" />
+        <Class name="~.*(Test|IT)" />
         <Bug pattern="UWF_UNWRITTEN_FIELD" />
+    </Match>
+    <!-- DerbyReadAdapterTest: lateinit var generates a redundant null-check in bytecode (RCN) -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest" />
+        <Bug code="RCN" />
+    </Match>
+    <!-- Kotlin's use{} closes JDBC resources in test; SpotBugs bytecode analysis misses this -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest" />
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest" />
+        <Bug pattern="ODR_OPEN_DATABASE_RESOURCE" />
+    </Match>
+    <!-- MySQLContainerIT companion object exposes container reference intentionally -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.support.MySQLContainerIT$Companion" />
+        <Bug pattern="MS_EXPOSE_REP" />
+    </Match>
+    <!-- Kotlin companion object init generates a SA false positive in bytecode -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.rest.MyTourbookImportControllerTest" />
+        <Bug code="SA" />
     </Match>
     <!-- Kotlin data class List fields are read-only via the List interface -->
     <Match>

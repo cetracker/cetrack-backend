@@ -32,12 +32,12 @@ import java.util.UUID
 @ExtendWith(MockKExtension::class)
 class MyTourbookImportServiceCommitTest {
 
-    @MockK lateinit var tourRepository: TourRepository
-    @MockK lateinit var bikeRepository: BikeRepository
-    @MockK lateinit var sessionRepository: ImportSessionRepository
-    @MockK lateinit var stateRepository: ImportStateRepository
-    @MockK lateinit var derbyAdapter: DerbyReadAdapter
-    @MockK lateinit var archiveExtractor: ArchiveExtractor
+    @MockK private lateinit var tourRepository: TourRepository
+    @MockK private lateinit var bikeRepository: BikeRepository
+    @MockK private lateinit var sessionRepository: ImportSessionRepository
+    @MockK private lateinit var stateRepository: ImportStateRepository
+    @MockK private lateinit var derbyAdapter: DerbyReadAdapter
+    @MockK private lateinit var archiveExtractor: ArchiveExtractor
 
     private val objectMapper = ObjectMapper()
     private lateinit var service: MyTourbookImportService

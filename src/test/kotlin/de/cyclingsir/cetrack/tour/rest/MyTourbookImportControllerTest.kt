@@ -145,7 +145,7 @@ class MyTourbookImportControllerTest {
         mvc.perform(post(MyTourbookImportApi.PATH_STAGE_MY_TOURBOOK_IMPORT)
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .content(ByteArray(8)))
-            .andExpect(status().isUnprocessableEntity)
+            .andExpect(status().`is`(422))
     }
 
     // #42
