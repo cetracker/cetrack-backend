@@ -15,9 +15,9 @@ import java.util.UUID
 @Transactional
 class ImportStorageIT {
 
-    @Autowired lateinit var tourRepository: TourRepository
-    @Autowired lateinit var sessionRepository: ImportSessionRepository
-    @Autowired lateinit var stateRepository: ImportStateRepository
+    @Autowired private lateinit var tourRepository: TourRepository
+    @Autowired private lateinit var sessionRepository: ImportSessionRepository
+    @Autowired private lateinit var stateRepository: ImportStateRepository
 
     private fun aTourEntity(mtTourId: String? = "9000000000001") = TourEntity(
         id = null,

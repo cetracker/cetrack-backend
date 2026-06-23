@@ -15,8 +15,8 @@ import java.util.UUID
 @Transactional
 class TracerBulletIT {
 
-    @Autowired lateinit var importService: MyTourbookImportService
-    @Autowired lateinit var tourRepository: TourRepository
+    @Autowired private lateinit var importService: MyTourbookImportService
+    @Autowired private lateinit var tourRepository: TourRepository
 
     companion object {
         val BIKE_A: UUID = UUID.fromString("a1111111-0001-0001-0001-000000000001")
