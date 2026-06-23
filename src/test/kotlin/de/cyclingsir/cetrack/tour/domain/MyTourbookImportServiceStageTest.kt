@@ -161,6 +161,32 @@ class MyTourbookImportServiceStageTest {
         verify { sessionRepository.save(match<ImportSessionEntity> { it.status == "PENDING" }) }
     }
 
+    // #45
+    @Test
+    fun `re-staging supersedes prior session without erasing its candidates and detects version drift`() {
+        val priorPayload = """[{"MTTOURID":"9000000000001"}]"""
+        val priorSession = ImportSessionEntity(UUID.randomUUID(), "PENDING", DB_VERSION, priorPayload)
+        val newDbVersion = DB_VERSION + 1
+
+        every { sessionRepository.findAllByStatus("PENDING") } returns listOf(priorSession)
+        every { stateRepository.findById(1) } returns Optional.of(
+            ImportStateEntity(1, lastDbVersion = DB_VERSION, updatedAt = Instant.now())
+        )
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            newDbVersion, listOf(aMTTour("9000000000002"))
+        )
+
+        val newSession = service.stage(emptyStream())
+
+        assertEquals("SUPERSEDED", priorSession.status)
+        assertEquals(priorPayload, priorSession.payload, "supersede must not erase prior session payload")
+        assertEquals("PENDING", newSession.status)
+        assertEquals(newDbVersion, newSession.dbVersion)
+        assertTrue(newSession.hasDrift, "dbVersion changed from baseline must signal hasDrift")
+        assertEquals(1, newSession.candidates.size)
+        assertEquals("9000000000002", newSession.candidates[0].MTTOURID)
+    }
+
     // #27
     @Test
     fun `Derby failure leaves no import_session row`() {
