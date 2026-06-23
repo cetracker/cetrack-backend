@@ -7,4 +7,5 @@ import java.util.UUID
 @Repository
 interface ImportSessionRepository : JpaRepository<ImportSessionEntity, UUID> {
     fun findAllByStatus(status: String): List<ImportSessionEntity>
+    fun findFirstByStatus(status: String): ImportSessionEntity?
 }

@@ -33,6 +33,15 @@ class MyTourbookImportController(
     }
 
     @GetMapping(
+        MyTourbookImportApi.PATH_GET_PENDING_MY_TOURBOOK_IMPORT_SESSION,
+        produces = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun getPendingSession(): ResponseEntity<ImportSession> {
+        val session = importService.getPendingSession() ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(mapper.map(session))
+    }
+
+    @GetMapping(
         MyTourbookImportApi.PATH_GET_MY_TOURBOOK_IMPORT_SESSION,
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
