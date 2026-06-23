@@ -46,4 +46,27 @@
         <Clas name="~.*Test" />
         <Bug pattern="UWF_UNWRITTEN_FIELD" />
     </Match>
+    <!-- Kotlin data class List fields are read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.domain.DomainImportSession" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter$ReadResult" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- Kotlin's use{} closes JDBC resources; SpotBugs bytecode analysis misses this -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter" />
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter" />
+        <Bug pattern="ODR_OPEN_DATABASE_RESOURCE" />
+    </Match>
+    <!-- Optional.orElseThrow() return is non-null; SpotBugs bytecode analysis false positive -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.domain.ArchiveExtractor" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+    </Match>
 </FindBugsFilter>
