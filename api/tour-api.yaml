@@ -136,6 +136,25 @@ paths:
         '500':
           description: Internal Server Error
 
+  /tours/mytourbook/import-sessions/pending:
+    get:
+      operationId: getPendingMyTourbookImportSession
+      summary: Get the current PENDING import session, if any
+      description: >
+        Returns the single active PENDING import session. At most one PENDING session
+        exists at any time (Decision 9). Returns 404 when no session is awaiting review.
+      tags:
+        - MyTourbookImport
+      responses:
+        '200':
+          description: Active PENDING session found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSession'
+        '404':
+          description: No PENDING session exists
+
   /tours/mytourbook/import-sessions/{sessionId}:
     parameters:
       - $ref: '#/components/parameters/sessionId'
@@ -476,7 +495,10 @@ components:
           type: string
           enum:
             - AMBIGUOUS_BIKE
-          description: AMBIGUOUS_BIKE — tour tagged with more than one tracked bike UUID (tour skipped, not blocked)
+            - LOGICAL_DUPLICATE
+          description: |
+            AMBIGUOUS_BIKE — tour tagged with more than one tracked bike UUID (tour skipped, not blocked).
+            LOGICAL_DUPLICATE — tour not yet known by mtTourId but matches an existing tour by start time + distance + moving duration; likely a re-import from device. Risk: two distinct rides with identical triple-key would both be suppressed (accepted for single-user single-bike-per-tour use).
         mtTourId:
           type: string
           description: Identifies the skipped tour
