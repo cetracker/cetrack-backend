@@ -21,7 +21,7 @@ logging:
 
 app:
   mytourbook:
-    work-dir: ${java.io.tmpdir}/cetrack-mytourbook
+    workdir: ${java.io.tmpdir}/cetrack-mytourbook
     max-decompressed-bytes: 524288000  # 500 MB
 
 # Actuator Endpoints

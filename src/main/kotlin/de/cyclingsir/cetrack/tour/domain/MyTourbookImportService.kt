@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
 
@@ -30,13 +31,14 @@ class MyTourbookImportService(
     private val derbyAdapter: DerbyReadAdapter,
     private val archiveExtractor: ArchiveExtractor,
     private val objectMapper: ObjectMapper,
-    @Value("\${app.mytourbook.work-dir}") private val workDir: String
+    @Value("\${app.mytourbook.workdir}") private val workDir: String
 ) {
 
     @Transactional
     fun stage(inputStream: InputStream): DomainImportSession {
         val sessionId = UUID.randomUUID()
-        val tempDir = Files.createTempDirectory("mytourbook-$sessionId")
+        val base = Path.of(workDir).also { Files.createDirectories(it) }
+        val tempDir = Files.createTempDirectory(base, "mytourbook-$sessionId")
         return try {
             val tourBookDir = archiveExtractor.extract(inputStream, tempDir)
             val bikeUuids = bikeRepository.findAll().mapNotNull { it.id?.toString() }
