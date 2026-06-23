@@ -15,6 +15,6 @@ class FlywayMigrationIT : MySQLContainerIT() {
     fun `all migrations apply cleanly on real MySQL and Hibernate validate passes`() {
         val applied = flyway.info().applied()
         assertThat(applied).isNotEmpty
-        assertThat(applied.map { it.version?.version }).contains("1.0", "1.1", "1.2", "1.3", "1.4")
+        assertThat(applied.map { it.version?.version }).contains("1.0", "1.1", "1.2", "1.3", "1.4", "1.5")
     }
 }
