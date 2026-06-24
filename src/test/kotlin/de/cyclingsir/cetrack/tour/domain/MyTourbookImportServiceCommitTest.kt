@@ -29,6 +29,7 @@ import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
+
 @ExtendWith(MockKExtension::class)
 class MyTourbookImportServiceCommitTest {
 
@@ -46,6 +47,7 @@ class MyTourbookImportServiceCommitTest {
         val BIKE_A: UUID = UUID.fromString("a1111111-0001-0001-0001-000000000001")
         private const val DB_VERSION = 59
         private val SESSION_ID: UUID = UUID.fromString("cccccccc-0000-0000-0000-000000000001")
+        private const val STATUS_PENDING = "PENDING"
     }
 
     @BeforeEach
@@ -85,7 +87,7 @@ class MyTourbookImportServiceCommitTest {
 
     private fun pendingSession(vararg tours: DomainMTTour): ImportSessionEntity {
         val payload = objectMapper.writeValueAsString(tours.toList())
-        return ImportSessionEntity(SESSION_ID, "PENDING", DB_VERSION, payload)
+        return ImportSessionEntity(SESSION_ID, STATUS_PENDING, DB_VERSION, payload)
     }
 
     // #28

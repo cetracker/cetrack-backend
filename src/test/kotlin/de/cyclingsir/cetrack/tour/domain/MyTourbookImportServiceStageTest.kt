@@ -47,6 +47,7 @@ class MyTourbookImportServiceStageTest {
         val BIKE_B: UUID = UUID.fromString("b2222222-0002-0002-0002-000000000002")
         private val DUMMY_TOURBOOK = Path.of("/tmp/dummy-tourbook")
         private const val DB_VERSION = 59
+        private const val STATUS_PENDING = "PENDING"
     }
 
     @BeforeEach
@@ -64,7 +65,8 @@ class MyTourbookImportServiceStageTest {
             ImportStateEntity(1, DB_VERSION, Instant.now())
         )
         every { tourRepository.existsByMtTourId(any()) } returns false
-        every { sessionRepository.findAllByStatus("PENDING") } returns emptyList()
+        every { tourRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns emptyList()
         every { sessionRepository.save(any<ImportSessionEntity>()) } answers { firstArg() }
         every { sessionRepository.saveAll(any<List<ImportSessionEntity>>()) } answers { firstArg() }
     }
@@ -97,7 +99,7 @@ class MyTourbookImportServiceStageTest {
 
         assertEquals(2, session.candidates.size)
         assertTrue(session.warnings.isEmpty())
-        assertEquals("PENDING", session.status)
+        assertEquals(STATUS_PENDING, session.status)
     }
 
     // #22
@@ -148,8 +150,8 @@ class MyTourbookImportServiceStageTest {
     // #25 + #26
     @Test
     fun `new stage marks existing PENDING session SUPERSEDED ensuring single-PENDING invariant`() {
-        val priorSession = ImportSessionEntity(UUID.randomUUID(), "PENDING", DB_VERSION, "[]")
-        every { sessionRepository.findAllByStatus("PENDING") } returns listOf(priorSession)
+        val priorSession = ImportSessionEntity(UUID.randomUUID(), STATUS_PENDING, DB_VERSION, "[]")
+        every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns listOf(priorSession)
         every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
         )
@@ -158,17 +160,17 @@ class MyTourbookImportServiceStageTest {
 
         assertEquals("SUPERSEDED", priorSession.status, "prior PENDING session must be marked SUPERSEDED")
         verify { sessionRepository.saveAll(match<List<ImportSessionEntity>> { it.contains(priorSession) }) }
-        verify { sessionRepository.save(match<ImportSessionEntity> { it.status == "PENDING" }) }
+        verify { sessionRepository.save(match<ImportSessionEntity> { it.status == STATUS_PENDING }) }
     }
 
     // #45
     @Test
     fun `re-staging supersedes prior session without erasing its candidates and detects version drift`() {
         val priorPayload = """[{"MTTOURID":"9000000000001"}]"""
-        val priorSession = ImportSessionEntity(UUID.randomUUID(), "PENDING", DB_VERSION, priorPayload)
+        val priorSession = ImportSessionEntity(UUID.randomUUID(), STATUS_PENDING, DB_VERSION, priorPayload)
         val newDbVersion = DB_VERSION + 1
 
-        every { sessionRepository.findAllByStatus("PENDING") } returns listOf(priorSession)
+        every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns listOf(priorSession)
         every { stateRepository.findById(1) } returns Optional.of(
             ImportStateEntity(1, lastDbVersion = DB_VERSION, updatedAt = Instant.now())
         )
@@ -180,7 +182,7 @@ class MyTourbookImportServiceStageTest {
 
         assertEquals("SUPERSEDED", priorSession.status)
         assertEquals(priorPayload, priorSession.payload, "supersede must not erase prior session payload")
-        assertEquals("PENDING", newSession.status)
+        assertEquals(STATUS_PENDING, newSession.status)
         assertEquals(newDbVersion, newSession.dbVersion)
         assertTrue(newSession.hasDrift, "dbVersion changed from baseline must signal hasDrift")
         assertEquals(1, newSession.candidates.size)
