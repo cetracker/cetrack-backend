@@ -36,7 +36,10 @@ enum class ErrorCodesDomain(
     ARCHIVE_EXCEEDS_SIZE_LIMIT(501, 400, "Archive exceeds size limit"),
     DERBY_SCHEMA_INCOMPATIBLE(502, 422, "Derby schema is incompatible with this backend release"),
     IMPORT_SESSION_NOT_FOUND(503, 404, "Import session not found"),
-    IMPORT_SESSION_SUPERSEDED(504, 409, "Import session has been superseded or already committed");
+    IMPORT_SESSION_SUPERSEDED(504, 409, "Import session has been superseded or already committed"),
+    IMPORT_RESOLUTION_REPLACE_AMBIGUOUS(505, 400, "REPLACE not allowed when multiple existing tours match the triple-key"),
+    IMPORT_RESOLUTION_SAME_BIKE(506, 400, "IMPORT_NEW not allowed when incoming bike matches the existing tour bike"),
+    IMPORT_TOUR_NOT_FOUND(507, 404, "Matched tour not found");
 
     override val reason: String?
         get() = description

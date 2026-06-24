@@ -504,6 +504,58 @@ components:
           description: Identifies the skipped tour
         message:
           type: string
+        incomingCandidate:
+          $ref: '#/components/schemas/ImportCandidate'
+          description: Full incoming tour data (LOGICAL_DUPLICATE only)
+        matchedTours:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExistingTourSummary'
+          description: Existing CETracker tours matched by triple-key (LOGICAL_DUPLICATE only)
+        replaceDisabled:
+          type: boolean
+          description: True when >1 existing rows matched; Replace is ambiguous
+    ExistingTourSummary:
+      type: object
+      required:
+        - tourId
+        - title
+        - startedAt
+        - distance
+        - durationMoving
+      properties:
+        tourId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        distance:
+          type: integer
+          minimum: 0
+        durationMoving:
+          type: integer
+          format: int64
+          minimum: 0
+        bikeId:
+          type: string
+          format: uuid
+    WarningResolution:
+      type: object
+      required:
+        - mtTourId
+        - action
+      properties:
+        mtTourId:
+          type: string
+        action:
+          type: string
+          enum:
+            - REPLACE
+            - IMPORT_NEW
+            - SUPPRESS
     ImportSessionStatus:
       type: string
       enum:
@@ -519,6 +571,12 @@ components:
           type: array
           items:
             type: string
-          minItems: 1
+          minItems: 0
           uniqueItems: true
           description: mtTourIds from the session candidates to persist
+        warningResolutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WarningResolution'
+          default: []
+          description: Resolution actions for LOGICAL_DUPLICATE warnings

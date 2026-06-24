@@ -7,6 +7,8 @@ import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter
+import de.cyclingsir.cetrack.tour.storage.ImportIgnoreEntity
+import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
 import de.cyclingsir.cetrack.tour.storage.ImportSessionEntity
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
@@ -23,6 +25,8 @@ import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
 
+data class WarningResolutionRequest(val mtTourId: String, val action: String)
+
 private val logger = KotlinLogging.logger {}
 
 private data class SessionPayload(
@@ -36,6 +40,7 @@ class MyTourbookImportService(
     private val bikeRepository: BikeRepository,
     private val sessionRepository: ImportSessionRepository,
     private val stateRepository: ImportStateRepository,
+    private val ignoreRepository: ImportIgnoreRepository,
     private val derbyAdapter: DerbyReadAdapter,
     private val archiveExtractor: ArchiveExtractor,
     private val objectMapper: ObjectMapper,
@@ -111,7 +116,7 @@ class MyTourbookImportService(
         }
 
     @Transactional
-    fun commit(sessionId: UUID, approvedMtTourIds: List<String>) {
+    fun commit(sessionId: UUID, approvedMtTourIds: List<String>, warningResolutions: List<WarningResolutionRequest> = emptyList()) {
         val entity = sessionRepository.findById(sessionId)
             .orElseThrow { ServiceException(ErrorCodesDomain.IMPORT_SESSION_NOT_FOUND, "Session $sessionId not found") }
         if (entity.status != "PENDING") {
@@ -121,6 +126,52 @@ class MyTourbookImportService(
         val approved = sessionPayload.candidates.filter { it.MTTOURID in approvedMtTourIds }
         val toImport = approved.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
         tourRepository.saveAll(toImport.map { mapToEntity(it) })
+
+        for (resolution in warningResolutions) {
+            val warning = sessionPayload.warnings
+                .find { it.mtTourId == resolution.mtTourId && it.type == "LOGICAL_DUPLICATE" }
+                ?: continue
+
+            when (resolution.action) {
+                "REPLACE" -> {
+                    if (warning.replaceDisabled) {
+                        throw ServiceException(ErrorCodesDomain.IMPORT_RESOLUTION_REPLACE_AMBIGUOUS,
+                            "REPLACE not allowed for multi-match warning ${resolution.mtTourId}")
+                    }
+                    val matchedId = warning.matchedTours.first().tourId
+                    val existing = tourRepository.findById(matchedId)
+                        .orElseThrow { ServiceException(ErrorCodesDomain.IMPORT_TOUR_NOT_FOUND, "Matched tour $matchedId not found") }
+                    val incoming = warning.incomingCandidate!!
+                    existing.mtTourId = incoming.MTTOURID
+                    existing.title = incoming.TITLE
+                    existing.distance = incoming.DISTANCE
+                    existing.durationMoving = incoming.DURATIONMOVING
+                    existing.startedAt = Instant.ofEpochMilli(incoming.STARTTIMESTAMP)
+                    existing.startYear = incoming.STARTYEAR
+                    existing.startMonth = incoming.STARTMONTH
+                    existing.startDay = incoming.STARTDAY
+                    existing.altUp = incoming.TOURALTUP
+                    existing.altDown = incoming.TOURALTDOWN
+                    existing.powerTotal = incoming.POWERTOTAL
+                    existing.bike = incoming.bikeId?.let { bikeRepository.findById(it).orElse(null) }
+                    existing.updatedAt = Instant.now()
+                    tourRepository.save(existing)
+                }
+                "IMPORT_NEW" -> {
+                    val incoming = warning.incomingCandidate!!
+                    val incomingBikeId = incoming.bikeId
+                    val matchedBikeId = warning.matchedTours.firstOrNull()?.bikeId
+                    if (incomingBikeId == matchedBikeId) {
+                        throw ServiceException(ErrorCodesDomain.IMPORT_RESOLUTION_SAME_BIKE,
+                            "IMPORT_NEW not allowed when incoming bike matches matched tour bike for ${resolution.mtTourId}")
+                    }
+                    tourRepository.save(mapToEntity(incoming))
+                    suppressTriple(warning.matchedTours.first())
+                }
+                "SUPPRESS" -> suppressTriple(warning.matchedTours.first())
+            }
+        }
+
         val state = stateRepository.findById(IMPORT_STATE_ID)
             .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
         state.lastDbVersion = entity.dbVersion
@@ -130,6 +181,17 @@ class MyTourbookImportService(
         sessionRepository.save(entity)
     }
 
+    private fun suppressTriple(summary: DomainTourSummary) {
+        if (!ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(
+                summary.startedAt, summary.distance, summary.durationMoving)) {
+            ignoreRepository.save(ImportIgnoreEntity(
+                startedAt = summary.startedAt,
+                distance = summary.distance,
+                durationMoving = summary.durationMoving
+            ))
+        }
+    }
+
     // False-positive risk: two rides with identical start time + distance + moving duration would both be skipped.
     // Accepted: CETracker is single-user and a bike can only be on one tour at a time.
     private fun filterLogicalDuplicates(candidates: List<DomainMTTour>): Pair<List<DomainMTTour>, List<DomainImportWarning>> {
@@ -137,10 +199,18 @@ class MyTourbookImportService(
         val warnings = mutableListOf<DomainImportWarning>()
         for (candidate in candidates) {
             val startedAt = Instant.ofEpochMilli(candidate.STARTTIMESTAMP)
-            if (tourRepository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, candidate.DISTANCE, candidate.DURATIONMOVING)) {
+            if (ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, candidate.DISTANCE, candidate.DURATIONMOVING)) {
+                continue
+            }
+            val matched = tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(startedAt, candidate.DISTANCE, candidate.DURATIONMOVING)
+            if (matched.isNotEmpty()) {
                 warnings += DomainImportWarning(
-                    "LOGICAL_DUPLICATE", candidate.MTTOURID,
-                    "Tour ${candidate.MTTOURID} matches an existing tour by start time, distance, and moving duration — possible re-import from device"
+                    type = "LOGICAL_DUPLICATE",
+                    mtTourId = candidate.MTTOURID,
+                    message = "Tour ${candidate.MTTOURID} matches an existing tour by start time, distance, and moving duration — possible re-import from device",
+                    incomingCandidate = candidate,
+                    matchedTours = matched.map { it.toSummary() },
+                    replaceDisabled = matched.size > 1
                 )
             } else {
                 result += candidate
@@ -148,6 +218,15 @@ class MyTourbookImportService(
         }
         return result to warnings
     }
+
+    private fun TourEntity.toSummary() = DomainTourSummary(
+        tourId = id!!,
+        title = title,
+        startedAt = startedAt,
+        distance = distance,
+        durationMoving = durationMoving,
+        bikeId = bike?.id
+    )
 
     private fun classifyRows(rows: List<DomainMTTour>): Pair<List<DomainMTTour>, List<DomainImportWarning>> {
         val byTourId = rows.groupBy { it.MTTOURID }

@@ -53,5 +53,7 @@ class TourEntity(
     var powerTotal: Long,
 
     @CreatedDate
-    var createdAt: Instant? = null
+    var createdAt: Instant? = null,
+
+    var updatedAt: Instant? = null
 )

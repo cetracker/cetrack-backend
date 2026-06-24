@@ -1,12 +1,14 @@
 package de.cyclingsir.cetrack.tour.rest
 
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
+import de.cyclingsir.cetrack.infrastructure.api.model.ExistingTourSummary
 import de.cyclingsir.cetrack.infrastructure.api.model.ImportCandidate
 import de.cyclingsir.cetrack.infrastructure.api.model.ImportSession
 import de.cyclingsir.cetrack.infrastructure.api.model.ImportSessionStatus
 import de.cyclingsir.cetrack.infrastructure.api.model.ImportWarning
 import de.cyclingsir.cetrack.tour.domain.DomainImportSession
 import de.cyclingsir.cetrack.tour.domain.DomainImportWarning
+import de.cyclingsir.cetrack.tour.domain.DomainTourSummary
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.time.ZoneOffset
@@ -38,6 +40,18 @@ class ImportSessionMapper {
     private fun mapWarning(w: DomainImportWarning): ImportWarning = ImportWarning(
         type = ImportWarning.Type.forValue(w.type),
         mtTourId = w.mtTourId,
-        message = w.message
+        message = w.message,
+        incomingCandidate = w.incomingCandidate?.let(::mapCandidate),
+        matchedTours = w.matchedTours.map(::mapTourSummary).takeIf { it.isNotEmpty() },
+        replaceDisabled = w.replaceDisabled.takeIf { w.matchedTours.isNotEmpty() }
+    )
+
+    private fun mapTourSummary(s: DomainTourSummary): ExistingTourSummary = ExistingTourSummary(
+        tourId = s.tourId,
+        title = s.title,
+        startedAt = s.startedAt.atOffset(ZoneOffset.UTC),
+        distance = s.distance,
+        durationMoving = s.durationMoving,
+        bikeId = s.bikeId
     )
 }

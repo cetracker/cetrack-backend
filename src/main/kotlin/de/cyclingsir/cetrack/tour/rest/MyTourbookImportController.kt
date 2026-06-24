@@ -4,6 +4,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.CommitImportRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.ImportSession
 import de.cyclingsir.cetrack.infrastructure.api.rest.MyTourbookImportApi
 import de.cyclingsir.cetrack.tour.domain.MyTourbookImportService
+import de.cyclingsir.cetrack.tour.domain.WarningResolutionRequest
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -58,7 +59,9 @@ class MyTourbookImportController(
         @PathVariable sessionId: UUID,
         @Valid @RequestBody request: CommitImportRequest
     ): ResponseEntity<Unit> {
-        importService.commit(sessionId, request.approvedMtTourIds.toList())
+        val resolutions = request.warningResolutions.orEmpty()
+            .map { WarningResolutionRequest(it.mtTourId, it.action.value) }
+        importService.commit(sessionId, request.approvedMtTourIds.toList(), resolutions)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 }

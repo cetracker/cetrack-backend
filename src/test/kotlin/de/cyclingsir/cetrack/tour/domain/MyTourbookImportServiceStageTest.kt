@@ -11,6 +11,7 @@ import de.cyclingsir.cetrack.tour.domain.DomainImportWarning
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
+import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
 import de.cyclingsir.cetrack.tour.storage.TourRepository
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -37,6 +38,7 @@ class MyTourbookImportServiceStageTest {
     @MockK private lateinit var bikeRepository: BikeRepository
     @MockK private lateinit var sessionRepository: ImportSessionRepository
     @MockK private lateinit var stateRepository: ImportStateRepository
+    @MockK private lateinit var ignoreRepository: ImportIgnoreRepository
     @MockK private lateinit var derbyAdapter: DerbyReadAdapter
     @MockK private lateinit var archiveExtractor: ArchiveExtractor
 
@@ -55,7 +57,7 @@ class MyTourbookImportServiceStageTest {
     fun setup() {
         service = MyTourbookImportService(
             tourRepository, bikeRepository, sessionRepository, stateRepository,
-            derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
+            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
         )
         every { archiveExtractor.extract(any(), any()) } returns DUMMY_TOURBOOK
         every { bikeRepository.findAll() } returns listOf(
@@ -66,7 +68,8 @@ class MyTourbookImportServiceStageTest {
             ImportStateEntity(1, DB_VERSION, Instant.now())
         )
         every { tourRepository.existsByMtTourId(any()) } returns false
-        every { tourRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns emptyList()
         every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns emptyList()
         every { sessionRepository.save(any<ImportSessionEntity>()) } answers { firstArg() }
         every { sessionRepository.saveAll(any<List<ImportSessionEntity>>()) } answers { firstArg() }

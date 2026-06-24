@@ -5,12 +5,7 @@ import org.springframework.stereotype.Repository
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Initially created on 2/1/23.
- */
 @Repository
-interface TourRepository : JpaRepository<TourEntity, UUID> {
+interface ImportIgnoreRepository : JpaRepository<ImportIgnoreEntity, UUID> {
     fun existsByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): Boolean
-    fun existsByMtTourId(mtTourId: String): Boolean
-    fun findAllByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): List<TourEntity>
 }

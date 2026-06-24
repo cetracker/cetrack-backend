@@ -10,6 +10,7 @@ import de.cyclingsir.cetrack.tour.storage.ImportSessionEntity
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
+import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
 import io.mockk.every
@@ -37,6 +38,7 @@ class MyTourbookImportServiceCommitTest {
     @MockK private lateinit var bikeRepository: BikeRepository
     @MockK private lateinit var sessionRepository: ImportSessionRepository
     @MockK private lateinit var stateRepository: ImportStateRepository
+    @MockK private lateinit var ignoreRepository: ImportIgnoreRepository
     @MockK private lateinit var derbyAdapter: DerbyReadAdapter
     @MockK private lateinit var archiveExtractor: ArchiveExtractor
 
@@ -54,7 +56,7 @@ class MyTourbookImportServiceCommitTest {
     fun setup() {
         service = MyTourbookImportService(
             tourRepository, bikeRepository, sessionRepository, stateRepository,
-            derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
+            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
         )
         every { tourRepository.existsByMtTourId(any()) } returns false
         every { tourRepository.saveAll(any<List<TourEntity>>()) } returns emptyList()
