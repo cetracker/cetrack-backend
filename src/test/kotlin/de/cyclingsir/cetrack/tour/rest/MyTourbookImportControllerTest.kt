@@ -91,10 +91,31 @@ class MyTourbookImportControllerTest {
             .andExpect(jsonPath("$.warnings[0].type").value("AMBIGUOUS_BIKE"))
     }
 
+    // #43
+    @Test
+    fun `getPendingSession returns 204 when no session exists`() {
+        every { importService.getPendingSession() } returns null
+
+        mvc.perform(get(MyTourbookImportApi.PATH_GET_PENDING_MY_TOURBOOK_IMPORT_SESSION))
+            .andExpect(status().isNoContent)
+    }
+
+    // #44
+    @Test
+    fun `getPendingSession returns 200 with session body when session exists`() {
+        every { importService.getPendingSession() } returns aDomainSession(candidates = listOf(aMTTour()))
+
+        mvc.perform(get(MyTourbookImportApi.PATH_GET_PENDING_MY_TOURBOOK_IMPORT_SESSION))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.sessionId").value(SESSION_ID.toString()))
+            .andExpect(jsonPath("$.status").value("PENDING"))
+            .andExpect(jsonPath("$.candidates[0].mtTourId").value("9000000000001"))
+    }
+
     // #37
     @Test
     fun `commit returns 201`() {
-        every { importService.commit(SESSION_ID, any()) } just Runs
+        every { importService.commit(SESSION_ID, any(), any()) } just Runs
 
         mvc.perform(post(MyTourbookImportApi.PATH_COMMIT_MY_TOURBOOK_IMPORT, SESSION_ID)
             .contentType(MediaType.APPLICATION_JSON)
@@ -115,7 +136,7 @@ class MyTourbookImportControllerTest {
     // #39
     @Test
     fun `commit on superseded session returns 409`() {
-        every { importService.commit(any(), any()) } throws
+        every { importService.commit(any(), any(), any()) } throws
             ServiceException(IMPORT_SESSION_SUPERSEDED, "superseded")
 
         mvc.perform(post(MyTourbookImportApi.PATH_COMMIT_MY_TOURBOOK_IMPORT, SESSION_ID)

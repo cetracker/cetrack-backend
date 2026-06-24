@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Cycling Equipment API
   description: The API documentation for tracking cycling equipment and parts - tour related definitions
-  version: 1.0.0
+  version: 1.1.0
   license:
     name: (c) CyclingSir
   contact:
@@ -142,7 +142,8 @@ paths:
       summary: Get the current PENDING import session, if any
       description: >
         Returns the single active PENDING import session. At most one PENDING session
-        exists at any time (Decision 9). Returns 404 when no session is awaiting review.
+        exists at any time (Decision 9). Returns 204 No Content when no session is
+        awaiting review.
       tags:
         - MyTourbookImport
       responses:
@@ -152,7 +153,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportSession'
-        '404':
+        '204':
           description: No PENDING session exists
 
   /tours/mytourbook/import-sessions/{sessionId}:

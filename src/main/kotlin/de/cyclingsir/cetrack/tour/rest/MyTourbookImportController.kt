@@ -38,7 +38,7 @@ class MyTourbookImportController(
         produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun getPendingSession(): ResponseEntity<ImportSession> {
-        val session = importService.getPendingSession() ?: return ResponseEntity.notFound().build()
+        val session = importService.getPendingSession() ?: return ResponseEntity.noContent().build()
         return ResponseEntity.ok(mapper.map(session))
     }
 
