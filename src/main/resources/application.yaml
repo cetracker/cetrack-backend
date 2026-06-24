@@ -74,7 +74,7 @@ spring:
       password: pwd
 app:
     mytourbook:
-      workdir: ~/tmp/cetracker
+      workdir: ${user.home}/tmp/cetracker
       max-decompressed-bytes: 367001600  # 350 MB
 
 # open more actuator endpoints for local testing
