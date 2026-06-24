@@ -40,8 +40,14 @@ class MyTourbookImportService(
     @Transactional
     fun stage(inputStream: InputStream): DomainImportSession {
         val sessionId = UUID.randomUUID()
-        val base = Path.of(workDir).also { Files.createDirectories(it) }
-        val tempDir = Files.createTempDirectory(base, "mytourbook-$sessionId")
+        val base = Path.of(workDir).also {
+            runCatching { Files.createDirectories(it) }
+                .onFailure { e -> logger.error(e) { "Failed to create or access work directory '$workDir'" } }
+                .getOrThrow()
+        }
+        val tempDir = runCatching { Files.createTempDirectory(base, "mytourbook-$sessionId") }
+            .onFailure { e -> logger.error(e) { "Failed to create temp directory under '$base'" } }
+            .getOrThrow()
 
         logger.info { "Staging MyTourbook import session $sessionId in $tempDir" }
 
