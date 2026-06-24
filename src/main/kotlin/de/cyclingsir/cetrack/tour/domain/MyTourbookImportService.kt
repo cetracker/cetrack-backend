@@ -25,6 +25,11 @@ import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 
+private data class SessionPayload(
+    val candidates: List<DomainMTTour> = emptyList(),
+    val warnings: List<DomainImportWarning> = emptyList()
+)
+
 @Service
 class MyTourbookImportService(
     private val tourRepository: TourRepository,
@@ -62,7 +67,7 @@ class MyTourbookImportService(
             val (newCandidates, logicalDupWarnings) = filterLogicalDuplicates(mtDeduped)
             val allWarnings = warnings + logicalDupWarnings
             val hasDrift = result.dbVersion != state.lastDbVersion
-            val payload = objectMapper.writeValueAsString(newCandidates)
+            val payload = objectMapper.writeValueAsString(SessionPayload(newCandidates, allWarnings))
             val pending = sessionRepository.findAllByStatus("PENDING")
             if (pending.isNotEmpty()) {
                 pending.forEach { it.status = "SUPERSEDED" }
@@ -89,14 +94,21 @@ class MyTourbookImportService(
     }
 
     private fun deserializeSession(entity: ImportSessionEntity): DomainImportSession {
-        val candidates: List<DomainMTTour> = objectMapper.readValue(
-            entity.payload, object : TypeReference<List<DomainMTTour>>() {}
-        )
+        val payload = deserializePayload(entity.payload)
         val state = stateRepository.findById(IMPORT_STATE_ID)
             .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
         val hasDrift = entity.dbVersion != state.lastDbVersion
-        return DomainImportSession(entity.id, entity.status, entity.dbVersion, hasDrift, candidates, emptyList())
+        return DomainImportSession(entity.id, entity.status, entity.dbVersion, hasDrift, payload.candidates, payload.warnings)
     }
+
+    private fun deserializePayload(json: String): SessionPayload =
+        try {
+            objectMapper.readValue(json, SessionPayload::class.java)
+        } catch (_: Exception) {
+            // stale bare-array format from before the wrapper was introduced; re-stage clears it
+            val candidates: List<DomainMTTour> = objectMapper.readValue(json, object : TypeReference<List<DomainMTTour>>() {})
+            SessionPayload(candidates)
+        }
 
     @Transactional
     fun commit(sessionId: UUID, approvedMtTourIds: List<String>) {
@@ -105,10 +117,8 @@ class MyTourbookImportService(
         if (entity.status != "PENDING") {
             throw ServiceException(ErrorCodesDomain.IMPORT_SESSION_SUPERSEDED, "Session $sessionId is ${entity.status}")
         }
-        val candidates: List<DomainMTTour> = objectMapper.readValue(
-            entity.payload, object : TypeReference<List<DomainMTTour>>() {}
-        )
-        val approved = candidates.filter { it.MTTOURID in approvedMtTourIds }
+        val sessionPayload = deserializePayload(entity.payload)
+        val approved = sessionPayload.candidates.filter { it.MTTOURID in approvedMtTourIds }
         val toImport = approved.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
         tourRepository.saveAll(toImport.map { mapToEntity(it) })
         val state = stateRepository.findById(IMPORT_STATE_ID)

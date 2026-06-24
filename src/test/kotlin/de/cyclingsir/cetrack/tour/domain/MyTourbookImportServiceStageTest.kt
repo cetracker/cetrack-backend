@@ -7,6 +7,7 @@ import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter
 import de.cyclingsir.cetrack.tour.storage.ImportSessionEntity
+import de.cyclingsir.cetrack.tour.domain.DomainImportWarning
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
@@ -187,6 +188,29 @@ class MyTourbookImportServiceStageTest {
         assertTrue(newSession.hasDrift, "dbVersion changed from baseline must signal hasDrift")
         assertEquals(1, newSession.candidates.size)
         assertEquals("9000000000002", newSession.candidates[0].MTTOURID)
+    }
+
+    // Slice-1 regression: warnings must survive the payload round-trip and be returned by getPendingSession
+    @Test
+    fun `getPendingSession surfaces LOGICAL_DUPLICATE warnings from persisted session payload`() {
+        val sessionId = UUID.randomUUID()
+        val candidate = aMTTour("9000000000001")
+        val warning = DomainImportWarning(
+            "LOGICAL_DUPLICATE", "9000000000099",
+            "Tour 9000000000099 matches an existing tour by start time, distance, and moving duration — possible re-import from device"
+        )
+        val payload = objectMapper.writeValueAsString(
+            mapOf("candidates" to listOf(candidate), "warnings" to listOf(warning))
+        )
+        every { sessionRepository.findFirstByStatus(STATUS_PENDING) } returns
+            ImportSessionEntity(sessionId, STATUS_PENDING, DB_VERSION, payload)
+
+        val session = service.getPendingSession()
+
+        assertEquals(1, session?.warnings?.size, "warnings must be returned from persisted payload")
+        assertEquals("LOGICAL_DUPLICATE", session?.warnings?.first()?.type)
+        assertEquals("9000000000099", session?.warnings?.first()?.mtTourId)
+        assertEquals(1, session?.candidates?.size)
     }
 
     // #27

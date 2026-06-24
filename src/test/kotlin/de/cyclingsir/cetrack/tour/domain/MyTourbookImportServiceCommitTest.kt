@@ -86,7 +86,9 @@ class MyTourbookImportServiceCommitTest {
     )
 
     private fun pendingSession(vararg tours: DomainMTTour): ImportSessionEntity {
-        val payload = objectMapper.writeValueAsString(tours.toList())
+        val payload = objectMapper.writeValueAsString(
+            mapOf("candidates" to tours.toList(), "warnings" to emptyList<Any>())
+        )
         return ImportSessionEntity(SESSION_ID, STATUS_PENDING, DB_VERSION, payload)
     }
 
