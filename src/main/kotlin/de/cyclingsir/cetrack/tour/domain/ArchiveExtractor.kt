@@ -46,7 +46,7 @@ class ArchiveExtractor(
                             totalBytes += n
                             if (totalBytes > maxDecompressedBytes) {
                                 throw ServiceException(
-                                    ErrorCodesDomain.ARCHIVE_INVALID,
+                                    ErrorCodesDomain.ARCHIVE_EXCEEDS_SIZE_LIMIT,
                                     "Archive exceeds size limit of $maxDecompressedBytes bytes"
                                 )
                             }
