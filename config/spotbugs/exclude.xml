@@ -72,6 +72,10 @@
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
     <Match>
+        <Class name="de.cyclingsir.cetrack.tour.domain.DomainImportWarning" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
         <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter$ReadResult" />
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
