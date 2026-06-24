@@ -62,14 +62,14 @@ class ArchiveExtractorTest {
 
     // #17
     @Test
-    fun `archive exceeding configured size cap yields ARCHIVE_INVALID`(@TempDir tempDir: Path) {
+    fun `archive exceeding configured size cap yields ARCHIVE_EXCEEDS_SIZE_LIMIT`(@TempDir tempDir: Path) {
         val extractor = ArchiveExtractor(TINY_CAP)
         val bigData = ByteArray(TINY_CAP.toInt() + 1) { 65 }
         val payload = makeTarBz2("tourbook/service.properties" to bigData)
         val ex = assertThrows<ServiceException> {
             extractor.extract(ByteArrayInputStream(payload), tempDir)
         }
-        assertEquals(ErrorCodesDomain.ARCHIVE_INVALID, ex.getError())
+        assertEquals(ErrorCodesDomain.ARCHIVE_EXCEEDS_SIZE_LIMIT, ex.getError())
     }
 
     // #18
