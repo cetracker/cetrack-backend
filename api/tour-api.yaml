@@ -106,8 +106,10 @@ paths:
       summary: Stage a MyTourbook Derby database archive for import
       description: >
         Upload a compressed MyTourbook Derby database archive (application/octet-stream).
-        Backend unpacks, queries Derby read-only, classifies candidate tours, and persists
-        an import session. Any existing PENDING session is superseded atomically.
+        Backend unpacks, queries Derby read-only, classifies candidate tours. If the archive
+        yields new candidates and/or warnings, persists a PENDING import session and supersedes
+        any prior PENDING session (201). If the archive yields nothing new, no session is
+        created and any existing PENDING session is preserved (204).
       tags:
         - MyTourbookImport
       requestBody:
@@ -119,7 +121,7 @@ paths:
               format: binary
       responses:
         '201':
-          description: Archive staged; import session created
+          description: Import session created (archive yielded new candidates and/or warnings)
           headers:
             Location:
               description: URL of the created import session
@@ -129,6 +131,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportSession'
+        '204':
+          description: >
+            Archive contained no new candidates and no warnings; no import session
+            created. Any existing unreviewed PENDING session is left untouched.
         '400':
           description: Archive invalid or unreadable (ARCHIVE_INVALID)
         '422':

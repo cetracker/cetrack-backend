@@ -30,6 +30,7 @@ class MyTourbookImportController(
     )
     fun stage(request: HttpServletRequest): ResponseEntity<ImportSession> {
         val session = importService.stage(request.inputStream)
+            ?: return ResponseEntity.noContent().build()
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.map(session))
     }
 

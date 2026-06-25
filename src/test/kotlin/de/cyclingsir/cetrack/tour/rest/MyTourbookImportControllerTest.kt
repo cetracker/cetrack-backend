@@ -73,6 +73,17 @@ class MyTourbookImportControllerTest {
             .andExpect(jsonPath("$.status").value("PENDING"))
     }
 
+    // #46
+    @Test
+    fun `stage returns 204 when archive yields nothing new`() {
+        every { importService.stage(any()) } returns null
+
+        mvc.perform(post(MyTourbookImportApi.PATH_STAGE_MY_TOURBOOK_IMPORT)
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .content(ByteArray(4)))
+            .andExpect(status().isNoContent)
+    }
+
     // #36
     @Test
     fun `getSession returns 200 with full session shape`() {

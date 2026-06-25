@@ -48,7 +48,7 @@ class MyTourbookImportService(
 ) {
 
     @Transactional
-    fun stage(inputStream: InputStream): DomainImportSession {
+    fun stage(inputStream: InputStream): DomainImportSession? {
         val sessionId = UUID.randomUUID()
         val base = Path.of(workDir).also {
             runCatching { Files.createDirectories(it) }
@@ -71,6 +71,10 @@ class MyTourbookImportService(
             val mtDeduped = candidates.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
             val (newCandidates, logicalDupWarnings) = filterLogicalDuplicates(mtDeduped)
             val allWarnings = warnings + logicalDupWarnings
+            if (newCandidates.isEmpty() && allWarnings.isEmpty()) {
+                logger.info { "Staging session $sessionId yielded no new candidates or warnings — no session created" }
+                return null
+            }
             val hasDrift = result.dbVersion != state.lastDbVersion
             val payload = objectMapper.writeValueAsString(SessionPayload(newCandidates, allWarnings))
             val pending = sessionRepository.findAllByStatus("PENDING")

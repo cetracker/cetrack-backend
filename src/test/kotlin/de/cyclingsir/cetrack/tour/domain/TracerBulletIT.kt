@@ -33,7 +33,7 @@ class TracerBulletIT {
         val fixture = javaClass.classLoader.getResourceAsStream("mytourbook-fixture/tourbook.tar.bz2")!!
 
         // Stage
-        val session = importService.stage(fixture)
+        val session = importService.stage(fixture)!!
         assertNotNull(session.sessionId)
         assertEquals("PENDING", session.status)
         assertTrue(session.candidates.isNotEmpty(), "expected candidates from fixture")

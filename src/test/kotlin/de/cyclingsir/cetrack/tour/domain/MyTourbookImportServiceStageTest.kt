@@ -19,6 +19,8 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -99,7 +101,7 @@ class MyTourbookImportServiceStageTest {
             DB_VERSION, listOf(aMTTour("9000000000001"), aMTTour("9000000000002"))
         )
 
-        val session = service.stage(emptyStream())
+        val session = service.stage(emptyStream())!!
 
         assertEquals(2, session.candidates.size)
         assertTrue(session.warnings.isEmpty())
@@ -118,7 +120,7 @@ class MyTourbookImportServiceStageTest {
         )
         every { tourRepository.existsByMtTourId("9000000000002") } returns true
 
-        val session = service.stage(emptyStream())
+        val session = service.stage(emptyStream())!!
 
         assertEquals(2, session.candidates.size, "already-imported tour must be filtered, others kept")
         assertTrue(session.candidates.none { it.MTTOURID == "9000000000002" })
@@ -134,7 +136,7 @@ class MyTourbookImportServiceStageTest {
             DB_VERSION, listOf(aMTTour())
         )
 
-        val session = service.stage(emptyStream())
+        val session = service.stage(emptyStream())!!
 
         assertTrue(session.hasDrift, "hasDrift must be true when dbVersion differs from baseline")
     }
@@ -146,7 +148,7 @@ class MyTourbookImportServiceStageTest {
             DB_VERSION, listOf(aMTTour())
         )
 
-        val session = service.stage(emptyStream())
+        val session = service.stage(emptyStream())!!
 
         assertFalse(session.hasDrift, "hasDrift must be false when dbVersion matches baseline")
     }
@@ -182,7 +184,7 @@ class MyTourbookImportServiceStageTest {
             newDbVersion, listOf(aMTTour("9000000000002"))
         )
 
-        val newSession = service.stage(emptyStream())
+        val newSession = service.stage(emptyStream())!!
 
         assertEquals("SUPERSEDED", priorSession.status)
         assertEquals(priorPayload, priorSession.payload, "supersede must not erase prior session payload")
@@ -214,6 +216,36 @@ class MyTourbookImportServiceStageTest {
         assertEquals("LOGICAL_DUPLICATE", session?.warnings?.first()?.type)
         assertEquals("9000000000099", session?.warnings?.first()?.mtTourId)
         assertEquals(1, session?.candidates?.size)
+    }
+
+    // #28
+    @Test
+    fun `stage returns null when archive yields no new candidates and no warnings`() {
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(aMTTour("9000000000001"))
+        )
+        every { tourRepository.existsByMtTourId("9000000000001") } returns true
+
+        val result = service.stage(emptyStream())
+
+        assertNull(result)
+        verify(exactly = 0) { sessionRepository.save(any()) }
+        verify(exactly = 0) { sessionRepository.saveAll(any<List<ImportSessionEntity>>()) }
+    }
+
+    // #29
+    @Test
+    fun `stage returns PENDING session when zero candidates but warnings exist`() {
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(aMTTour("9000000000001", BIKE_A), aMTTour("9000000000001", BIKE_B))
+        )
+
+        val result = service.stage(emptyStream())!!
+
+        assertNotNull(result)
+        assertTrue(result.candidates.isEmpty())
+        assertEquals(1, result.warnings.size)
+        assertEquals("AMBIGUOUS_BIKE", result.warnings[0].type)
     }
 
     // #27
