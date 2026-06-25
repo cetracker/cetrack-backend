@@ -148,7 +148,7 @@ object DerbyFixtureBuilder {
 
     private fun shutdownDerby(dbPath: Path) {
         try {
-            DriverManager.getConnection("jdbc:derby:${dbPath.toAbsolutePath()};shutdown=true")
+            DriverManager.getConnection("jdbc:derby:${dbPath.toAbsolutePath()};shutdown=true").close()
         } catch (e: SQLException) {
             if (e.sqlState !in setOf("XJ015", "08006")) {
                 throw e

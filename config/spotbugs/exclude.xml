@@ -22,6 +22,10 @@
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
     <Match>
+        <Class name="de.cyclingsir.cetrack.tour.support.DerbyFixtureBuilder" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
         <Class name="~.*\.storage\..*" />
         <Method name="~set.*" />
         <Bug pattern="EI_EXPOSE_REP2" />
@@ -92,5 +96,25 @@
     <Match>
         <Class name="de.cyclingsir.cetrack.tour.domain.ArchiveExtractor" />
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+    </Match>
+    <!-- Kotlin backtick JUnit 5 test names compile to JVM method names starting with uppercase -->
+    <Match>
+        <Class name="~.*(Test|IT)" />
+        <Bug pattern="NM_METHOD_NAMING_CONVENTION" />
+    </Match>
+    <!-- MyTourbookImportIT companion vals are test fixtures; Kotlin List is effectively immutable -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.domain.MyTourbookImportIT$Companion" />
+        <Bug pattern="MS_EXPOSE_REP" />
+    </Match>
+    <!-- DerbyFixtureBuilder builds a local in-memory Derby DB; SQL injection risk is not applicable -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.support.DerbyFixtureBuilder" />
+        <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE" />
+    </Match>
+    <!-- TourSpec data class: Kotlin val List<UUID> is read-only; data class generates component2/getBikeTags -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.support.TourSpec" />
+        <Bug pattern="EI_EXPOSE_REP" />
     </Match>
 </FindBugsFilter>

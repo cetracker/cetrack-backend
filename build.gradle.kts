@@ -11,7 +11,7 @@ plugins {
     id("com.gorylenko.gradle-git-properties") version "2.5.7"
     id("com.google.devtools.ksp") version "2.3.7" // /for kmapper
     id("org.openapi.generator") version "7.22.0"
-    id("com.github.spotbugs") version "6.5.1"
+    id("com.github.spotbugs") version "6.5.8"
     checkstyle
     idea
 
@@ -40,11 +40,22 @@ spotbugs {
     excludeFilter = file(layout.projectDirectory.file("config/spotbugs/exclude.xml"))
 }
 
+tasks.spotbugsTest {
+    reports.create("xml") {
+        required.set(true)
+        outputLocation.set(layout.buildDirectory.file("reports/spotbugs/test.xml"))
+    }
+}
+
 tasks.spotbugsMain {
     reports.create("html") {
-        required = true
-        outputLocation = file(layout.buildDirectory.file("reports/spotbugs/spotbugs.html"))
+        required.set(true)
+        outputLocation.set(layout.buildDirectory.file("reports/spotbugs/spotbugs.html"))
         setStylesheet("fancy-hist.xsl")
+    }
+    reports.create("xml") {
+        required.set(true)
+        outputLocation.set(layout.buildDirectory.file("reports/spotbugs/main.xml"))
     }
 }
 
