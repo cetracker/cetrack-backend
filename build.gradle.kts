@@ -303,6 +303,17 @@ tasks.register<Test>("integrationTest") {
     description = "Runs Testcontainers integration tests (requires Docker)"
     useJUnitPlatform {
         includeTags("integration")
+        excludeTags("import-integration")
+    }
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+}
+
+tasks.register<Test>("importIntegrationTest") {
+    group = "verification"
+    description = "Runs the MyTourbook import end-to-end integration suite (requires Docker)"
+    useJUnitPlatform {
+        includeTags("import-integration")
     }
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
