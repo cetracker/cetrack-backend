@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
@@ -36,6 +37,9 @@ class TourServiceTest {
 
     @MockK
     private lateinit var bikeService: BikeService
+
+    @MockK
+    private lateinit var bikeRepository: BikeRepository
 
     private lateinit var service: TourService
 
@@ -77,7 +81,7 @@ class TourServiceTest {
     @BeforeEach
     fun init() {
         MockKAnnotations.init(this)
-        service = TourService(repository, mapper, bikeMapper, bikeService)
+        service = TourService(repository, mapper, bikeMapper, bikeService, bikeRepository)
     }
 
     @Test
@@ -137,6 +141,50 @@ class TourServiceTest {
         every { repository.saveAll(any<List<TourEntity>>()) } returns emptyList()
 
         service.importTours(listOf(tour1, tour2))
+        verify(exactly = 1) { repository.saveAll(any<List<TourEntity>>()) }
+    }
+
+    @Test
+    fun `importTours throws IMPORT_BIKE_NOT_FOUND when bikeId does not exist`() {
+        val bikeId = UUID.randomUUID()
+        val tour = aMTTour("MT-001").copy(bikeId = bikeId)
+
+        every { repository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { bikeRepository.existsById(bikeId) } returns false
+
+        val ex = assertThrows(ServiceException::class.java) { service.importTours(listOf(tour)) }
+        assertEquals(ErrorCodesDomain.IMPORT_BIKE_NOT_FOUND, ex.getError())
+        verify(exactly = 0) { repository.saveAll(any<List<TourEntity>>()) }
+    }
+
+    @Test
+    fun `importTours succeeds when bikeId is null`() {
+        val tour = aMTTour("MT-001") // bikeId = null by default
+
+        every { repository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { mapper.map(domain = any<DomainTour>()) } returns TourEntity(
+            UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L)
+        every { repository.saveAll(any<List<TourEntity>>()) } returns emptyList()
+
+        service.importTours(listOf(tour))
+        verify(exactly = 1) { repository.saveAll(any<List<TourEntity>>()) }
+        verify(exactly = 0) { bikeRepository.existsById(any()) }
+    }
+
+    @Test
+    fun `importTours succeeds when bikeId exists`() {
+        val bikeId = UUID.randomUUID()
+        val tour = aMTTour("MT-001").copy(bikeId = bikeId)
+
+        every { repository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { bikeRepository.existsById(bikeId) } returns true
+        every { mapper.map(domain = any<DomainTour>()) } returns TourEntity(
+            UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L)
+        every { repository.saveAll(any<List<TourEntity>>()) } returns emptyList()
+
+        service.importTours(listOf(tour))
         verify(exactly = 1) { repository.saveAll(any<List<TourEntity>>()) }
     }
 }
