@@ -39,7 +39,8 @@ enum class ErrorCodesDomain(
     IMPORT_SESSION_SUPERSEDED(504, 409, "Import session has been superseded or already committed"),
     IMPORT_RESOLUTION_REPLACE_AMBIGUOUS(505, 400, "REPLACE not allowed when multiple existing tours match the triple-key"),
     IMPORT_RESOLUTION_SAME_BIKE(506, 400, "IMPORT_NEW not allowed when incoming bike matches the existing tour bike"),
-    IMPORT_TOUR_NOT_FOUND(507, 404, "Matched tour not found");
+    IMPORT_TOUR_NOT_FOUND(507, 404, "Matched tour not found"),
+    IMPORT_BIKE_NOT_FOUND(508, 400, "Bike referenced in import not found");
 
     override val reason: String?
         get() = description

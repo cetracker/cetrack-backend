@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
@@ -24,7 +25,8 @@ class TourService(
     private val repository: TourRepository,
     private val mapper: TourDomain2StorageMapper,
     private val bikeMapper: BikeDomain2StorageMapper,
-    private val bikeService: BikeService
+    private val bikeService: BikeService,
+    private val bikeRepository: BikeRepository
 ) {
 
     fun addTour(tour: DomainTour): DomainTour {
@@ -61,6 +63,10 @@ class TourService(
                 ErrorCodesDomain.TOUR_DUPLICATE,
                 "Duplicate tours detected: ${duplicates.joinToString { it.MTTOURID }}"
             )
+        }
+        tours.mapNotNull { it.bikeId }.distinct().forEach { id ->
+            if (!bikeRepository.existsById(id))
+                throw ServiceException(ErrorCodesDomain.IMPORT_BIKE_NOT_FOUND, "Bike $id referenced in import not found")
         }
         val domainTours = tours.map(this::mapMTTour2Tour)
         repository.saveAll(domainTours.map(mapper::map))
