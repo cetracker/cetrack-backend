@@ -201,8 +201,20 @@ class PartService(
         val relationEntity = mapper.map(relation)
         val createdRelation: PartPartTypeRelationEntity = partParTypRelationRepository.save(relationEntity)
         val part: PartEntity = partRepository.findById(createdRelation.partId).get()
+        deriveFirstUsedDate(part)
         logger.info {"Newly related part: ${part.id} ${part.label} with ${part.partTypeRelations?.size} PartTypeRelations"}
         return mapper.map(part)
+    }
+
+    private fun deriveFirstUsedDate(part: PartEntity) {
+        val minValidFrom = partParTypRelationRepository
+            .findAllByPartId(part.id!!)
+            .minOfOrNull { it.validFrom } ?: return
+        val current = part.firstUsedDate
+        if (current == null || minValidFrom.isBefore(current)) {
+            part.firstUsedDate = minValidFrom
+            partRepository.save(part)
+        }
     }
 
     /**

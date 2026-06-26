@@ -77,10 +77,14 @@ class PartServiceTest {
 
     val relationEntity = partStorageMapper.map(relation)
 
+    val partEntity = PartEntity(UUID_PART_A, "A", null)
+
     every { relationRepository.countByPartId(UUID_PART_A) } returns 0
     every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
     every { relationRepository.save(any()) } returns relationEntity
-    every { partRepository.findById(UUID_PART_A) } returns Optional.of(PartEntity(UUID_PART_A, "A", null))
+    every { relationRepository.findAllByPartId(UUID_PART_A) } returns mutableListOf(relationEntity)
+    every { partRepository.findById(UUID_PART_A) } returns Optional.of(partEntity)
+    every { partRepository.save(any()) } returns partEntity
 
     val partRelationWasAddedTo = partService.createPartPartTypeRelation(relation)
 
@@ -275,7 +279,9 @@ class PartServiceTest {
       savedEntities.add(entity)
       entity
     }
+    every { relationRepository.findAllByPartId(UUID_PART_B) } returns mutableListOf(partStorageMapper.map(relationB))
     every { partRepository.findById(UUID_PART_B) } returns Optional.of(partEntityB)
+    every { partRepository.save(partEntityB) } returns partEntityB
 
     @SuppressWarnings("NP_NULL_ON_SOME_PATH") // lateinit -> false positive
     val partRelationWasAddedTo = partService.createPartPartTypeRelation(relationB)
@@ -359,6 +365,71 @@ class PartServiceTest {
     }
     Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
     Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `createPartPartTypeRelation sets firstUsedDate when part has no prior date`() {
+    val validFrom = OffsetDateTime.parse("2022-06-01T00:00:00Z")
+    val relation = DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, validFrom, null, domainPartA, domainPartTypeCrank)
+    val relationEntity = partStorageMapper.map(relation)
+    val partEntity = PartEntity(UUID_PART_A, "A", null, firstUsedDate = null)
+
+    every { relationRepository.countByPartId(UUID_PART_A) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
+    every { relationRepository.save(any()) } returns relationEntity
+    every { relationRepository.findAllByPartId(UUID_PART_A) } returns mutableListOf(relationEntity)
+    every { partRepository.findById(UUID_PART_A) } returns Optional.of(partEntity)
+    every { partRepository.save(partEntity) } returns partEntity
+
+    partService.createPartPartTypeRelation(relation)
+
+    Assertions.assertEquals(validFrom.toInstant(), partEntity.firstUsedDate)
+    verify(exactly = 1) { partRepository.save(partEntity) }
+  }
+
+  @Test
+  fun `createPartPartTypeRelation moves firstUsedDate earlier when new relation is earlier`() {
+    val existingValidFrom = OffsetDateTime.parse("2022-06-01T00:00:00Z")
+    val earlierValidFrom = OffsetDateTime.parse("2021-01-01T00:00:00Z")
+    val newRelation = DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, earlierValidFrom, null, domainPartA, domainPartTypeCrank)
+    val newRelationEntity = partStorageMapper.map(newRelation)
+    val existingRelationEntity = partStorageMapper.map(
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, existingValidFrom, null, domainPartA, domainPartTypeCrank))
+    val partEntity = PartEntity(UUID_PART_A, "A", null, firstUsedDate = existingValidFrom.toInstant())
+
+    every { relationRepository.countByPartId(UUID_PART_A) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
+    every { relationRepository.save(any()) } returns newRelationEntity
+    every { relationRepository.findAllByPartId(UUID_PART_A) } returns mutableListOf(existingRelationEntity, newRelationEntity)
+    every { partRepository.findById(UUID_PART_A) } returns Optional.of(partEntity)
+    every { partRepository.save(partEntity) } returns partEntity
+
+    partService.createPartPartTypeRelation(newRelation)
+
+    Assertions.assertEquals(earlierValidFrom.toInstant(), partEntity.firstUsedDate)
+    verify(exactly = 1) { partRepository.save(partEntity) }
+  }
+
+  @Test
+  fun `createPartPartTypeRelation does not change firstUsedDate when new relation is not earlier`() {
+    val existingValidFrom = OffsetDateTime.parse("2021-01-01T00:00:00Z")
+    val laterValidFrom = OffsetDateTime.parse("2022-06-01T00:00:00Z")
+    val newRelation = DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, laterValidFrom, null, domainPartA, domainPartTypeCrank)
+    val newRelationEntity = partStorageMapper.map(newRelation)
+    val existingRelationEntity = partStorageMapper.map(
+      DomainPartPartTypeRelation(UUID_PART_A, UUID_PART_TYPE_CRANK, existingValidFrom, null, domainPartA, domainPartTypeCrank))
+    val partEntity = PartEntity(UUID_PART_A, "A", null, firstUsedDate = existingValidFrom.toInstant())
+
+    every { relationRepository.countByPartId(UUID_PART_A) } returns 0
+    every { relationRepository.countByPartTypeIdAndValidUntilIsNull(UUID_PART_TYPE_CRANK) } returns 0
+    every { relationRepository.save(any()) } returns newRelationEntity
+    every { relationRepository.findAllByPartId(UUID_PART_A) } returns mutableListOf(existingRelationEntity, newRelationEntity)
+    every { partRepository.findById(UUID_PART_A) } returns Optional.of(partEntity)
+
+    partService.createPartPartTypeRelation(newRelation)
+
+    Assertions.assertEquals(existingValidFrom.toInstant(), partEntity.firstUsedDate)
+    verify(exactly = 0) { partRepository.save(any()) }
   }
 
   @Test
