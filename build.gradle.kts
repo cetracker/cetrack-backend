@@ -192,6 +192,7 @@ kotlin {
 }
 
 
+val garminFitVersion = "21.205.0"
 val kMapperVersion = "1.3.0"
 val kotlinLoggingVersion = "8.0.4"
 val swaggerVersion = "2.2.50"
@@ -232,6 +233,8 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.apache.derby:derby:$derbyVersion")
     implementation("org.apache.commons:commons-compress:$commonsCompressVersion")
+    // Garmin FIT SDK — vendored jar (v21.205.0 not yet on Maven Central); license: FIT Protocol License (royalty-free, internal use)
+    implementation(files("libs/fit-$garminFitVersion.jar"))
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.mockk:mockk:$mockKVersion")
