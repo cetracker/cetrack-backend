@@ -19,6 +19,8 @@ tags:
     description: Tour related definitions
   - name: MyTourbookImport
     description: Direct import from a MyTourbook Derby database archive
+  - name: FitImport
+    description: Stateless FIT file parsing — returns draft tours for user review before create
 
 paths:
   /tours:
@@ -50,7 +52,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Tour'
+              $ref: '#/components/schemas/TourCreateRequest'
       responses:
         '200':
           description: o.k.
@@ -60,6 +62,11 @@ paths:
                 $ref: '#/components/schemas/Tour'
         '400':
           description: Bad Request
+        '409':
+          description: >
+            Duplicate — a tour with the same startedAt, distance, durationRecorded,
+            durationElapsed, and bikeId already exists (TOUR_DUPLICATE).
+            Same trip with a different bike is allowed (ADR-0003).
         '500':
           description: Internal Server Error
   /tours/upload:
@@ -100,6 +107,42 @@ paths:
           description: Bad Request
         '500':
           description: Internal Server Error
+  /tours/fit/parse:
+    post:
+      operationId: parseFitFile
+      summary: Parse a FIT file and return draft tours (one per FIT session)
+      description: >
+        Upload a single FIT file. Backend parses all FIT sessions and returns one draft
+        tour per session with mapped summary fields (title null, bike null).
+        duplicateHint is present if the draft matches an existing tour by the
+        bike-independent device-time key (startedAt, distance, durationRecorded,
+        durationElapsed). Stateless — no session row created. Each accepted draft must
+        be POSTed to POST /tours (with title and bike supplied by the user) to persist.
+      tags:
+        - FitImport
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: >
+            FIT file parsed. Zero or more draft tours returned (one per FIT session).
+            duplicateHint is present if the draft matches an existing tour by
+            bike-independent device-time key (startedAt, distance, durationRecorded,
+            durationElapsed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FitDraftTours'
+        '400':
+          description: FIT file invalid, unreadable, or contains no valid sessions
+        '500':
+          description: Internal Server Error
+
   /tours/mytourbook/import-sessions:
     post:
       operationId: stageMyTourbookImport
@@ -337,6 +380,85 @@ components:
         createdAt:
           type: string
           format: date-time
+        source:
+          type: string
+          enum:
+            - MYTOURBOOK
+            - FIT
+            - MANUAL
+          readOnly: true
+          description: How this tour entered CETracker. Server-set; ignored in create request.
+    TourCreateRequest:
+      type: object
+      required:
+        - title
+        - distance
+        - durationMoving
+        - durationRecorded
+        - durationElapsed
+        - altUp
+        - altDown
+        - powerTotal
+        - startedAt
+        - startYear
+        - startMonth
+        - startDay
+        - bike
+      properties:
+        title:
+          type: string
+        distance:
+          type: integer
+          minimum: 0
+        durationMoving:
+          type: integer
+          format: int64
+          minimum: 0
+        durationRecorded:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            FIT total_timer_time / MT TOURDEVICETIME_RECORDED. 0 if unavailable.
+            Used as part of the dedup key (startedAt, distance, durationRecorded,
+            durationElapsed, bikeId).
+        durationElapsed:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            FIT total_elapsed_time / MT TOURDEVICETIME_ELAPSED. 0 if unavailable.
+            Used as part of the dedup key.
+        altUp:
+          type: integer
+          minimum: 0
+        altDown:
+          type: integer
+          minimum: 0
+        powerTotal:
+          type: integer
+          format: int64
+          minimum: 0
+        startedAt:
+          type: string
+          format: date-time
+        startYear:
+          type: integer
+          format: int16
+        startMonth:
+          type: integer
+          format: int16
+          minimum: 1
+          maximum: 12
+        startDay:
+          type: integer
+          format: int16
+          minimum: 1
+          maximum: 31
+        bike:
+          allOf:
+            - $ref: './bike-api.yaml#/components/schemas/Bike'
+          description: Required — user must select before submitting
     MTTour:
       type: object
       required:
@@ -588,3 +710,102 @@ components:
             $ref: '#/components/schemas/WarningResolution'
           default: []
           description: Resolution actions for LOGICAL_DUPLICATE warnings
+    FitDraftTour:
+      type: object
+      description: >
+        A tour draft returned by POST /tours/fit/parse. title and bike are null; the user
+        must supply both before calling POST /tours.
+      required:
+        - distance
+        - durationMoving
+        - durationRecorded
+        - durationElapsed
+        - altUp
+        - altDown
+        - powerTotal
+        - startedAt
+        - startYear
+        - startMonth
+        - startDay
+      properties:
+        title:
+          type: string
+          nullable: true
+          description: "null — user must supply"
+        distance:
+          type: integer
+          minimum: 0
+        durationMoving:
+          type: integer
+          format: int64
+          minimum: 0
+        durationRecorded:
+          type: integer
+          format: int64
+          minimum: 0
+          description: FIT total_timer_time. 0 if not present in session.
+        durationElapsed:
+          type: integer
+          format: int64
+          minimum: 0
+          description: FIT total_elapsed_time. 0 if not present in session.
+        altUp:
+          type: integer
+          minimum: 0
+          description: 0 when not available in FIT session (e.g. Strava exports)
+        altDown:
+          type: integer
+          minimum: 0
+          description: 0 when not available in FIT session
+        powerTotal:
+          type: integer
+          format: int64
+          minimum: 0
+        startedAt:
+          type: string
+          format: date-time
+        startYear:
+          type: integer
+          format: int16
+        startMonth:
+          type: integer
+          format: int16
+          minimum: 1
+          maximum: 12
+        startDay:
+          type: integer
+          format: int16
+          minimum: 1
+          maximum: 31
+        bike:
+          nullable: true
+          description: "null — user must select"
+          allOf:
+            - $ref: './bike-api.yaml#/components/schemas/Bike'
+        duplicateHint:
+          description: >
+            Present when one or more existing tours match this draft by bike-independent
+            device-time key (startedAt, distance, durationRecorded, durationElapsed).
+            Advisory only — the user may still proceed; the bike-inclusive 409 guard
+            fires at POST /tours.
+          allOf:
+            - $ref: '#/components/schemas/FitDuplicateHint'
+    FitDraftTours:
+      type: array
+      items:
+        $ref: '#/components/schemas/FitDraftTour'
+    FitDuplicateHint:
+      type: object
+      required:
+        - matchedTours
+      properties:
+        matchedTours:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ExistingTourSummary'
+          description: >
+            Tours already in CETracker that match this draft by (startedAt, distance,
+            durationRecorded, durationElapsed), regardless of bike. Shown so the user
+            can decide whether this is a true re-import or a same-route ride on a
+            different bike.
