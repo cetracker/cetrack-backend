@@ -312,7 +312,7 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: tour's summed up power values in Watt
+          description: accumulated mechanical work the rider put into the pedals, in Joules (W·s); drivetrain-wear proxy
         startedAt:
           type: string
           format: date-time
@@ -410,7 +410,7 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: tour's summed up power values in Watt
+          description: accumulated mechanical work the rider put into the pedals, in Joules (W·s); drivetrain-wear proxy
         bikeId:
           type: string
           format: uuid
@@ -488,6 +488,7 @@ components:
           type: integer
           format: int64
           minimum: 0
+          description: accumulated mechanical work the rider put into the pedals, in Joules (W·s); drivetrain-wear proxy
         bikeId:
           type: string
           format: uuid
