@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 
 /**
- * CE-0066 spike: validates that the vendored Garmin FIT SDK (fit-21.205.0.jar) can decode
+ * CE-0066 spike: validates that the Garmin FIT SDK (com.garmin:fit:21.205.0) can decode
  * a real device file and expose all fields required by CE-0064/CE-0067/CE-0068.
  *
  * Expected values sourced from Bye_bye_Silverton.json (MyTourbook reference output):

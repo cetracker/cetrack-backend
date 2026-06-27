@@ -233,8 +233,8 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.apache.derby:derby:$derbyVersion")
     implementation("org.apache.commons:commons-compress:$commonsCompressVersion")
-    // Garmin FIT SDK — vendored jar (v21.205.0 not yet on Maven Central); license: FIT Protocol License (royalty-free, internal use)
-    implementation(files("libs/fit-$garminFitVersion.jar"))
+    // Garmin FIT SDK — license: FIT Protocol License (royalty-free, internal use)
+    implementation("com.garmin:fit:$garminFitVersion")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.mockk:mockk:$mockKVersion")
