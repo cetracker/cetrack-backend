@@ -69,11 +69,23 @@ class MyTourbookImportService(
             val result = derbyAdapter.read(tourBookDir, bikeUuids)
             if (!state.deviceTimeBackfilled) {
                 result.rows.forEach { mtTour ->
-                    tourRepository.updateDeviceTimes(
-                        mtTour.MTTOURID,
-                        mtTour.TIMERECORDEDDEVICE ?: 0L,
-                        mtTour.TIMEELAPSEDDEVICE ?: 0L
-                    )
+                    run {
+                        if (mtTour.TIMERECORDEDDEVICE == null || mtTour.TIMEELAPSEDDEVICE == null)
+                            logger.info { "Backfilling device times for tour ${mtTour.TITLE} will write 0 to at least one field" }
+
+                        tourRepository.existsByMtTourId(mtTour.MTTOURID).let { exists ->
+                            if (!exists) {
+                                logger.info { "Can't find MTTOURID for tour ${mtTour.TITLE} in DB" }
+                                logger.info { "Backfilling elapsed ${mtTour.TIMEELAPSEDDEVICE} an recorded ${mtTour.TIMERECORDEDDEVICE} time will not succeed " }
+                            }
+
+                            tourRepository.updateDeviceTimes(
+                                mtTour.MTTOURID,
+                                mtTour.TIMERECORDEDDEVICE ?: 0L,
+                                mtTour.TIMEELAPSEDDEVICE ?: 0L
+                            )
+                        }
+                    }
                 }
                 state.deviceTimeBackfilled = true
                 stateRepository.save(state)
