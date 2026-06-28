@@ -67,8 +67,9 @@ class MyTourbookImportServiceStageTest {
             BikeEntity(id = BIKE_B, model = "Bike B")
         )
         every { stateRepository.findById(1) } returns Optional.of(
-            ImportStateEntity(1, DB_VERSION, Instant.now())
+            ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = true)
         )
+        every { stateRepository.save(any<ImportStateEntity>()) } answers { firstArg() }
         every { tourRepository.existsByMtTourId(any()) } returns false
         every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
         every { tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns emptyList()
@@ -130,7 +131,7 @@ class MyTourbookImportServiceStageTest {
     @Test
     fun `stage signals hasDrift when DBVERSION differs from baseline`() {
         every { stateRepository.findById(1) } returns Optional.of(
-            ImportStateEntity(1, lastDbVersion = DB_VERSION - 1, updatedAt = Instant.now())
+            ImportStateEntity(1, lastDbVersion = DB_VERSION - 1, updatedAt = Instant.now(), deviceTimeBackfilled = true)
         )
         every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
@@ -178,7 +179,7 @@ class MyTourbookImportServiceStageTest {
 
         every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns listOf(priorSession)
         every { stateRepository.findById(1) } returns Optional.of(
-            ImportStateEntity(1, lastDbVersion = DB_VERSION, updatedAt = Instant.now())
+            ImportStateEntity(1, lastDbVersion = DB_VERSION, updatedAt = Instant.now(), deviceTimeBackfilled = true)
         )
         every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
             newDbVersion, listOf(aMTTour("9000000000002"))
@@ -258,5 +259,35 @@ class MyTourbookImportServiceStageTest {
 
         verify(exactly = 0) { sessionRepository.save(any()) }
         verify(exactly = 0) { sessionRepository.saveAll(any<List<ImportSessionEntity>>()) }
+    }
+
+    @Test
+    fun `stage backfills device times for all Derby rows on first upload`() {
+        val mtTour1 = aMTTour("9000000000001").copy(TIMERECORDEDDEVICE = 3600L, TIMEELAPSEDDEVICE = 4000L)
+        val mtTour2 = aMTTour("9000000000002").copy(TIMERECORDEDDEVICE = null, TIMEELAPSEDDEVICE = null)
+        every { stateRepository.findById(1) } returns Optional.of(
+            ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = false)
+        )
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(mtTour1, mtTour2)
+        )
+        every { tourRepository.updateDeviceTimes(any(), any(), any()) } returns 1
+
+        service.stage(emptyStream())
+
+        verify { tourRepository.updateDeviceTimes("9000000000001", 3600L, 4000L) }
+        verify { tourRepository.updateDeviceTimes("9000000000002", 0L, 0L) }
+        verify { stateRepository.save(match<ImportStateEntity> { it.deviceTimeBackfilled }) }
+    }
+
+    @Test
+    fun `stage skips backfill on subsequent uploads when already backfilled`() {
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(aMTTour())
+        )
+
+        service.stage(emptyStream())
+
+        verify(exactly = 0) { tourRepository.updateDeviceTimes(any(), any(), any()) }
     }
 }

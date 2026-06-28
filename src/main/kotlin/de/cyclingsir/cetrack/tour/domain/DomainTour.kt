@@ -13,6 +13,8 @@ data class DomainTour(
     val title: String,
     val distance: Int,
     val durationMoving: Long,
+    val durationRecorded: Long = 0L,
+    val durationElapsed: Long = 0L,
     val altUp: Int,
     val altDown: Int,
     val powerTotal: Long,

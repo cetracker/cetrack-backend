@@ -55,5 +55,9 @@ class TourEntity(
     @CreatedDate
     var createdAt: Instant? = null,
 
-    var updatedAt: Instant? = null
+    var updatedAt: Instant? = null,
+
+    var durationRecorded: Long = 0L,
+
+    var durationElapsed: Long = 0L
 )

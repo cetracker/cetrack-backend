@@ -30,10 +30,12 @@ class TourService(
 ) {
 
     fun addTour(tour: DomainTour): DomainTour {
-        if (repository.existsByStartedAtAndDistanceAndDurationMoving(tour.startedAt, tour.distance, tour.durationMoving)) {
+        val bikeEntity = tour.bike?.let { bikeMapper.map(it) }
+        if (repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                tour.startedAt, tour.distance, tour.durationRecorded, tour.durationElapsed, bikeEntity)) {
             throw ServiceException(
                 ErrorCodesDomain.TOUR_DUPLICATE,
-                "Tour starting at ${tour.startedAt} with distance ${tour.distance}m and duration ${tour.durationMoving}s already exists"
+                "Tour starting at ${tour.startedAt} with distance ${tour.distance}m and device times ${tour.durationRecorded}/${tour.durationElapsed}s already exists"
             )
         }
         val tourEntity = repository.save(mapper.map(tour))
@@ -80,6 +82,8 @@ class TourService(
             title = mtTour.TITLE,
             distance = mtTour.DISTANCE,
             durationMoving = mtTour.DURATIONMOVING,
+            durationRecorded = mtTour.TIMERECORDEDDEVICE ?: 0L,
+            durationElapsed = mtTour.TIMEELAPSEDDEVICE ?: 0L,
             altUp = mtTour.TOURALTUP,
             altDown = mtTour.TOURALTDOWN,
             powerTotal = mtTour.POWERTOTAL,

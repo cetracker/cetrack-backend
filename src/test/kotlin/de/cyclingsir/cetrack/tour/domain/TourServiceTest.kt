@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
@@ -46,16 +47,20 @@ class TourServiceTest {
     private val startedAt = Instant.parse("2024-06-01T08:00:00Z")
     private val distance = 50000
     private val durationMoving = 7200L
+    private val durationRecorded = 3600L
+    private val durationElapsed = 4000L
 
-    private fun aTour() = DomainTour(
+    private fun aTour(bikeId: UUID? = null) = DomainTour(
         id = null,
         title = "Morning Ride",
         distance = distance,
         durationMoving = durationMoving,
+        durationRecorded = durationRecorded,
+        durationElapsed = durationElapsed,
         altUp = 500,
         altDown = 500,
         powerTotal = 0L,
-        bike = null,
+        bike = bikeId?.let { DomainBike("", null, it, null, null, null) },
         startedAt = startedAt,
         startYear = 2024.toShort(),
         startMonth = 6.toShort(),
@@ -85,9 +90,10 @@ class TourServiceTest {
     }
 
     @Test
-    fun `addTour throws ServiceException when tour already exists`() {
+    fun `addTour throws ServiceException when tour with same device times and bike already exists`() {
         every {
-            repository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, distance, durationMoving)
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, null)
         } returns true
 
         val ex = assertThrows(ServiceException::class.java) { service.addTour(aTour()) }
@@ -100,13 +106,59 @@ class TourServiceTest {
             null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
         val saved = aTour().copy(id = entity.id, createdAt = entity.createdAt)
 
-        every { repository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, distance, durationMoving) } returns false
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, null)
+        } returns false
         every { mapper.map(domain = any<DomainTour>()) } returns entity
         every { repository.save(any()) } returns entity
         every { mapper.map(jpa = any()) } returns saved
 
         val result = service.addTour(aTour())
         assertEquals(entity.id, result.id)
+        verify(exactly = 1) { repository.save(any()) }
+    }
+
+    // Dedup matrix: same ride, different bike → allowed (bikeId differs → different entity → no match)
+    @Test
+    fun `addTour allows same ride on a different bike`() {
+        val bikeId = UUID.randomUUID()
+        val bikeEntity = BikeEntity(id = bikeId, model = "Bike A")
+        val tour = aTour(bikeId = bikeId)
+        val entity = TourEntity(UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            bikeEntity, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
+        val saved = tour.copy(id = entity.id, createdAt = entity.createdAt)
+
+        every { bikeMapper.map(any<DomainBike>()) } returns bikeEntity
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, bikeEntity)
+        } returns false
+        every { mapper.map(domain = any<DomainTour>()) } returns entity
+        every { repository.save(any()) } returns entity
+        every { mapper.map(jpa = any()) } returns saved
+
+        service.addTour(tour)
+        verify(exactly = 1) { repository.save(any()) }
+    }
+
+    // Dedup matrix: legacy tour with recorded=0 discriminated by elapsed
+    @Test
+    fun `addTour allows tour where only elapsed differs (legacy recorded=0 case)`() {
+        val tourWithDifferentElapsed = aTour().copy(durationRecorded = 0L, durationElapsed = 5000L)
+        val entity = TourEntity(UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
+        val saved = tourWithDifferentElapsed.copy(id = entity.id, createdAt = entity.createdAt)
+
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, 0L, 5000L, null)
+        } returns false
+        every { mapper.map(domain = any<DomainTour>()) } returns entity
+        every { repository.save(any()) } returns entity
+        every { mapper.map(jpa = any()) } returns saved
+
+        service.addTour(tourWithDifferentElapsed)
         verify(exactly = 1) { repository.save(any()) }
     }
 
@@ -186,5 +238,19 @@ class TourServiceTest {
 
         service.importTours(listOf(tour))
         verify(exactly = 1) { repository.saveAll(any<List<TourEntity>>()) }
+    }
+
+    // MT staging dedup stays bike-independent: a bike-less MT re-import is detected as duplicate
+    @Test
+    fun `importTours detects duplicate regardless of bikeId (bike-independent staging dedup)`() {
+        val tour = aMTTour("MT-001") // bikeId = null
+
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationMoving(
+                Instant.ofEpochMilli(tour.STARTTIMESTAMP), tour.DISTANCE, tour.DURATIONMOVING)
+        } returns true
+
+        val ex = assertThrows(ServiceException::class.java) { service.importTours(listOf(tour)) }
+        assertEquals(ErrorCodesDomain.TOUR_DUPLICATE, ex.getError())
     }
 }

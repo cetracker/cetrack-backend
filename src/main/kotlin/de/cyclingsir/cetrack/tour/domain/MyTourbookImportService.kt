@@ -67,6 +67,17 @@ class MyTourbookImportService(
             val state = stateRepository.findById(IMPORT_STATE_ID)
                 .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
             val result = derbyAdapter.read(tourBookDir, bikeUuids)
+            if (!state.deviceTimeBackfilled) {
+                result.rows.forEach { mtTour ->
+                    tourRepository.updateDeviceTimes(
+                        mtTour.MTTOURID,
+                        mtTour.TIMERECORDEDDEVICE ?: 0L,
+                        mtTour.TIMEELAPSEDDEVICE ?: 0L
+                    )
+                }
+                state.deviceTimeBackfilled = true
+                stateRepository.save(state)
+            }
             val (candidates, warnings) = classifyRows(result.rows)
             val mtDeduped = candidates.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
             val (newCandidates, logicalDupWarnings) = filterLogicalDuplicates(mtDeduped)
@@ -150,6 +161,8 @@ class MyTourbookImportService(
                     existing.title = incoming.TITLE
                     existing.distance = incoming.DISTANCE
                     existing.durationMoving = incoming.DURATIONMOVING
+                    existing.durationRecorded = incoming.TIMERECORDEDDEVICE ?: 0L
+                    existing.durationElapsed = incoming.TIMEELAPSEDDEVICE ?: 0L
                     existing.startedAt = Instant.ofEpochMilli(incoming.STARTTIMESTAMP)
                     existing.startYear = incoming.STARTYEAR
                     existing.startMonth = incoming.STARTMONTH
@@ -256,6 +269,8 @@ class MyTourbookImportService(
             title = mtTour.TITLE,
             distance = mtTour.DISTANCE,
             durationMoving = mtTour.DURATIONMOVING,
+            durationRecorded = mtTour.TIMERECORDEDDEVICE ?: 0L,
+            durationElapsed = mtTour.TIMEELAPSEDDEVICE ?: 0L,
             startedAt = startedAt,
             startYear = mtTour.STARTYEAR,
             startMonth = mtTour.STARTMONTH,

@@ -27,7 +27,7 @@ class TracerBulletIT {
     @Sql(statements = [
         "INSERT INTO bike (id, model) VALUES ('a1111111-0001-0001-0001-000000000001', 'Bike A')",
         "INSERT INTO bike (id, model) VALUES ('b2222222-0002-0002-0002-000000000002', 'Bike B')",
-        "INSERT INTO import_state (id, last_db_version, updated_at) VALUES (1, 59, CURRENT_TIMESTAMP)"
+        "INSERT INTO import_state (id, last_db_version, updated_at, device_time_backfilled) VALUES (1, 59, CURRENT_TIMESTAMP, TRUE)"
     ])
     fun `stage one candidate then get session then commit persists the tour`() {
         val fixture = javaClass.classLoader.getResourceAsStream("mytourbook-fixture/tourbook.tar.bz2")!!

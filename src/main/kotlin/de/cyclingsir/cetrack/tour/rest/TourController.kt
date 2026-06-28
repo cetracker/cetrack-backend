@@ -2,6 +2,7 @@ package de.cyclingsir.cetrack.tour.rest
 
 import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
+import de.cyclingsir.cetrack.infrastructure.api.model.TourCreateRequest
 import de.cyclingsir.cetrack.infrastructure.api.rest.ToursApi
 import de.cyclingsir.cetrack.tour.domain.TourService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -29,9 +30,9 @@ class TourController(
     private val importMapper: MTTourDomain2ApiMapper
 ) : ToursApi {
 
-    override fun createTour(@Valid @RequestBody tour: Tour): ResponseEntity<Tour> {
-        logger.debug{ "Add tour with title ${tour.title}" }
-        val addedTour = service.addTour(mapper.map(tour))
+    override fun createTour(@Valid @RequestBody tourCreateRequest: TourCreateRequest): ResponseEntity<Tour> {
+        logger.debug{ "Add tour with title ${tourCreateRequest.title}" }
+        val addedTour = service.addTour(mapper.map(tourCreateRequest))
         return ResponseEntity.ok(/* body = */ mapper.map(addedTour))
     }
 

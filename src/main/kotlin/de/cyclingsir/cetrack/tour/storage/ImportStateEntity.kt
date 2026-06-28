@@ -16,5 +16,8 @@ class ImportStateEntity(
     var lastDbVersion: Int,
 
     @Column(nullable = false)
-    var updatedAt: Instant
+    var updatedAt: Instant,
+
+    @Column(nullable = false)
+    var deviceTimeBackfilled: Boolean = false
 )
