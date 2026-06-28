@@ -7,6 +7,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.infrastructure.api.model.TourCreateRequest
 import de.cyclingsir.cetrack.tour.domain.DomainTour
+import de.cyclingsir.cetrack.tour.domain.TourSource
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -21,6 +22,8 @@ interface TourDomain2ApiMapperSupport {
     fun mapNullableInstant2UTC(i: Instant?): OffsetDateTime? = i?.atOffset(ZoneOffset.UTC)
     fun mapInt2Duration(l: Long): Duration = Duration.ofSeconds(l)
     fun mapDuration2Int(d: Duration): Long = d.toSeconds()
+    fun mapDomainSource2Api(s: TourSource): Tour.Source = Tour.Source.valueOf(s.name)
+    fun mapApiSource2Domain(s: Tour.Source?): TourSource = s?.let { TourSource.valueOf(it.name) } ?: TourSource.MYTOURBOOK
 /*
     fun mapNullableBike2NullableBikeId(b: DomainBike?): UUID? = b?.id
     fun mapNullableBikeId2NullableDomainBike(id: UUID?): DomainBike? = id?.let{

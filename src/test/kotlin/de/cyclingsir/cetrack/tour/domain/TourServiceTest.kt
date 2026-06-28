@@ -253,4 +253,27 @@ class TourServiceTest {
         val ex = assertThrows(ServiceException::class.java) { service.importTours(listOf(tour)) }
         assertEquals(ErrorCodesDomain.TOUR_DUPLICATE, ex.getError())
     }
+
+    // CE-0069: addTour must generate mtTourId and stamp source = MANUAL
+    @Test
+    fun `addTour stamps generated mtTourId and source MANUAL`() {
+        val domainSlot = mutableListOf<DomainTour>()
+        val entity = TourEntity(UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
+        val saved = aTour().copy(id = entity.id, createdAt = entity.createdAt)
+
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, null)
+        } returns false
+        every { mapper.map(domain = capture(domainSlot)) } returns entity
+        every { repository.save(any()) } returns entity
+        every { mapper.map(jpa = any()) } returns saved
+
+        service.addTour(aTour())
+
+        val captured = domainSlot.first()
+        assert(!captured.mtTourId.isNullOrBlank()) { "mtTourId must be generated" }
+        assertEquals(TourSource.MANUAL, captured.source)
+    }
 }

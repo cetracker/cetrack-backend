@@ -4,6 +4,7 @@ import de.cyclingsir.cetrack.support.MySQLContainerIT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import java.time.Instant
@@ -28,16 +29,14 @@ class ImportConstraintIT : MySQLContainerIT() {
         powerTotal = 0L
     )
 
-    // #3
+    // #3 — V1.9 dropped UNIQUE(mt_tour_id); two rows with the same id now save without exception
     @Test
-    fun `uq_tour_mt_tour_id rejects duplicate mt_tour_id`() {
+    fun `duplicate mt_tour_id is allowed after V1_9 drops the unique constraint`() {
         tourRepository.saveAndFlush(aTourEntity("9000000000001", "First"))
 
-        val ex = assertThrows<DataIntegrityViolationException> {
-            tourRepository.saveAndFlush(aTourEntity("9000000000001", "Duplicate"))
+        assertDoesNotThrow {
+            tourRepository.saveAndFlush(aTourEntity("9000000000001", "Duplicate — now allowed"))
         }
-        assertThat(ex.message).isNotNull()
-        assertThat(ex.message!!).containsIgnoringCase("uq_tour_mt_tour_id")
     }
 
     // #42

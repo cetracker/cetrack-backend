@@ -61,7 +61,7 @@ class MyTourbookImportServiceResolutionTest {
             tourRepository, bikeRepository, sessionRepository, stateRepository,
             ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
         )
-        every { tourRepository.existsByMtTourId(any()) } returns false
+        every { tourRepository.existsByMtTourIdAndSourceNot(any(), TourSource.FIT) } returns false
         every { tourRepository.saveAll(any<List<TourEntity>>()) } returns emptyList()
         every { tourRepository.save(any<TourEntity>()) } answers { firstArg() }
         every { bikeRepository.findById(any<UUID>()) } returns Optional.empty()
@@ -232,5 +232,37 @@ class MyTourbookImportServiceResolutionTest {
 
         verify(exactly = 0) { ignoreRepository.save(any()) }
         verify(exactly = 0) { tourRepository.save(any()) }
+    }
+
+    // CE-0069: REPLACE of a FIT-sourced row must flip source → MYTOURBOOK
+    @Test
+    fun `REPLACE flips source to MYTOURBOOK when overwriting a FIT-sourced row`() {
+        val fitRow = anExistingTour(bikeId = BIKE_A).also { it.source = TourSource.FIT }
+        every { sessionRepository.findById(SESSION_ID) } returns Optional.of(sessionWithWarning())
+        every { tourRepository.findById(EXISTING_TOUR_ID) } returns Optional.of(fitRow)
+        val saved = slot<TourEntity>()
+        every { tourRepository.save(capture(saved)) } answers { firstArg() }
+
+        service.commit(SESSION_ID, emptyList(), listOf(WarningResolutionRequest(MT_TOUR_ID, "REPLACE")))
+
+        assertEquals(TourSource.MYTOURBOOK, saved.captured.source, "REPLACE must flip source to MYTOURBOOK")
+    }
+
+    // CE-0069: mapToEntity must stamp MYTOURBOOK on plain candidates committed via IMPORT_NEW
+    @Test
+    fun `IMPORT_NEW saves tour with source MYTOURBOOK`() {
+        every { sessionRepository.findById(SESSION_ID) } returns Optional.of(
+            sessionWithWarning(
+                incoming = aMTTour(bikeId = BIKE_B),
+                matchedTours = listOf(DomainTourSummary(EXISTING_TOUR_ID, "Old", STARTED_AT, 30_000, 5400L, BIKE_A))
+            )
+        )
+        val savedTour = slot<TourEntity>()
+        every { tourRepository.save(capture(savedTour)) } answers { firstArg() }
+        every { ignoreRepository.save(any<ImportIgnoreEntity>()) } answers { firstArg() }
+
+        service.commit(SESSION_ID, emptyList(), listOf(WarningResolutionRequest(MT_TOUR_ID, "IMPORT_NEW")))
+
+        assertEquals(TourSource.MYTOURBOOK, savedTour.captured.source, "IMPORT_NEW must stamp source = MYTOURBOOK")
     }
 }

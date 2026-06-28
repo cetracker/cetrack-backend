@@ -79,7 +79,7 @@ class MyTourbookImportService(
                 stateRepository.save(state)
             }
             val (candidates, warnings) = classifyRows(result.rows)
-            val mtDeduped = candidates.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
+            val mtDeduped = candidates.filter { !tourRepository.existsByMtTourIdAndSourceNot(it.MTTOURID, TourSource.FIT) }
             val (newCandidates, logicalDupWarnings) = filterLogicalDuplicates(mtDeduped)
             val allWarnings = warnings + logicalDupWarnings
             if (newCandidates.isEmpty() && allWarnings.isEmpty()) {
@@ -139,7 +139,7 @@ class MyTourbookImportService(
         }
         val sessionPayload = deserializePayload(entity.payload)
         val approved = sessionPayload.candidates.filter { it.MTTOURID in approvedMtTourIds }
-        val toImport = approved.filter { !tourRepository.existsByMtTourId(it.MTTOURID) }
+        val toImport = approved.filter { !tourRepository.existsByMtTourIdAndSourceNot(it.MTTOURID, TourSource.FIT) }
         tourRepository.saveAll(toImport.map { mapToEntity(it) })
 
         for (resolution in warningResolutions) {
@@ -171,6 +171,7 @@ class MyTourbookImportService(
                     existing.altDown = incoming.TOURALTDOWN
                     existing.powerTotal = incoming.POWERTOTAL
                     existing.bike = incoming.bikeId?.let { bikeRepository.findById(it).orElse(null) }
+                    existing.source = TourSource.MYTOURBOOK
                     existing.updatedAt = Instant.now()
                     tourRepository.save(existing)
                 }
@@ -278,7 +279,8 @@ class MyTourbookImportService(
             altUp = mtTour.TOURALTUP,
             altDown = mtTour.TOURALTDOWN,
             powerTotal = mtTour.POWERTOTAL,
-            bike = bikeEntity
+            bike = bikeEntity,
+            source = TourSource.MYTOURBOOK
         )
     }
 

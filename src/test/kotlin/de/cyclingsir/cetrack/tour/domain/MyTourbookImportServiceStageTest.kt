@@ -70,7 +70,7 @@ class MyTourbookImportServiceStageTest {
             ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = true)
         )
         every { stateRepository.save(any<ImportStateEntity>()) } answers { firstArg() }
-        every { tourRepository.existsByMtTourId(any()) } returns false
+        every { tourRepository.existsByMtTourIdAndSourceNot(any(), TourSource.FIT) } returns false
         every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
         every { tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns emptyList()
         every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns emptyList()
@@ -119,7 +119,7 @@ class MyTourbookImportServiceStageTest {
                 aMTTour("9000000000003")
             )
         )
-        every { tourRepository.existsByMtTourId("9000000000002") } returns true
+        every { tourRepository.existsByMtTourIdAndSourceNot("9000000000002", TourSource.FIT) } returns true
 
         val session = service.stage(emptyStream())!!
 
@@ -225,7 +225,7 @@ class MyTourbookImportServiceStageTest {
         every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001"))
         )
-        every { tourRepository.existsByMtTourId("9000000000001") } returns true
+        every { tourRepository.existsByMtTourIdAndSourceNot("9000000000001", TourSource.FIT) } returns true
 
         val result = service.stage(emptyStream())
 
@@ -289,5 +289,33 @@ class MyTourbookImportServiceStageTest {
         service.stage(emptyStream())
 
         verify(exactly = 0) { tourRepository.updateDeviceTimes(any(), any(), any()) }
+    }
+
+    // CE-0069: source-aware staging filter
+    @Test
+    fun `stage retains candidate when only mt_tour_id match is a FIT-sourced row`() {
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(aMTTour("9000000000001"))
+        )
+        // existsByMtTourIdAndSourceNot(id, FIT) returns false → only FIT match exists → candidate is kept
+        every { tourRepository.existsByMtTourIdAndSourceNot("9000000000001", TourSource.FIT) } returns false
+
+        val session = service.stage(emptyStream())!!
+
+        assertEquals(1, session.candidates.size, "candidate with FIT-only id match must not be dropped by stage")
+        assertEquals("9000000000001", session.candidates.first().MTTOURID)
+    }
+
+    @Test
+    fun `stage drops candidate when a MYTOURBOOK row with same mt_tour_id exists`() {
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(aMTTour("9000000000001"))
+        )
+        // existsByMtTourIdAndSourceNot(id, FIT) returns true → a non-FIT (MYTOURBOOK) row exists → drop
+        every { tourRepository.existsByMtTourIdAndSourceNot("9000000000001", TourSource.FIT) } returns true
+
+        val result = service.stage(emptyStream())
+
+        assertNull(result, "candidate whose mt_tour_id matches a MYTOURBOOK row must be filtered")
     }
 }

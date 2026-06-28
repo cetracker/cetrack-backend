@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.tour.storage
 
 import de.cyclingsir.cetrack.bike.storage.BikeEntity
+import de.cyclingsir.cetrack.tour.domain.TourSource
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -19,6 +20,7 @@ interface TourRepository : JpaRepository<TourEntity, UUID> {
         startedAt: Instant, distance: Int, durationRecorded: Long, durationElapsed: Long, bike: BikeEntity?
     ): Boolean
     fun existsByMtTourId(mtTourId: String): Boolean
+    fun existsByMtTourIdAndSourceNot(mtTourId: String, source: TourSource): Boolean
     fun findAllByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): List<TourEntity>
 
     @Modifying

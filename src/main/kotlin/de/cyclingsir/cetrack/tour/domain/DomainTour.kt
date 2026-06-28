@@ -23,5 +23,6 @@ data class DomainTour(
     val startYear: Short,
     val startMonth: Short,
     val startDay: Short,
-    val createdAt: Instant?
+    val createdAt: Instant?,
+    val source: TourSource = TourSource.MYTOURBOOK
 )

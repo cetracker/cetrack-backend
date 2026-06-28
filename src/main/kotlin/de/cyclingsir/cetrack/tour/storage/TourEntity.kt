@@ -1,9 +1,12 @@
 package de.cyclingsir.cetrack.tour.storage
 
 import de.cyclingsir.cetrack.bike.storage.BikeEntity
+import de.cyclingsir.cetrack.tour.domain.TourSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EntityListeners
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -26,7 +29,7 @@ class TourEntity(
         @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID?,
 
-    @Column(length = 30, unique = true)
+    @Column(length = 30)
     var mtTourId: String? = null,
 
     @Column(length = 255)
@@ -59,5 +62,9 @@ class TourEntity(
 
     var durationRecorded: Long = 0L,
 
-    var durationElapsed: Long = 0L
+    var durationElapsed: Long = 0L,
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    var source: TourSource = TourSource.MYTOURBOOK
 )

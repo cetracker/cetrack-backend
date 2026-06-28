@@ -58,7 +58,7 @@ class MyTourbookImportServiceCommitTest {
             tourRepository, bikeRepository, sessionRepository, stateRepository,
             ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
         )
-        every { tourRepository.existsByMtTourId(any()) } returns false
+        every { tourRepository.existsByMtTourIdAndSourceNot(any(), TourSource.FIT) } returns false
         every { tourRepository.saveAll(any<List<TourEntity>>()) } returns emptyList()
         every { bikeRepository.findById(any<UUID>()) } returns Optional.empty()
         every { stateRepository.findById(1) } returns Optional.of(
@@ -121,7 +121,7 @@ class MyTourbookImportServiceCommitTest {
         every { sessionRepository.findById(SESSION_ID) } returns Optional.of(
             pendingSession(tourA, tourB)
         )
-        every { tourRepository.existsByMtTourId("9000000000002") } returns true
+        every { tourRepository.existsByMtTourIdAndSourceNot("9000000000002", TourSource.FIT) } returns true
         val saved = slot<List<TourEntity>>()
         every { tourRepository.saveAll(capture(saved)) } returns emptyList()
 

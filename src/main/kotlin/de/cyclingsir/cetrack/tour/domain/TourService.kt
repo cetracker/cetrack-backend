@@ -29,16 +29,17 @@ class TourService(
     private val bikeRepository: BikeRepository
 ) {
 
-    fun addTour(tour: DomainTour): DomainTour {
-        val bikeEntity = tour.bike?.let { bikeMapper.map(it) }
+    fun addTour(tour: DomainTour, source: TourSource = TourSource.MANUAL): DomainTour {
+        val stamped = tour.copy(mtTourId = genMtId(tour.startedAt, tour.distance), source = source)
+        val bikeEntity = stamped.bike?.let { bikeMapper.map(it) }
         if (repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
-                tour.startedAt, tour.distance, tour.durationRecorded, tour.durationElapsed, bikeEntity)) {
+                stamped.startedAt, stamped.distance, stamped.durationRecorded, stamped.durationElapsed, bikeEntity)) {
             throw ServiceException(
                 ErrorCodesDomain.TOUR_DUPLICATE,
-                "Tour starting at ${tour.startedAt} with distance ${tour.distance}m and device times ${tour.durationRecorded}/${tour.durationElapsed}s already exists"
+                "Tour starting at ${stamped.startedAt} with distance ${stamped.distance}m and device times ${stamped.durationRecorded}/${stamped.durationElapsed}s already exists"
             )
         }
-        val tourEntity = repository.save(mapper.map(tour))
+        val tourEntity = repository.save(mapper.map(stamped))
         logger.info { "Added Entity = mtTour., ${tourEntity.title}" }
         val domainTour = mapper.map(tourEntity)
         logger.info { "Domain Tour (mapped) ${domainTour.createdAt?.toString()}" }
@@ -92,7 +93,8 @@ class TourService(
             startMonth = mtTour.STARTMONTH,
             startDay = mtTour.STARTDAY,
             bike = DomainBike("", null, mtTour.bikeId, null, null, null),
-            createdAt = null
+            createdAt = null,
+            source = TourSource.MYTOURBOOK
         )
     }
 
