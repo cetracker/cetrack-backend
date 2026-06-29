@@ -263,13 +263,17 @@ class MyTourbookImportServiceStageTest {
 
     @Test
     fun `stage backfills device times for all Derby rows on first upload`() {
-        val mtTour1 = aMTTour("9000000000001").copy(TIMERECORDEDDEVICE = 3600L, TIMEELAPSEDDEVICE = 4000L)
-        val mtTour2 = aMTTour("9000000000002").copy(TIMERECORDEDDEVICE = null, TIMEELAPSEDDEVICE = null)
         every { stateRepository.findById(1) } returns Optional.of(
             ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = false)
         )
+        every { tourRepository.count() } returns 2
         every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
-            DB_VERSION, listOf(mtTour1, mtTour2)
+            dbVersion = DB_VERSION,
+            rows = listOf(aMTTour("9000000000001"), aMTTour("9000000000002")),
+            allDeviceTimes = mapOf(
+                "9000000000001" to (3600L to 4000L),
+                "9000000000002" to (0L to 0L)
+            )
         )
         every { tourRepository.updateDeviceTimes(any(), any(), any()) } returns 1
 
@@ -278,6 +282,27 @@ class MyTourbookImportServiceStageTest {
         verify { tourRepository.updateDeviceTimes("9000000000001", 3600L, 4000L) }
         verify { tourRepository.updateDeviceTimes("9000000000002", 0L, 0L) }
         verify { stateRepository.save(match<ImportStateEntity> { it.deviceTimeBackfilled }) }
+    }
+
+    @Test
+    fun `stage backfills tours not present in bike-filtered rows`() {
+        every { stateRepository.findById(1) } returns Optional.of(
+            ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = false)
+        )
+        every { tourRepository.count() } returns 2
+        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+            dbVersion = DB_VERSION,
+            rows = listOf(aMTTour("9000000000001")),
+            allDeviceTimes = mapOf(
+                "9000000000001" to (3600L to 4000L),
+                "9000000000099" to (1800L to 2000L)  // tour without bike tag — not in rows
+            )
+        )
+        every { tourRepository.updateDeviceTimes(any(), any(), any()) } returns 1
+
+        service.stage(emptyStream())
+
+        verify { tourRepository.updateDeviceTimes("9000000000099", 1800L, 2000L) }
     }
 
     @Test

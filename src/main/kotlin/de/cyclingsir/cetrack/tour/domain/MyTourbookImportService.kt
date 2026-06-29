@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
+import java.lang.classfile.Attributes.record
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Instant
@@ -68,27 +69,7 @@ class MyTourbookImportService(
                 .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
             val result = derbyAdapter.read(tourBookDir, bikeUuids)
             if (!state.deviceTimeBackfilled) {
-                result.rows.forEach { mtTour ->
-                    run {
-                        if (mtTour.TIMERECORDEDDEVICE == null || mtTour.TIMEELAPSEDDEVICE == null)
-                            logger.info { "Backfilling device times for tour ${mtTour.TITLE} will write 0 to at least one field" }
-
-                        tourRepository.existsByMtTourId(mtTour.MTTOURID).let { exists ->
-                            if (!exists) {
-                                logger.info { "Can't find MTTOURID for tour ${mtTour.TITLE} in DB" }
-                                logger.info { "Backfilling elapsed ${mtTour.TIMEELAPSEDDEVICE} an recorded ${mtTour.TIMERECORDEDDEVICE} time will not succeed " }
-                            }
-
-                            tourRepository.updateDeviceTimes(
-                                mtTour.MTTOURID,
-                                mtTour.TIMERECORDEDDEVICE ?: 0L,
-                                mtTour.TIMEELAPSEDDEVICE ?: 0L
-                            )
-                        }
-                    }
-                }
-                state.deviceTimeBackfilled = true
-                stateRepository.save(state)
+                backFillDeviceTimes(result, state)
             }
             val (candidates, warnings) = classifyRows(result.rows)
             val mtDeduped = candidates.filter { !tourRepository.existsByMtTourIdAndSourceNot(it.MTTOURID, TourSource.FIT) }
@@ -110,6 +91,29 @@ class MyTourbookImportService(
         } finally {
             tempDir.toFile().deleteRecursively()
         }
+    }
+
+    private fun backFillDeviceTimes(
+        result: DerbyReadAdapter.ReadResult,
+        state: ImportStateEntity
+    ) {
+        var updatedCount = 0
+        val tourCount = tourRepository.count()
+        logger.info { "Backfilling device times for ${tourCount} tours from ${result.allDeviceTimes.size} rows in MyTourbook import" }
+        result.allDeviceTimes.forEach { (mtTourId, times) ->
+            if (tourRepository.updateDeviceTimes(mtTourId, times.first, times.second) > 0) updatedCount++
+        }
+        logger.info { "Backfill updated $updatedCount tours (${result.allDeviceTimes.size - updatedCount} Derby rows not in CETrack — expected)" }
+        if(updatedCount < tourCount) {
+            logger.warn { "Could not backfill ${tourCount - updatedCount} tours" }
+            tourRepository.findAllByDurationRecordedAndDurationElapsed(0, 0).forEach {
+              if(it.mtTourId !in result.allDeviceTimes.keys) {
+                  logger.warn { "Tour ${it.startYear}-${it.startMonth}-${it.startDay} - ${it.title} not found in derby query" }
+              }
+            }
+        }
+        state.deviceTimeBackfilled = true
+        stateRepository.save(state)
     }
 
     @Transactional(readOnly = true)

@@ -15,7 +15,11 @@ private val logger = KotlinLogging.logger {}
 @Component
 class DerbyReadAdapter {
 
-    data class ReadResult(val dbVersion: Int, val rows: List<DomainMTTour>)
+    data class ReadResult(
+        val dbVersion: Int,
+        val rows: List<DomainMTTour>,
+        val allDeviceTimes: Map<String, Pair<Long, Long>> = emptyMap()
+    )
 
     fun read(tourBookDir: Path, bikeUuids: List<String>): ReadResult {
         require(bikeUuids.isNotEmpty()) { "bikeUuids must not be empty" }
@@ -24,7 +28,8 @@ class DerbyReadAdapter {
             return DriverManager.getConnection(dbUrl).use { conn ->
                 val dbVersion = readDbVersion(conn)
                 val rows = readTours(conn, bikeUuids)
-                ReadResult(dbVersion, rows)
+                val allDeviceTimes = readDeviceTimes(conn)
+                ReadResult(dbVersion, rows, allDeviceTimes)
             }
         } catch (e: ServiceException) {
             throw e
@@ -74,6 +79,24 @@ class DerbyReadAdapter {
         }
     }
 
+    private fun readDeviceTimes(conn: java.sql.Connection): Map<String, Pair<Long, Long>> {
+        val map = mutableMapOf<String, Pair<Long, Long>>()
+        conn.createStatement().use { stmt ->
+            stmt.executeQuery(DEVICE_TIMES_QUERY).use { rs ->
+                while (rs.next()) {
+                    val id = rs.getString("MTTOURID")
+                    val elapsed = rs.getLong("TIMEELAPSEDDEVICE").takeUnless { rs.wasNull() } ?: 0L
+                    val recorded = rs.getLong("TIMERECORDEDDEVICE").takeUnless { rs.wasNull() } ?: 0L
+                    if(map.containsKey(id)) {
+                        logger.error { "Duplicate MTTOURID in DEVICE_TIMES_QUERY result: $id" }
+                    }
+                    map[id] = recorded to elapsed
+                }
+            }
+        }
+        return map
+    }
+
     // Derby emits an expected SQLException on shutdown (XJ015 = engine, 08006 = single DB).
     private fun shutdownDerby(tourBookDir: Path) {
         try {
@@ -86,6 +109,15 @@ class DerbyReadAdapter {
     }
 
     companion object {
+        private val DEVICE_TIMES_QUERY = """
+            SELECT
+                TD.TOURID                       AS MTTOURID,
+                TD.TOURDEVICETIME_ELAPSED       AS TIMEELAPSEDDEVICE,
+                TD.TOURDEVICETIME_RECORDED      AS TIMERECORDEDDEVICE
+            FROM "USER".TOURDATA TD
+            WHERE TD.TOURPERSON_PERSONID = 0
+        """.trimIndent()
+
         private val EXPORT_QUERY = """
             SELECT
                 TD.TOURID                       AS MTTOURID,
