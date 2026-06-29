@@ -64,6 +64,8 @@ class MyTourbookImportServiceStageTest {
             ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, mockedConfig
         )
         every { mockedConfig.workdir } returns "/tmp/cetrack-test"
+        every { mockedConfig.tourPersonId } returns 0
+        every { mockedConfig.tourTypeIds } returns emptyList()
         every { archiveExtractor.extract(any(), any()) } returns DUMMY_TOURBOOK
         every { bikeRepository.findAll() } returns listOf(
             BikeEntity(id = BIKE_A, model = "Bike A"),

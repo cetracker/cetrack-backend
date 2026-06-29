@@ -254,6 +254,67 @@ class TourServiceTest {
         assertEquals(ErrorCodesDomain.TOUR_DUPLICATE, ex.getError())
     }
 
+    // CE-0070: addTour with source=FIT stamps genMtId and source=FIT
+    @Test
+    fun `addTour stamps source FIT when caller passes FIT`() {
+        val domainSlot = mutableListOf<DomainTour>()
+        val entity = TourEntity(UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            null, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
+        val saved = aTour().copy(id = entity.id, createdAt = entity.createdAt)
+
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, null)
+        } returns false
+        every { mapper.map(domain = capture(domainSlot)) } returns entity
+        every { repository.save(any()) } returns entity
+        every { mapper.map(jpa = any()) } returns saved
+
+        service.addTour(aTour(), TourSource.FIT)
+
+        val captured = domainSlot.first()
+        assert(!captured.mtTourId.isNullOrBlank()) { "mtTourId must be generated" }
+        assertEquals(TourSource.FIT, captured.source)
+    }
+
+    @Test
+    fun `addTour with FIT source throws TOUR_DUPLICATE on same-bike re-create`() {
+        val bikeId = UUID.randomUUID()
+        val bikeEntity = BikeEntity(id = bikeId, model = "Bike A")
+        val tour = aTour(bikeId = bikeId)
+
+        every { bikeMapper.map(any<DomainBike>()) } returns bikeEntity
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, bikeEntity)
+        } returns true
+
+        val ex = assertThrows(ServiceException::class.java) { service.addTour(tour, TourSource.FIT) }
+        assertEquals(ErrorCodesDomain.TOUR_DUPLICATE, ex.getError())
+    }
+
+    @Test
+    fun `addTour with FIT source allows same ride on different bike`() {
+        val bikeId = UUID.randomUUID()
+        val bikeEntity = BikeEntity(id = bikeId, model = "Bike B")
+        val tour = aTour(bikeId = bikeId)
+        val entity = TourEntity(UUID.randomUUID(), null, "Morning Ride", distance, durationMoving,
+            bikeEntity, startedAt, 2024.toShort(), 6.toShort(), 1.toShort(), 500, 500, 0L, Instant.now())
+        val saved = tour.copy(id = entity.id, createdAt = entity.createdAt)
+
+        every { bikeMapper.map(any<DomainBike>()) } returns bikeEntity
+        every {
+            repository.existsByStartedAtAndDistanceAndDurationRecordedAndDurationElapsedAndBike(
+                startedAt, distance, durationRecorded, durationElapsed, bikeEntity)
+        } returns false
+        every { mapper.map(domain = any<DomainTour>()) } returns entity
+        every { repository.save(any()) } returns entity
+        every { mapper.map(jpa = any()) } returns saved
+
+        service.addTour(tour, TourSource.FIT)
+        verify(exactly = 1) { repository.save(any()) }
+    }
+
     // CE-0069: addTour must generate mtTourId and stamp source = MANUAL
     @Test
     fun `addTour stamps generated mtTourId and source MANUAL`() {
