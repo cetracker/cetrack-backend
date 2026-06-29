@@ -117,4 +117,38 @@
         <Class name="de.cyclingsir.cetrack.tour.support.TourSpec" />
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
+    <!-- Kotlin data class: tourTypeIds List<Int> is read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- FitImportService.DraftWithHint: existingMatches List is read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.domain.FitImportService$DraftWithHint" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- FitParsedSession: internal data class; SessionMesg and List<FitRecord> not exposed to untrusted code -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.fit.FitParsedSession" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- FitMovingTimeKt: Kotlin smart-cast guards the nullable Float access; SpotBugs misses it at bytecode level -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.fit.FitMovingTimeKt" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+    </Match>
+    <!-- DerbyReadAdapterTest companion: TOUR_TYPE_IDS is Kotlin listOf() — effectively immutable -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest$Companion" />
+        <Bug pattern="MS_EXPOSE_REP" />
+    </Match>
+    <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.rest.FitImportControllerTest" />
+        <Bug code="SA" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.tour.rest.TourControllerTest" />
+        <Bug code="SA" />
+    </Match>
 </FindBugsFilter>
