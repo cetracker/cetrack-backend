@@ -30,7 +30,10 @@ class FitTourParser {
             val broadcaster = MesgBroadcaster(Decode())
             broadcaster.addListener(SessionMesgListener { sessions.add(it) })
             broadcaster.addListener(RecordMesgListener { rawRecords.add(it) })
-            inputStream.use { broadcaster.run(it) }
+            // ByteArrayInputStream.available() is always reliable; HTTP request streams
+            // may return 0 from available() even when data exists, which causes
+            // MesgBroadcaster.run() to exit immediately without reading anything.
+            inputStream.use { broadcaster.run(it.readBytes().inputStream()) }
         } catch (e: Exception) {
             throw FitParseException("Failed to parse FIT file: ${e.message}", e)
         }

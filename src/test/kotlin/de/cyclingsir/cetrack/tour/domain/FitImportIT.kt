@@ -52,6 +52,13 @@ class FitImportIT {
     }
 
     @Test
+    fun `parse ELEMNT ROAM FIT file with 38 session fields returns one draft`() {
+        val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2025-06-07-060955-ELEMNT-ROAM.fit"))
+        assertEquals(1, drafts.size)
+        assertEquals(TourSource.FIT, drafts[0].draft.source)
+    }
+
+    @Test
     @Sql(statements = [
         "INSERT INTO bike (id, model) VALUES ('a1111111-0001-0001-0001-000000000001', 'Road Bike')"
     ])
