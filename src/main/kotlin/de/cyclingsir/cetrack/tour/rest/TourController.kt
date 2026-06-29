@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.infrastructure.api.model.TourCreateRequest
 import de.cyclingsir.cetrack.infrastructure.api.rest.ToursApi
 import de.cyclingsir.cetrack.tour.domain.TourService
+import de.cyclingsir.cetrack.tour.domain.TourSource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Parameter
 import jakarta.validation.Valid
@@ -32,7 +33,11 @@ class TourController(
 
     override fun createTour(@Valid @RequestBody tourCreateRequest: TourCreateRequest): ResponseEntity<Tour> {
         logger.debug{ "Add tour with title ${tourCreateRequest.title}" }
-        val addedTour = service.addTour(mapper.map(tourCreateRequest))
+        val source = when (tourCreateRequest.source) {
+            TourCreateRequest.Source.FIT -> TourSource.FIT
+            TourCreateRequest.Source.MANUAL, null -> TourSource.MANUAL
+        }
+        val addedTour = service.addTour(mapper.map(tourCreateRequest), source)
         return ResponseEntity.ok(/* body = */ mapper.map(addedTour))
     }
 
