@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.Instant
 import java.util.UUID
 
-class FitImportControllerTest {
+    class FitImportControllerTest {
 
     private val fitImportService = mockk<FitImportService>()
     private val mvc: MockMvc = MockMvcBuilders
@@ -29,22 +29,22 @@ class FitImportControllerTest {
         .setControllerAdvice(CentralExceptionHandler())
         .build()
 
-    private fun aDraft(startedAt: Instant = Instant.parse("2022-07-17T19:35:11Z")) = DomainTour(
+    private fun aDraft(startedAt: Instant = Instant.parse("2024-09-04T07:17:01Z")) = DomainTour(
         id = null,
         mtTourId = null,
         title = "",
-        distance = 2138,
-        durationMoving = 570L,
-        durationRecorded = 573L,
-        durationElapsed = 627L,
-        altUp = 33,
-        altDown = 35,
-        powerTotal = 0L,
+        distance = 18986,
+        durationMoving = 5600L,
+        durationRecorded = 5689L,
+        durationElapsed = 10255L,
+        altUp = 91,
+        altDown = 79,
+        powerTotal = 344410L,
         bike = null,
         startedAt = startedAt,
-        startYear = 2022.toShort(),
-        startMonth = 7.toShort(),
-        startDay = 17.toShort(),
+        startYear = 2024.toShort(),
+        startMonth = 9.toShort(),
+        startDay = 4.toShort(),
         createdAt = null,
         source = TourSource.FIT
     )
@@ -60,10 +60,10 @@ class FitImportControllerTest {
             .content(ByteArray(8)))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").isArray)
-            .andExpect(jsonPath("$[0].distance").value(2138))
-            .andExpect(jsonPath("$[0].durationRecorded").value(573))
-            .andExpect(jsonPath("$[0].durationElapsed").value(627))
-            .andExpect(jsonPath("$[0].altUp").value(33))
+            .andExpect(jsonPath("$[0].distance").value(18986))
+            .andExpect(jsonPath("$[0].durationRecorded").value(5689))
+            .andExpect(jsonPath("$[0].durationElapsed").value(10255))
+            .andExpect(jsonPath("$[0].altUp").value(91))
             .andExpect(jsonPath("$[0].duplicateHint").doesNotExist())
     }
 
@@ -73,17 +73,17 @@ class FitImportControllerTest {
         val matchingEntity = TourEntity(
             id = existingId,
             mtTourId = "9000000000001",
-            title = "Prior Silverton Ride",
-            distance = 2138,
-            durationMoving = 570L,
+            title = "Prior ELEMNT ROAM Ride",
+            distance = 18986,
+            durationMoving = 5600L,
             bike = BikeEntity(id = UUID.randomUUID(), model = "Road Bike"),
-            startedAt = Instant.parse("2022-07-17T19:35:11Z"),
-            startYear = 2022.toShort(),
-            startMonth = 7.toShort(),
-            startDay = 17.toShort(),
-            altUp = 33,
-            altDown = 35,
-            powerTotal = 0L
+            startedAt = Instant.parse("2024-09-04T07:17:01Z"),
+            startYear = 2024.toShort(),
+            startMonth = 9.toShort(),
+            startDay = 4.toShort(),
+            altUp = 91,
+            altDown = 79,
+            powerTotal = 344410L
         )
         every { fitImportService.parseToDrafts(any()) } returns listOf(
             DraftWithHint(aDraft(), listOf(matchingEntity))
@@ -96,7 +96,7 @@ class FitImportControllerTest {
             .andExpect(jsonPath("$[0].duplicateHint").exists())
             .andExpect(jsonPath("$[0].duplicateHint.matchedTours").isArray)
             .andExpect(jsonPath("$[0].duplicateHint.matchedTours[0].tourId").value(existingId.toString()))
-            .andExpect(jsonPath("$[0].duplicateHint.matchedTours[0].title").value("Prior Silverton Ride"))
+            .andExpect(jsonPath("$[0].duplicateHint.matchedTours[0].title").value("Prior ELEMNT ROAM Ride"))
     }
 
     @Test
@@ -111,9 +111,9 @@ class FitImportControllerTest {
     }
 
     @Test
-    fun `parseFitFile parses real Silverton fixture`() {
+    fun `parseFitFile parses real ELEMNT ROAM fixture`() {
         val bytes = FitImportControllerTest::class.java.classLoader
-            .getResourceAsStream("fit-fixture/Bye_bye_Silverton.fit")!!
+            .getResourceAsStream("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit")!!
             .use { it.readBytes() }
 
         every { fitImportService.parseToDrafts(any()) } returns listOf(
