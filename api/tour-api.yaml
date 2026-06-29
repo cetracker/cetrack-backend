@@ -387,7 +387,10 @@ components:
             - FIT
             - MANUAL
           readOnly: true
-          description: How this tour entered CETracker. Server-set; ignored in create request.
+          description: >
+            How this tour entered CETracker. Server-set on response.
+            On create the client may assert FIT or MANUAL via TourCreateRequest.source;
+            MYTOURBOOK is server-only.
     TourCreateRequest:
       type: object
       required:
@@ -459,6 +462,15 @@ components:
           allOf:
             - $ref: './bike-api.yaml#/components/schemas/Bike'
           description: Required — user must select before submitting
+        source:
+          type: string
+          enum:
+            - FIT
+            - MANUAL
+          default: MANUAL
+          description: >
+            Origin of this create. Omit for manual creates (defaults to MANUAL).
+            The FIT import flow sends FIT. MYTOURBOOK is server-only and rejected here.
     MTTour:
       type: object
       required:
