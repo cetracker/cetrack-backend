@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
+import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter
 import de.cyclingsir.cetrack.tour.storage.ImportIgnoreEntity
 import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
@@ -41,6 +42,7 @@ class MyTourbookImportServiceResolutionTest {
     @MockK private lateinit var ignoreRepository: ImportIgnoreRepository
     @MockK private lateinit var derbyAdapter: DerbyReadAdapter
     @MockK private lateinit var archiveExtractor: ArchiveExtractor
+    @MockK private lateinit var mockedConfig: MyTourbookImportConfiguration
 
     private val objectMapper = ObjectMapper()
     private lateinit var service: MyTourbookImportService
@@ -59,8 +61,9 @@ class MyTourbookImportServiceResolutionTest {
     fun setup() {
         service = MyTourbookImportService(
             tourRepository, bikeRepository, sessionRepository, stateRepository,
-            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
+            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, mockedConfig
         )
+        every { mockedConfig.workdir } returns "/tmp/cetrack-test"
         every { tourRepository.existsByMtTourIdAndSourceNot(any(), TourSource.FIT) } returns false
         every { tourRepository.saveAll(any<List<TourEntity>>()) } returns emptyList()
         every { tourRepository.save(any<TourEntity>()) } answers { firstArg() }

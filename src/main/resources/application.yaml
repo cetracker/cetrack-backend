@@ -23,6 +23,8 @@ app:
   mytourbook:
     workdir: ${java.io.tmpdir}/cetrack-mytourbook
     max-decompressed-bytes: 524288000  # 500 MB
+    tour-person-id: 0
+    tour-type-ids: [0, 1, 2, 4, 113]
 
 # Actuator Endpoints
 management:

@@ -15,8 +15,8 @@ import de.cyclingsir.cetrack.tour.storage.ImportStateEntity
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
+import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
@@ -45,15 +45,15 @@ class MyTourbookImportService(
     private val derbyAdapter: DerbyReadAdapter,
     private val archiveExtractor: ArchiveExtractor,
     private val objectMapper: ObjectMapper,
-    @Value("\${app.mytourbook.workdir}") private val workDir: String
+    private val config: MyTourbookImportConfiguration
 ) {
 
     @Transactional
     fun stage(inputStream: InputStream): DomainImportSession? {
         val sessionId = UUID.randomUUID()
-        val base = Path.of(workDir).also {
+        val base = Path.of(config.workdir).also {
             runCatching { Files.createDirectories(it) }
-                .onFailure { e -> logger.error(e) { "Failed to create or access work directory '$workDir'" } }
+                .onFailure { e -> logger.error(e) { "Failed to create or access work directory '${config.workdir}'" } }
                 .getOrThrow()
         }
         val tempDir = runCatching { Files.createTempDirectory(base, "mytourbook-$sessionId") }
@@ -67,7 +67,7 @@ class MyTourbookImportService(
             val bikeUuids = bikeRepository.findAll().mapNotNull { it.id?.toString() }
             val state = stateRepository.findById(IMPORT_STATE_ID)
                 .orElseGet { ImportStateEntity(IMPORT_STATE_ID, 0, Instant.now()) }
-            val result = derbyAdapter.read(tourBookDir, bikeUuids)
+            val result = derbyAdapter.read(tourBookDir, bikeUuids, config.tourPersonId, config.tourTypeIds)
             if (!state.deviceTimeBackfilled) {
                 backFillDeviceTimes(result, state)
             }

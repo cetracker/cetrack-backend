@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
+import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import de.cyclingsir.cetrack.tour.derby.DerbyReadAdapter
 import de.cyclingsir.cetrack.tour.storage.ImportSessionEntity
 import de.cyclingsir.cetrack.tour.domain.DomainImportWarning
@@ -43,6 +44,7 @@ class MyTourbookImportServiceStageTest {
     @MockK private lateinit var ignoreRepository: ImportIgnoreRepository
     @MockK private lateinit var derbyAdapter: DerbyReadAdapter
     @MockK private lateinit var archiveExtractor: ArchiveExtractor
+    @MockK private lateinit var mockedConfig: MyTourbookImportConfiguration
 
     private val objectMapper = ObjectMapper()
     private lateinit var service: MyTourbookImportService
@@ -59,8 +61,9 @@ class MyTourbookImportServiceStageTest {
     fun setup() {
         service = MyTourbookImportService(
             tourRepository, bikeRepository, sessionRepository, stateRepository,
-            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, workDir = "/tmp/cetrack-test"
+            ignoreRepository, derbyAdapter, archiveExtractor, objectMapper, mockedConfig
         )
+        every { mockedConfig.workdir } returns "/tmp/cetrack-test"
         every { archiveExtractor.extract(any(), any()) } returns DUMMY_TOURBOOK
         every { bikeRepository.findAll() } returns listOf(
             BikeEntity(id = BIKE_A, model = "Bike A"),
@@ -98,7 +101,7 @@ class MyTourbookImportServiceStageTest {
     // #21
     @Test
     fun `stage classifies clean rows as candidates`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001"), aMTTour("9000000000002"))
         )
 
@@ -112,7 +115,7 @@ class MyTourbookImportServiceStageTest {
     // #22
     @Test
     fun `stage filters already-imported tours instead of rejecting the batch`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(
                 aMTTour("9000000000001"),
                 aMTTour("9000000000002"),
@@ -133,7 +136,7 @@ class MyTourbookImportServiceStageTest {
         every { stateRepository.findById(1) } returns Optional.of(
             ImportStateEntity(1, lastDbVersion = DB_VERSION - 1, updatedAt = Instant.now(), deviceTimeBackfilled = true)
         )
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
         )
 
@@ -145,7 +148,7 @@ class MyTourbookImportServiceStageTest {
     // #24
     @Test
     fun `stage signals no drift when DBVERSION matches baseline`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
         )
 
@@ -159,7 +162,7 @@ class MyTourbookImportServiceStageTest {
     fun `new stage marks existing PENDING session SUPERSEDED ensuring single-PENDING invariant`() {
         val priorSession = ImportSessionEntity(UUID.randomUUID(), STATUS_PENDING, DB_VERSION, "[]")
         every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns listOf(priorSession)
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
         )
 
@@ -181,7 +184,7 @@ class MyTourbookImportServiceStageTest {
         every { stateRepository.findById(1) } returns Optional.of(
             ImportStateEntity(1, lastDbVersion = DB_VERSION, updatedAt = Instant.now(), deviceTimeBackfilled = true)
         )
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             newDbVersion, listOf(aMTTour("9000000000002"))
         )
 
@@ -222,7 +225,7 @@ class MyTourbookImportServiceStageTest {
     // #28
     @Test
     fun `stage returns null when archive yields no new candidates and no warnings`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001"))
         )
         every { tourRepository.existsByMtTourIdAndSourceNot("9000000000001", TourSource.FIT) } returns true
@@ -237,7 +240,7 @@ class MyTourbookImportServiceStageTest {
     // #29
     @Test
     fun `stage returns PENDING session when zero candidates but warnings exist`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001", BIKE_A), aMTTour("9000000000001", BIKE_B))
         )
 
@@ -252,7 +255,7 @@ class MyTourbookImportServiceStageTest {
     // #27
     @Test
     fun `Derby failure leaves no import_session row`() {
-        every { derbyAdapter.read(any(), any()) } throws
+        every { derbyAdapter.read(any(), any(), any(), any()) } throws
             ServiceException(ErrorCodesDomain.DERBY_SCHEMA_INCOMPATIBLE, "schema error")
 
         assertThrows<ServiceException> { service.stage(emptyStream()) }
@@ -267,7 +270,7 @@ class MyTourbookImportServiceStageTest {
             ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = false)
         )
         every { tourRepository.count() } returns 2
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             dbVersion = DB_VERSION,
             rows = listOf(aMTTour("9000000000001"), aMTTour("9000000000002")),
             allDeviceTimes = mapOf(
@@ -290,7 +293,7 @@ class MyTourbookImportServiceStageTest {
             ImportStateEntity(1, DB_VERSION, Instant.now(), deviceTimeBackfilled = false)
         )
         every { tourRepository.count() } returns 2
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             dbVersion = DB_VERSION,
             rows = listOf(aMTTour("9000000000001")),
             allDeviceTimes = mapOf(
@@ -307,7 +310,7 @@ class MyTourbookImportServiceStageTest {
 
     @Test
     fun `stage skips backfill on subsequent uploads when already backfilled`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour())
         )
 
@@ -319,7 +322,7 @@ class MyTourbookImportServiceStageTest {
     // CE-0069: source-aware staging filter
     @Test
     fun `stage retains candidate when only mt_tour_id match is a FIT-sourced row`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001"))
         )
         // existsByMtTourIdAndSourceNot(id, FIT) returns false → only FIT match exists → candidate is kept
@@ -333,7 +336,7 @@ class MyTourbookImportServiceStageTest {
 
     @Test
     fun `stage drops candidate when a MYTOURBOOK row with same mt_tour_id exists`() {
-        every { derbyAdapter.read(any(), any()) } returns DerbyReadAdapter.ReadResult(
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
             DB_VERSION, listOf(aMTTour("9000000000001"))
         )
         // existsByMtTourIdAndSourceNot(id, FIT) returns true → a non-FIT (MYTOURBOOK) row exists → drop

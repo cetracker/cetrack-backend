@@ -21,14 +21,20 @@ class DerbyReadAdapter {
         val allDeviceTimes: Map<String, Pair<Long, Long>> = emptyMap()
     )
 
-    fun read(tourBookDir: Path, bikeUuids: List<String>): ReadResult {
+    fun read(
+        tourBookDir: Path,
+        bikeUuids: List<String>,
+        personId: Int,
+        tourTypeIds: List<Int>
+    ): ReadResult {
         require(bikeUuids.isNotEmpty()) { "bikeUuids must not be empty" }
+        require(tourTypeIds.isNotEmpty()) { "tourTypeIds must not be empty" }
         val dbUrl = "jdbc:derby:${tourBookDir.toAbsolutePath()};readOnly=true"
         try {
             return DriverManager.getConnection(dbUrl).use { conn ->
                 val dbVersion = readDbVersion(conn)
-                val rows = readTours(conn, bikeUuids)
-                val allDeviceTimes = readDeviceTimes(conn)
+                val rows = readTours(conn, bikeUuids, personId, tourTypeIds)
+                val allDeviceTimes = readDeviceTimes(conn, personId)
                 ReadResult(dbVersion, rows, allDeviceTimes)
             }
         } catch (e: ServiceException) {
@@ -49,11 +55,17 @@ class DerbyReadAdapter {
         }
     }
 
-    private fun readTours(conn: java.sql.Connection, bikeUuids: List<String>): List<DomainMTTour> {
-        val placeholders = bikeUuids.joinToString(",") { "?" }
-        val sql = EXPORT_QUERY.format(placeholders)
+    private fun readTours(conn: java.sql.Connection,
+                          bikeUuids: List<String>,
+                          personId: Int,
+                          tourTypeIds: List<Int>): List<DomainMTTour> {
+        val typePlaceholders = tourTypeIds.joinToString(",") { "?" }
+        val bikePlaceholders = bikeUuids.joinToString(",") { "?" }
+        val sql = EXPORT_QUERY.format(typePlaceholders, bikePlaceholders)
         conn.prepareStatement(sql).use { stmt ->
-            bikeUuids.forEachIndexed { i, uuid -> stmt.setString(i + 1, uuid) }
+            stmt.setInt(1, personId)
+            tourTypeIds.forEachIndexed { i, typeId -> stmt.setInt(1 + i + 1, typeId) }
+            bikeUuids.forEachIndexed { i, uuid -> stmt.setString(1 + tourTypeIds.size + i + 1, uuid) }
             stmt.executeQuery().use { rs ->
                 val rows = mutableListOf<DomainMTTour>()
                 while (rs.next()) {
@@ -79,10 +91,11 @@ class DerbyReadAdapter {
         }
     }
 
-    private fun readDeviceTimes(conn: java.sql.Connection): Map<String, Pair<Long, Long>> {
+    private fun readDeviceTimes(conn: java.sql.Connection, personId: Int): Map<String, Pair<Long, Long>> {
         val map = mutableMapOf<String, Pair<Long, Long>>()
-        conn.createStatement().use { stmt ->
-            stmt.executeQuery(DEVICE_TIMES_QUERY).use { rs ->
+        conn.prepareStatement(DEVICE_TIMES_QUERY).use { stmt ->
+            stmt.setInt(1, personId)
+            stmt.executeQuery().use { rs ->
                 while (rs.next()) {
                     val id = rs.getString("MTTOURID")
                     val elapsed = rs.getLong("TIMEELAPSEDDEVICE").takeUnless { rs.wasNull() } ?: 0L
@@ -115,7 +128,7 @@ class DerbyReadAdapter {
                 TD.TOURDEVICETIME_ELAPSED       AS TIMEELAPSEDDEVICE,
                 TD.TOURDEVICETIME_RECORDED      AS TIMERECORDEDDEVICE
             FROM "USER".TOURDATA TD
-            WHERE TD.TOURPERSON_PERSONID = 0
+            WHERE TD.TOURPERSON_PERSONID = ?
         """.trimIndent()
 
         private val EXPORT_QUERY = """
@@ -137,8 +150,8 @@ class DerbyReadAdapter {
             FROM "USER".TOURDATA TD
             JOIN "USER".TOURDATA_TOURTAG DTT ON DTT.TOURDATA_TOURID = TD.TOURID
             JOIN "USER".TOURTAG TT           ON TT.TAGID = DTT.TOURTAG_TAGID
-            WHERE TD.TOURPERSON_PERSONID = 0
-              AND TD.TOURTYPE_TYPEID IN (0, 1, 2, 4, 113)
+            WHERE TD.TOURPERSON_PERSONID = ?
+              AND TD.TOURTYPE_TYPEID IN (%s)
               AND TT.NAME IN (%s)
             ORDER BY TD.TOURSTARTTIME ASC
         """.trimIndent()

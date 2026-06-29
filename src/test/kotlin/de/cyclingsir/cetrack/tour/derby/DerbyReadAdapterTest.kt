@@ -36,6 +36,8 @@ class DerbyReadAdapterTest {
         const val UNTAGGED_TOUR = "9000000000028"
         const val WRONG_PERSON_TOUR = "9000000000029"
         const val WRONG_TYPE_TOUR = "9000000000030"
+        const val PERSON_ID = 0
+        val TOUR_TYPE_IDS : List<Int> = listOf(0, 1, 2, 4, 113)
     }
 
     @BeforeAll
@@ -67,14 +69,14 @@ class DerbyReadAdapterTest {
     // #7
     @Test
     fun `adapter reads DBVERSION from the fixture`() {
-        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString()))
+        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString()), PERSON_ID, TOUR_TYPE_IDS)
         assertEquals(59, result.dbVersion)
     }
 
     // #8
     @Test
     fun `export query returns rows only for tracked bike UUIDs`() {
-        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()))
+        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()), PERSON_ID, TOUR_TYPE_IDS)
         assertTrue(result.rows.isNotEmpty())
         assertTrue(result.rows.all { it.bikeId == BIKE_A || it.bikeId == BIKE_B },
             "all rows must be tagged with a tracked bike")
@@ -85,7 +87,7 @@ class DerbyReadAdapterTest {
     // #9
     @Test
     fun `tour tagged with two tracked bikes yields two rows`() {
-        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()))
+        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()), PERSON_ID, TOUR_TYPE_IDS)
         val ambiguousRows = result.rows.filter { it.MTTOURID == AMBIGUOUS_TOUR }
         assertEquals(2, ambiguousRows.size, "ambiguous tour must appear once per matched bike tag")
         val bikeIds = ambiguousRows.map { it.bikeId }.toSet()
@@ -95,7 +97,7 @@ class DerbyReadAdapterTest {
     // #10
     @Test
     fun `untagged and foreign-tagged tours are excluded`() {
-        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()))
+        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()), PERSON_ID, TOUR_TYPE_IDS)
         val ids = result.rows.map { it.MTTOURID }.toSet()
         assertFalse(ids.contains(FOREIGN_TOUR), "foreign-tagged tour must be excluded")
         assertFalse(ids.contains(UNTAGGED_TOUR), "untagged tour must be excluded")
@@ -105,7 +107,7 @@ class DerbyReadAdapterTest {
     // #12
     @Test
     fun `wrong-type tour is excluded by tour-type filter`() {
-        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()))
+        val result = adapter.read(tourBookDir, listOf(BIKE_A.toString(), BIKE_B.toString()), PERSON_ID, TOUR_TYPE_IDS)
         assertFalse(result.rows.any { it.MTTOURID == WRONG_TYPE_TOUR },
             "wrong-type tour must be excluded by TOURTYPE_TYPEID filter")
     }
@@ -130,7 +132,7 @@ class DerbyReadAdapterTest {
             } catch (e: SQLException) { /* expected XJ015 / 08006 */ }
 
             val ex = assertThrows<ServiceException> {
-                adapter.read(dbDir, listOf(BIKE_A.toString()))
+                adapter.read(dbDir, listOf(BIKE_A.toString()), PERSON_ID, TOUR_TYPE_IDS)
             }
             assertEquals(ErrorCodesDomain.DERBY_SCHEMA_INCOMPATIBLE, ex.getError())
         } finally {
@@ -141,9 +143,9 @@ class DerbyReadAdapterTest {
     // #14
     @Test
     fun `second read on same path succeeds after Derby shutdown`() {
-        val result1 = adapter.read(tourBookDir, listOf(BIKE_A.toString()))
+        val result1 = adapter.read(tourBookDir, listOf(BIKE_A.toString()), PERSON_ID, TOUR_TYPE_IDS)
         assertNotNull(result1)
-        val result2 = adapter.read(tourBookDir, listOf(BIKE_A.toString()))
+        val result2 = adapter.read(tourBookDir, listOf(BIKE_A.toString()), PERSON_ID, TOUR_TYPE_IDS)
         assertEquals(result1.dbVersion, result2.dbVersion)
         assertEquals(result1.rows.size, result2.rows.size)
     }

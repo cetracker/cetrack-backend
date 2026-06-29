@@ -2,10 +2,10 @@ package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
+import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.InputStream
 import java.io.OutputStream
@@ -14,7 +14,7 @@ import java.nio.file.Path
 
 @Component
 class ArchiveExtractor(
-    @Value("\${app.mytourbook.max-decompressed-bytes}") val maxDecompressedBytes: Long
+    private val config: MyTourbookImportConfiguration
 ) {
     fun extract(inputStream: InputStream, destDir: Path): Path {
         try {
@@ -67,10 +67,10 @@ class ArchiveExtractor(
         var n: Int
         while (tar.read(buf).also { n = it } != -1) {
             totalBytes += n
-            if (totalBytes > maxDecompressedBytes) {
+            if (totalBytes > config.maxDecompressedBytes) {
                 throw ServiceException(
                     ErrorCodesDomain.ARCHIVE_EXCEEDS_SIZE_LIMIT,
-                    "Archive exceeds size limit of ${maxDecompressedBytes.toMb()} MB when decompressed"
+                    "Archive exceeds size limit of ${config.maxDecompressedBytes.toMb()} MB when decompressed"
                 )
             }
             out.write(buf, 0, n)
