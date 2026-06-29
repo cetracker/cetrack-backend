@@ -21,11 +21,8 @@ interface TourRepository : JpaRepository<TourEntity, UUID> {
     ): Boolean
     fun existsByMtTourId(mtTourId: String): Boolean
     fun existsByMtTourIdAndSourceNot(mtTourId: String, source: TourSource): Boolean
-    fun findAllByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): List<TourEntity>
+    fun findAllByStartedAtAndDistanceBetween(startedAt: Instant, distMin: Int, distMax: Int): List<TourEntity>
     fun findAllByDurationRecordedAndDurationElapsed(durationRecorded: Long, durationElapsed: Long): List<TourEntity>
-    fun findAllByStartedAtAndDistanceAndDurationRecordedAndDurationElapsed(
-        startedAt: java.time.Instant, distance: Int, durationRecorded: Long, durationElapsed: Long
-    ): List<TourEntity>
 
     @Modifying
     @Query("UPDATE tour t SET t.durationRecorded = :recorded, t.durationElapsed = :elapsed WHERE t.mtTourId = :mtTourId")

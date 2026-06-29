@@ -9,6 +9,7 @@ import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
+import de.cyclingsir.cetrack.tour.domain.TourSource
 import de.cyclingsir.cetrack.tour.support.DerbyFixtureBuilder
 import de.cyclingsir.cetrack.tour.support.TourSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -112,6 +113,17 @@ class MyTourbookImportIT : MySQLContainerIT() {
         val F_MULTI_SPECS = listOf(
             TourSpec(8000000000041L, listOf(BIKE_A), 1_702_000_000_000L, 55_000, 7_000L)
         )
+
+        // Group H — CE-0072: cross-source FIT↔MT dedup via startedAt + distance tolerance
+        // FIT tour: startedAt = 2026-06-27T03:00:57Z, distance = 96195 (as observed in CE-0060 test)
+        // MT fixture: same startedAt, distance = 96192 (observed MT value, off by 3 m — within ±0.5%)
+        // Tolerance: tol = maxOf(round(96195 * 0.005), 5) = 481; range = [95714, 96676]
+        private val FIT_CROSS_SOURCE_MS = Instant.parse("2026-06-27T03:00:57Z").toEpochMilli()
+        private const val FIT_CROSS_SOURCE_DISTANCE = 96195
+        // in-tolerance Derby fixture: |96192 - 96195| = 3 < 481
+        val H_IN_TOL_SPEC = TourSpec(8000000000071L, listOf(BIKE_A), FIT_CROSS_SOURCE_MS, 96192, 11452L)
+        // out-of-tolerance Derby fixture: |97200 - 96195| = 1005 > 481
+        val H_OUT_TOL_SPEC = TourSpec(8000000000072L, listOf(BIKE_A), FIT_CROSS_SOURCE_MS, 97200, 11452L)
     }
 
     @BeforeEach
@@ -365,13 +377,46 @@ class MyTourbookImportIT : MySQLContainerIT() {
         assertThat(sessionRepository.count()).isEqualTo(sessionCountBefore)
     }
 
+    // ─── Group H — CE-0072: FIT↔Derby cross-source dedup via startedAt+distance tolerance ────
+
+    @Test
+    fun `Group H - FIT-imported tour detected as logical duplicate by Derby import within distance tolerance`() {
+        // H1: Seed a FIT-sourced tour (distance=96195) — simulates the ride already imported via FIT
+        val fitSpec = TourSpec(8000000000070L, listOf(BIKE_A), FIT_CROSS_SOURCE_MS, FIT_CROSS_SOURCE_DISTANCE, 11452L)
+        seedTour(fitSpec, TourSource.FIT)
+
+        // Regression guard: startedAt anchor is bit-stable across sources
+        val seededTour = tourRepository.findAll().single()
+        assertThat(seededTour.startedAt).isEqualTo(Instant.ofEpochMilli(FIT_CROSS_SOURCE_MS))
+
+        // H2: Stage Derby fixture with distance=96192 (within ±0.5%, off by 3 m) → LOGICAL_DUPLICATE
+        val sessionH2 = importService.stage(DerbyFixtureBuilder.buildFixture(tours = listOf(H_IN_TOL_SPEC)))!!
+        assertThat(sessionH2.candidates).isEmpty()
+        val dupWarning = sessionH2.warnings.single { it.type == "LOGICAL_DUPLICATE" }
+        assertThat(dupWarning.mtTourId).isEqualTo(H_IN_TOL_SPEC.mtTourId.toString())
+
+        // H3: SUPPRESS → re-stage → duplicate silently skipped (stays suppressed)
+        importService.commit(sessionH2.sessionId, emptyList(),
+            listOf(WarningResolutionRequest(dupWarning.mtTourId!!, "SUPPRESS")))
+        assertThat(ignoreRepository.count()).isEqualTo(1)
+
+        val sessionH3 = importService.stage(DerbyFixtureBuilder.buildFixture(tours = listOf(H_IN_TOL_SPEC)))
+        assertThat(sessionH3).isNull()
+
+        // H4: Negative — out-of-tolerance fixture (distance=97200) must NOT raise a warning
+        val sessionH4 = importService.stage(DerbyFixtureBuilder.buildFixture(tours = listOf(H_OUT_TOL_SPEC)))!!
+        assertThat(sessionH4.warnings.filter { it.type == "LOGICAL_DUPLICATE" }).isEmpty()
+        assertThat(sessionH4.candidates).hasSize(1)
+        assertThat(sessionH4.candidates.first().MTTOURID).isEqualTo(H_OUT_TOL_SPEC.mtTourId.toString())
+    }
+
     // ─── Helpers ────────────────────────────────────────────────────────────────
 
     private fun seedF1Tours() {
         F1_SPECS.forEach { spec -> seedTour(spec) }
     }
 
-    private fun seedTour(spec: TourSpec) {
+    private fun seedTour(spec: TourSpec, source: TourSource = TourSource.MYTOURBOOK) {
         val bikeEntity = spec.bikeTags.firstOrNull()?.let { bikeRepository.findById(it).orElse(null) }
         tourRepository.save(
             TourEntity(
@@ -387,7 +432,8 @@ class MyTourbookImportIT : MySQLContainerIT() {
                 altUp = spec.altUp,
                 altDown = spec.altDown,
                 powerTotal = spec.powerTotal,
-                bike = bikeEntity
+                bike = bikeEntity,
+                source = source
             )
         )
     }

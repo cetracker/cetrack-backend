@@ -216,8 +216,8 @@ class MyTourbookImportService(
     }
 
     private fun suppressTriple(summary: DomainTourSummary) {
-        if (!ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(
-                summary.startedAt, summary.distance, summary.durationMoving)) {
+        val (lo, hi) = TourDedup.distanceRange(summary.distance)
+        if (!ignoreRepository.existsByStartedAtAndDistanceBetween(summary.startedAt, lo, hi)) {
             ignoreRepository.save(ImportIgnoreEntity(
                 startedAt = summary.startedAt,
                 distance = summary.distance,
@@ -226,22 +226,23 @@ class MyTourbookImportService(
         }
     }
 
-    // False-positive risk: two rides with identical start time + distance + moving duration would both be skipped.
-    // Accepted: CETracker is single-user and a bike can only be on one tour at a time.
+    // False-positive risk: two rides starting at the same second within ±0.5% distance would both be skipped.
+    // Accepted: CETracker is single-user; a bike can only be on one tour at a time, and FIT/MT compute distance within ±3 m.
     private fun filterLogicalDuplicates(candidates: List<DomainMTTour>): Pair<List<DomainMTTour>, List<DomainImportWarning>> {
         val result = mutableListOf<DomainMTTour>()
         val warnings = mutableListOf<DomainImportWarning>()
         for (candidate in candidates) {
             val startedAt = Instant.ofEpochMilli(candidate.STARTTIMESTAMP)
-            if (ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(startedAt, candidate.DISTANCE, candidate.DURATIONMOVING)) {
+            val (lo, hi) = TourDedup.distanceRange(candidate.DISTANCE)
+            if (ignoreRepository.existsByStartedAtAndDistanceBetween(startedAt, lo, hi)) {
                 continue
             }
-            val matched = tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(startedAt, candidate.DISTANCE, candidate.DURATIONMOVING)
+            val matched = tourRepository.findAllByStartedAtAndDistanceBetween(startedAt, lo, hi)
             if (matched.isNotEmpty()) {
                 warnings += DomainImportWarning(
                     type = "LOGICAL_DUPLICATE",
                     mtTourId = candidate.MTTOURID,
-                    message = "Tour ${candidate.MTTOURID} matches an existing tour by start time, distance, and moving duration — possible re-import from device",
+                    message = "Tour ${candidate.MTTOURID} matches an existing tour by start time and distance (within tolerance) — possible re-import from device",
                     incomingCandidate = candidate,
                     matchedTours = matched.map { it.toSummary() },
                     replaceDisabled = matched.size > 1

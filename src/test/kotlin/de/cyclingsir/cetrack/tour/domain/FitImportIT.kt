@@ -2,6 +2,7 @@ package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
+import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -12,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 
 @SpringBootTest
@@ -130,5 +133,38 @@ class FitImportIT {
         val drafts2 = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
         assertTrue(drafts2[0].existingMatches.isNotEmpty(), "existing match should be surfaced")
         assertEquals(1, drafts2[0].existingMatches.size)
+    }
+
+    // CE-0072: FIT hint uses distance tolerance — a tour with same startedAt but slightly different distance is surfaced
+    @Test
+    fun `parseToDrafts surfaces duplicate hint when existing tour has same startedAt and distance within tolerance`() {
+        // Parse to discover the real startedAt and distance from the FIT file
+        val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
+        assertEquals(1, drafts.size)
+        val draft = drafts[0].draft
+        // distance = 18986; tol = maxOf(round(18986 * 0.005), 5) = 95; range = [18891, 19081]
+        // seed a tour 50 m off — still within tolerance
+        val nearbyDistance = draft.distance + 50
+        val seededAt = draft.startedAt
+        tourRepository.save(TourEntity(
+            id = null,
+            mtTourId = "FIT-dedup-test-72",
+            title = "Nearby Ride",
+            distance = nearbyDistance,
+            durationMoving = draft.durationMoving,
+            startedAt = seededAt,
+            startYear = seededAt.atZone(ZoneOffset.UTC).year.toShort(),
+            startMonth = seededAt.atZone(ZoneOffset.UTC).monthValue.toShort(),
+            startDay = seededAt.atZone(ZoneOffset.UTC).dayOfMonth.toShort(),
+            altUp = draft.altUp,
+            altDown = draft.altDown,
+            powerTotal = draft.powerTotal,
+            bike = null
+        ))
+
+        // Re-parse → tolerance match must surface as hint
+        val drafts2 = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
+        assertTrue(drafts2[0].existingMatches.isNotEmpty(),
+            "tolerance match must be surfaced as duplicateHint (distance off by $nearbyDistance - ${draft.distance} = 50 m)")
     }
 }

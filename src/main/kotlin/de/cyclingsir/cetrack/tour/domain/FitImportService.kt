@@ -25,9 +25,8 @@ class FitImportService(
 
     private fun FitParsedSession.toDraftWithHint(): DraftWithHint {
         val draft = sessionMapper.map(session, records)
-        val matches = tourRepository.findAllByStartedAtAndDistanceAndDurationRecordedAndDurationElapsed(
-            draft.startedAt, draft.distance, draft.durationRecorded, draft.durationElapsed
-        )
+        val (lo, hi) = TourDedup.distanceRange(draft.distance)
+        val matches = tourRepository.findAllByStartedAtAndDistanceBetween(draft.startedAt, lo, hi)
         return DraftWithHint(draft, matches)
     }
 }

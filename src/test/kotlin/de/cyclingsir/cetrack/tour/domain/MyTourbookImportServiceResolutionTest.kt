@@ -69,7 +69,7 @@ class MyTourbookImportServiceResolutionTest {
         every { tourRepository.save(any<TourEntity>()) } answers { firstArg() }
         every { bikeRepository.findById(any<UUID>()) } returns Optional.empty()
         every { ignoreRepository.save(any<ImportIgnoreEntity>()) } answers { firstArg() }
-        every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
+        every { ignoreRepository.existsByStartedAtAndDistanceBetween(any(), any(), any()) } returns false
         every { stateRepository.findById(1) } returns Optional.of(
             ImportStateEntity(1, DB_VERSION - 1, Instant.now())
         )
@@ -219,7 +219,7 @@ class MyTourbookImportServiceResolutionTest {
     @Test
     fun `SUPPRESS is idempotent when triple already in ignore set`() {
         every { sessionRepository.findById(SESSION_ID) } returns Optional.of(sessionWithWarning())
-        every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns true
+        every { ignoreRepository.existsByStartedAtAndDistanceBetween(any(), any(), any()) } returns true
 
         service.commit(SESSION_ID, emptyList(), listOf(WarningResolutionRequest(MT_TOUR_ID, "SUPPRESS")))
 

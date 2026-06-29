@@ -76,8 +76,8 @@ class MyTourbookImportServiceStageTest {
         )
         every { stateRepository.save(any<ImportStateEntity>()) } answers { firstArg() }
         every { tourRepository.existsByMtTourIdAndSourceNot(any(), TourSource.FIT) } returns false
-        every { ignoreRepository.existsByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns false
-        every { tourRepository.findAllByStartedAtAndDistanceAndDurationMoving(any(), any(), any()) } returns emptyList()
+        every { ignoreRepository.existsByStartedAtAndDistanceBetween(any(), any(), any()) } returns false
+        every { tourRepository.findAllByStartedAtAndDistanceBetween(any(), any(), any()) } returns emptyList()
         every { sessionRepository.findAllByStatus(STATUS_PENDING) } returns emptyList()
         every { sessionRepository.save(any<ImportSessionEntity>()) } answers { firstArg() }
         every { sessionRepository.saveAll(any<List<ImportSessionEntity>>()) } answers { firstArg() }
@@ -347,5 +347,41 @@ class MyTourbookImportServiceStageTest {
         val result = service.stage(emptyStream())
 
         assertNull(result, "candidate whose mt_tour_id matches a MYTOURBOOK row must be filtered")
+    }
+
+    // CE-0072: tolerance boundary — in-tolerance → LOGICAL_DUPLICATE; out-of-tolerance → candidate
+    @Test
+    fun `stage raises LOGICAL_DUPLICATE when distance within tolerance and no warning when outside`() {
+        val baseDistance = 30_000
+        val inTolerance = aMTTour("9000000000011").copy(DISTANCE = baseDistance + 100) // within ±0.5%=150m
+        val outTolerance = aMTTour("9000000000012").copy(DISTANCE = baseDistance + 300) // outside ±0.5%=150m
+
+        every { derbyAdapter.read(any(), any(), any(), any()) } returns DerbyReadAdapter.ReadResult(
+            DB_VERSION, listOf(inTolerance, outTolerance)
+        )
+
+        val existingTour = de.cyclingsir.cetrack.tour.storage.TourEntity(
+            id = java.util.UUID.randomUUID(), mtTourId = "8000000000001", title = "Existing",
+            distance = baseDistance, durationMoving = 5400L,
+            startedAt = Instant.parse("2026-01-15T08:00:00Z"),
+            startYear = 2026, startMonth = 1, startDay = 15,
+            altUp = 200, altDown = 200, powerTotal = 0L, bike = null
+        )
+
+        // in-tolerance candidate: ignoreRepo miss, tourRepo hit
+        every { ignoreRepository.existsByStartedAtAndDistanceBetween(any(), any(), any()) } returns false
+        every { tourRepository.findAllByStartedAtAndDistanceBetween(any(), any(), any()) } answers {
+            val lo = secondArg<Int>()
+            val hi = thirdArg<Int>()
+            if (baseDistance in lo..hi) listOf(existingTour) else emptyList()
+        }
+
+        val session = service.stage(emptyStream())!!
+
+        assertEquals(1, session.candidates.size, "out-of-tolerance candidate must remain a candidate")
+        assertEquals("9000000000012", session.candidates.first().MTTOURID)
+        assertEquals(1, session.warnings.filter { it.type == "LOGICAL_DUPLICATE" }.size,
+            "in-tolerance candidate must raise LOGICAL_DUPLICATE")
+        assertEquals("9000000000011", session.warnings.first { it.type == "LOGICAL_DUPLICATE" }.mtTourId)
     }
 }

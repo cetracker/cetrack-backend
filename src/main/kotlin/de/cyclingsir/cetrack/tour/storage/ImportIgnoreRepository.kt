@@ -7,5 +7,5 @@ import java.util.UUID
 
 @Repository
 interface ImportIgnoreRepository : JpaRepository<ImportIgnoreEntity, UUID> {
-    fun existsByStartedAtAndDistanceAndDurationMoving(startedAt: Instant, distance: Int, durationMoving: Long): Boolean
+    fun existsByStartedAtAndDistanceBetween(startedAt: Instant, distMin: Int, distMax: Int): Boolean
 }
