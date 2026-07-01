@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack
 
+import de.cyclingsir.cetrack.configuration.CetrackBanner
 import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -14,5 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 class MainApplication
 
 fun main(args: Array<String>) {
-    runApplication<MainApplication>(*args)
+    runApplication<MainApplication>(*args) {
+        setBanner(CetrackBanner())
+    }
 }

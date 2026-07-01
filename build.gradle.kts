@@ -34,6 +34,10 @@ gitProperties {
     keys = listOf("git.branch","git.commit.id","git.commit.time","git.commit.message.short","git.tags","git.commit.user.email")
 }
 
+springBoot {
+    buildInfo()
+}
+
 spotbugs {
     effort = Effort.DEFAULT
     reportsDir = file(layout.buildDirectory.file("reports/spotbugs"))
