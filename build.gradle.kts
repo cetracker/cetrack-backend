@@ -199,7 +199,7 @@ val swaggerVersion = "2.2.52"
 val mockKVersion = "1.14.11"
 val byeBuddyVersion = "1.18.9"
 val derbyVersion = "10.17.1.0"
-val commonsCompressVersion = "1.27.1"
+val commonsCompressVersion = "1.28.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
