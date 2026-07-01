@@ -195,7 +195,7 @@ kotlin {
 val garminFitVersion = "21.205.0"
 val kMapperVersion = "1.3.0"
 val kotlinLoggingVersion = "8.0.4"
-val swaggerVersion = "2.2.50"
+val swaggerVersion = "2.2.52"
 val mockKVersion = "1.14.11"
 val byeBuddyVersion = "1.18.9"
 val derbyVersion = "10.17.1.0"
