@@ -42,7 +42,7 @@ class PartPartTypeRelationEntity(
     var part: PartEntity)
 
 @Embeddable
-class CompositeKey(
+data class CompositeKey(
     var partId: UUID,
     var partTypeId: UUID,
     var validFrom: Instant) : Serializable

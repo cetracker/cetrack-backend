@@ -9,6 +9,8 @@ spring:
     datatype:
       datetime:
         adjust-dates-to-context-time-zone: false
+  jpa:
+    open-in-view: true
 server:
   port: 8080
   servlet:
@@ -104,9 +106,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${hibernate.ddl:validate}
-    properties:
-      hibernate:
-        dialect: ${MYSQL_DIALECT:org.hibernate.dialect.MySQLDialect}
   flyway:
     enabled: true
     baseline-version: 0.1
