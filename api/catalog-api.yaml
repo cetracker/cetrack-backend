@@ -1,0 +1,316 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: The API documentation for tracking cycling equipment - catalog / reference data (component types and positions)
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: ComponentTypes
+    description: Component type catalog (what a component is, e.g. "tire", "chain")
+  - name: Positions
+    description: Position catalog (shared place vocabulary, e.g. "front", "rear")
+
+paths:
+  /componentTypes:
+    get:
+      operationId: getComponentTypes
+      description: returns all component types; empty list when none exist
+      tags:
+        - ComponentTypes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentTypes'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createComponentType
+      description: creates a new component type
+      tags:
+        - ComponentTypes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentTypeInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /componentTypes/{componentTypeId}:
+    parameters:
+      - $ref: '#/components/parameters/componentTypeId'
+    get:
+      operationId: getComponentType
+      description: returns a single component type
+      tags:
+        - ComponentTypes
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: modifyComponentType
+      description: modifies an existing component type
+      tags:
+        - ComponentTypes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentTypeInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentType'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteComponentType
+      description: >
+        Deletes the component type. Rejected with 409 while any component,
+        mount point or assembly slot references it.
+      tags:
+        - ComponentTypes
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /positions:
+    get:
+      operationId: getPositions
+      description: returns all positions; empty list when none exist
+      tags:
+        - Positions
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Positions'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createPosition
+      description: creates a new position
+      tags:
+        - Positions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /positions/{positionId}:
+    parameters:
+      - $ref: '#/components/parameters/positionId'
+    get:
+      operationId: getPosition
+      description: returns a single position
+      tags:
+        - Positions
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: modifyPosition
+      description: modifies an existing position
+      tags:
+        - Positions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deletePosition
+      description: >
+        Deletes the position. Rejected with 409 while any mount point or
+        component assembly references it.
+      tags:
+        - Positions
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    componentTypeId:
+      name: componentTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    positionId:
+      name: positionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    ComponentType:
+      type: object
+      description: catalog entry classifying what a component is; never a physical thing
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: unique component type name (e.g. "tire", "chain")
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    ComponentTypeInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    ComponentTypes:
+      type: array
+      items:
+        $ref: '#/components/schemas/ComponentType'
+    Position:
+      type: object
+      description: >
+        shared place-vocabulary entry ("front", "rear"). Referenced by mount points
+        and component assemblies only - never by components (ADR-0003).
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: unique position name
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    PositionInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Positions:
+      type: array
+      items:
+        $ref: '#/components/schemas/Position'
