@@ -93,8 +93,8 @@ spring:
     activate:
       on-profile: postgres
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5442}/${POSTGRES_DB:cuetdata}
-    username: ${POSTGRES_USER:cuet}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:cetracker}
+    username: ${POSTGRES_USER:cet}
     password: ${POSTGRES_PASSWORD:components}
     hikari:
       pool-name: ${spring.application.name}
