@@ -27,5 +27,6 @@ data class DomainMounting(
  */
 data class DomainMountingChanges(
     val created: List<DomainMounting> = emptyList(),
-    val closed: List<DomainMounting> = emptyList()
+    val closed: List<DomainMounting> = emptyList(),
+    val membershipChanges: List<DomainMembershipChange> = emptyList(),
 )

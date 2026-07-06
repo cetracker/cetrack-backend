@@ -28,6 +28,7 @@ class MountingService(
     private val mountPointRepository: MountPointRepository,
     private val bikeRepository: BikeRepository,
     private val componentRepository: ComponentRepository,
+    private val membershipPropagation: MembershipPropagation,
 ) {
 
     /**
@@ -65,32 +66,47 @@ class MountingService(
 
         val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)
         val own = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
+        // ADR-0001 §2 (ruling 2b, first bullet): the component itself governed elsewhere is
+        // rejected before the occupant is touched - auto-dismounting it here would silently
+        // rip it out of its mounted assembly with no replacement joining. The degenerate
+        // self-case (own IS the occupant, same mount point) is not "elsewhere" - no reject.
+        if (own != null && own.assemblyMountingId != null && own.mountPointId != mountPointId) {
+            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED, "Dismount the assembly instead.")
+        }
+
         val toClose = listOfNotNull(occupant, own).distinctBy { it.id }
         toClose.forEach { mounting ->
             if (!at.isAfter(mounting.mountedAt)) {
                 throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED,
                     "Mounting to close started at ${mounting.mountedAt}.")
             }
-            mounting.dismountedAt = at
         }
+        // ADR-0001 §2 (ruling 2b, second bullet): a governed occupant of a MOUNTED assembly
+        // propagates membership to the replacement instead of rejecting the mount.
+        val propagateOccupant = occupant != null && occupant.assemblyMountingId != null && occupant.componentId != componentId
+        toClose.forEach { it.dismountedAt = at }
+
+        val newMounting = MountingEntity(id = null, componentId = componentId, mountPointId = mountPointId, mountedAt = at)
+        val membershipChanges = if (propagateOccupant) {
+            membershipPropagation.propagate(occupant, newMounting, at)
+        } else {
+            emptyList()
+        }
+
         val created = try {
             // flush the closings first: the exclusion constraint is checked per
             // statement and Hibernate would otherwise order the INSERT first
             mountingRepository.saveAllAndFlush(toClose)
-            mountingRepository.saveAndFlush(
-                MountingEntity(id = null, componentId = componentId, mountPointId = mountPointId, mountedAt = at)
-            )
+            mountingRepository.saveAndFlush(newMounting)
         } catch (e: DataIntegrityViolationException) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
         }
         logger.info { "Mounted $componentId at $mountPointId ($at); closed ${toClose.map { it.id }}" }
 
-        // CE-0086 extension point (ADR-0001 §2): if a closed occupant is a member of a
-        // MOUNTED assembly, membership auto-propagates to the replacement + notification.
-        // Impossible before assemblies ship - membershipChanges stays empty.
         return DomainMountingChanges(
             created = listOf(toDomain(created)),
-            closed = toClose.map(::toDomain)
+            closed = toClose.map(::toDomain),
+            membershipChanges = membershipChanges
         )
     }
 
@@ -142,7 +158,7 @@ class MountingService(
             .orElseThrow { ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND) }
         if (mounting.assemblyMountingId != null) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED,
-                "Correction cascades are out of scope until CE-0086.")
+                "Correction cascades for governed mountings are tracked in CE-0093.")
         }
         if (mountedAt == null && dismountedAt == null && !reopenDismount) {
             throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID)

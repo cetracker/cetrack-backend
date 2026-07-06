@@ -1,7 +1,10 @@
 package de.cyclingsir.cetrack.mounting.rest
 
+import de.cyclingsir.cetrack.infrastructure.api.model.MembershipChange
 import de.cyclingsir.cetrack.infrastructure.api.model.Mounting
 import de.cyclingsir.cetrack.infrastructure.api.model.MountingChanges
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipAction
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipChange
 import de.cyclingsir.cetrack.mounting.domain.DomainMounting
 import de.cyclingsir.cetrack.mounting.domain.DomainMountingChanges
 import java.time.ZoneOffset
@@ -20,9 +23,19 @@ class MountingDomain2ApiMapper {
         createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
     )
 
+    fun map(domain: DomainMembershipChange): MembershipChange = MembershipChange(
+        componentId = domain.componentId,
+        assemblySlotId = domain.assemblySlotId,
+        action = when (domain.action) {
+            DomainMembershipAction.ADDED -> MembershipChange.Action.added
+            DomainMembershipAction.REMOVED -> MembershipChange.Action.removed
+        },
+        at = domain.at.atOffset(ZoneOffset.UTC)
+    )
+
     fun map(domain: DomainMountingChanges): MountingChanges = MountingChanges(
         created = domain.created.map(::map),
         closed = domain.closed.map(::map),
-        membershipChanges = emptyList()
+        membershipChanges = domain.membershipChanges.map(::map)
     )
 }
