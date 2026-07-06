@@ -15,7 +15,7 @@ class FlywayMigrationIT : PostgreSQLContainerIT() {
     fun `fresh CUET baseline applies cleanly on PostgreSQL`() {
         val applied = flyway.info().applied()
         assertThat(applied).isNotEmpty
-        assertThat(applied.map { it.version?.version }).containsExactly("1.0")
+        assertThat(applied.map { it.version?.version }).containsExactly("1.0", "1.1")
         assertThat(applied.all { it.state.isApplied }).isTrue()
     }
 }
