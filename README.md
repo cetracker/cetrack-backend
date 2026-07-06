@@ -11,7 +11,7 @@ The Backend is a Kotlin, SpringBoot application, providing business logic via a 
 
 A specification first approach is used for the API. Code is being generated with the help of the [OpenAPI Generator](https://openapi-generator.tech/), and it's plugin for [Gradle](https://gradle.org/).
 For mapping the data on it's journey through the onion layers [kmapper](https://stackoverflow.com/a/74864762/2664521) is being used.  
-Setting up database schema on MySQL compatible databases is done with [Flyway scripts](https://flywaydb.org/).
+Setting up the database schema on PostgreSQL is done with [Flyway scripts](https://flywaydb.org/).
 
 A JDK of Java 25 is needed for building the project.
 
@@ -25,15 +25,15 @@ To build an artefact, all you  have to do is to run
 
 ### Running tests
 
-The fast unit test suite (H2, no Docker required):
+The fast unit test suite (no DB, no Docker required):
 
 ```bash
 ./gradlew test
 ```
 
-**Integration tests** run Flyway migrations and DB-constraint assertions against a real MySQL
-8 container via Testcontainers. A running Docker (or Podman with a Docker-compatible socket)
-daemon is required:
+**Integration tests** run Flyway migrations and DB-constraint assertions against a real
+PostgreSQL 17 container via Testcontainers. A running Docker (or Podman with a
+Docker-compatible socket) daemon is required:
 
 ```bash
 ./gradlew integrationTest
@@ -45,15 +45,14 @@ CI runs `integrationTest` automatically in the `integration-test` GitHub Actions
 ### Running locally
 
 ```bash
-./gradlew bootRun -Dspring.profiles.active="h2db"
+./gradlew bootRun -Dspring.profiles.active="local,postgres"
 ```
 
-When running with the profile `h2db`, the database will be _destroyed_ when the service is terminated.
-If you want the data to be persisted, you may connect it with a MariaDB oder MySQL instance.
-A prepared profile named `mysql` is provided for this.
-Have a look inside the `application.yaml` for the necessary connection parameters as well as for additionally
-available Spring profiles. The above startup command needs to adapted to `-Dspring.profiles.active="mysql"`
-in order to use MySQL instead of the in memory h2 database.
+The `postgres` profile expects a running PostgreSQL 17 (defaults match the compose file in
+`CUET_DDD_Model/database/`: localhost:5442, db `cuetdata`, user `cuet`); Flyway migrates the
+schema on startup. `local` adds dev conveniences and has no datasource of its own.
+Have a look inside the `application.yaml` for the connection parameters (env-var overridable)
+as well as for additionally available Spring profiles.
 
 Once the service has completely started, the API is accessible at `http://localhost:8080/api`
 

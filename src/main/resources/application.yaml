@@ -1,7 +1,7 @@
 spring:
   profiles:
     group:
-      demo: h2db, demo-data
+      demo: postgres, demo-data
     active: default
   devtools:
     add-properties: false
@@ -69,9 +69,7 @@ spring:
       max-request-size: 512KB
   flyway:
     enabled: true
-    baseline-version: 0.1
-    baseline-on-migrate: true
-    locations: classpath:db/migration/mysql
+    locations: classpath:db/migration/postgres
   security:
     user:
       name: user
@@ -93,63 +91,19 @@ management:
 spring:
   config:
     activate:
-      on-profile: mysql
+      on-profile: postgres
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:ceparts}?useSSL=${MYSQL_USE_SSL:true}&requireSSL=${MYSQL_REQUIRE_SSL:false}&verifyServerCertificate=${MYSQL_VERIFY_SERVER_CERTIFICATE:false}&useServerPrepStmts=true&useTimezone=true&useLegacyDatetimeCode=false&serverTimezone=UTC&sendFractionalSeconds=true
-    username: ${MYSQL_USER:parts}
-    password: ${MYSQL_PASSWORD:parts}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5442}/${POSTGRES_DB:cuetdata}
+    username: ${POSTGRES_USER:cuet}
+    password: ${POSTGRES_PASSWORD:components}
     hikari:
       pool-name: ${spring.application.name}
-      data-source-properties:
-        useUnicode: true
-        characterEncoding: UTF-8
   jpa:
     hibernate:
       ddl-auto: ${hibernate.ddl:validate}
   flyway:
     enabled: true
-    baseline-version: 0.1
-    baseline-on-migrate: true
-    locations: classpath:db/migration/mysql
-  h2:
-    console:
-      enabled: false
-  sql:
-    init:
-      platform: mysql
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: h2db
-  jpa:
-    database: h2
-    hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
-    properties:
-      hibernate:
-#        format_sql: true
-  datasource:
-    url: jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=false
-#    url: jdbc:h2:tcp//localhost:9092/./testDB2;DB_CLOSE_ON_EXIT=false
-    username: sa
-    driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
-      settings:
-        web-allow-others: true
-        trace: true
-  sql:
-    init:
-      mode: always
-      platform: h2
-  flyway:
-    enabled: false
+    locations: classpath:db/migration/postgres
 
 ---
 
