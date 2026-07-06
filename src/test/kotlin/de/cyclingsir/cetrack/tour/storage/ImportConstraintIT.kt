@@ -1,6 +1,6 @@
 package de.cyclingsir.cetrack.tour.storage
 
-import de.cyclingsir.cetrack.support.MySQLContainerIT
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import java.time.Instant
 
-class ImportConstraintIT : MySQLContainerIT() {
+class ImportConstraintIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var tourRepository: TourRepository
     @Autowired private lateinit var ignoreRepository: ImportIgnoreRepository
@@ -24,8 +24,8 @@ class ImportConstraintIT : MySQLContainerIT() {
         startYear = 2026.toShort(),
         startMonth = 1.toShort(),
         startDay = 15.toShort(),
-        altUp = 200,
-        altDown = 150,
+        ascent = 200,
+        descent = 150,
         powerTotal = 0L
     )
 

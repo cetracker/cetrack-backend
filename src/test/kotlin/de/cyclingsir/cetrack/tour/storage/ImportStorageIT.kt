@@ -29,8 +29,8 @@ class ImportStorageIT {
         startYear = 2026.toShort(),
         startMonth = 1.toShort(),
         startDay = 15.toShort(),
-        altUp = 200,
-        altDown = 150,
+        ascent = 200,
+        descent = 150,
         powerTotal = 0L
     )
 

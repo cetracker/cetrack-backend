@@ -47,8 +47,8 @@ class FitImportIT {
         assertTrue(draft.durationMoving <= draft.durationRecorded,
             "durationMoving must be <= durationRecorded")
         // ELEMNT ROAM file has elevation data from device
-        assertEquals(91, draft.altUp)
-        assertEquals(79, draft.altDown)
+        assertEquals(91, draft.ascent)
+        assertEquals(79, draft.descent)
         assertEquals(344410L, draft.powerTotal)
         assertEquals(TourSource.FIT, draft.source)
         assertTrue(drafts[0].existingMatches.isEmpty(), "no duplicates expected on first import")
@@ -81,7 +81,7 @@ class FitImportIT {
         val draft = drafts[0].draft
 
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
         val created = tourService.addTour(draft.copy(title = "ELEMNT ROAM Ride", bike = bike), TourSource.FIT)
 
@@ -102,7 +102,7 @@ class FitImportIT {
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
         val draft = drafts[0].draft
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
 
         // First create succeeds
@@ -123,7 +123,7 @@ class FitImportIT {
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
         val draft = drafts[0].draft
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
 
         // Persist it first
@@ -156,8 +156,8 @@ class FitImportIT {
             startYear = seededAt.atZone(ZoneOffset.UTC).year.toShort(),
             startMonth = seededAt.atZone(ZoneOffset.UTC).monthValue.toShort(),
             startDay = seededAt.atZone(ZoneOffset.UTC).dayOfMonth.toShort(),
-            altUp = draft.altUp,
-            altDown = draft.altDown,
+            ascent = draft.ascent,
+            descent = draft.descent,
             powerTotal = draft.powerTotal,
             bike = null
         ))

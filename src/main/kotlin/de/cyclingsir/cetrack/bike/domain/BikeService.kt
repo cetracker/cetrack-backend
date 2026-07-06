@@ -21,6 +21,8 @@ private val logger = KotlinLogging.logger {}
 class BikeService(private val repository: BikeRepository, private val mapper: BikeDomain2StorageMapper) {
 
     fun addBike(bike: DomainBike): DomainBike {
+        requireIdentifiable(bike)
+        requirePricePair(bike)
         val bikeEntity = repository.save(mapper.map(bike))
         logger.info { "Added Entity: ${bikeEntity.createdAt?.toString()}, ${bikeEntity.model}" }
         val domainBike = mapper.map(bikeEntity)
@@ -29,14 +31,32 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     fun getBike(bikeId: UUID) : DomainBike {
-        val bikeEntity = repository.findById(bikeId).get()
-        return mapper.map(jpa = bikeEntity);
+        val bikeEntity = repository.findById(bikeId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
+        return mapper.map(jpa = bikeEntity)
     }
 
     @SuppressWarnings("BC_BAD_CAST_TO_ABSTRACT_COLLECTION")
     fun getBikes(): List<DomainBike> {
         val bikeEntities: List<BikeEntity> = repository.findAll()
         return bikeEntities.map(mapper::map)
+    }
+
+    /**
+     * A bike must be identifiable by at least a name or a model (spec: domain validation).
+     */
+    private fun requireIdentifiable(bike: DomainBike) {
+        if (bike.name.isNullOrBlank() && bike.model.isNullOrBlank()) {
+            throw ServiceException(ErrorCodesDomain.BIKE_NOT_IDENTIFIABLE)
+        }
+    }
+
+    private fun requirePricePair(bike: DomainBike) {
+        val hasPrice = !bike.price.isNullOrBlank()
+        val hasCurrency = !bike.priceCurrency.isNullOrBlank()
+        if (hasPrice != hasCurrency) {
+            throw ServiceException(ErrorCodesDomain.BIKE_PRICE_CURRENCY_MISMATCH)
+        }
     }
 
     @Transactional
@@ -46,11 +66,15 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         }
         val existing = repository.findById(bikeId)
             .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
+        requireIdentifiable(bike)
+        requirePricePair(bike)
         val incoming = mapper.map(bike)
+        existing.name = incoming.name
         existing.model = incoming.model
         existing.manufacturer = incoming.manufacturer
-        existing.boughtAt = incoming.boughtAt
-        existing.retiredAt = incoming.retiredAt
+        existing.purchaseDate = incoming.purchaseDate
+        existing.price = incoming.price
+        existing.priceCurrency = incoming.priceCurrency
         val bikeEntity = try {
             repository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
@@ -65,17 +89,13 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         if (!repository.existsById(bikeId)) throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND)
         try {
             repository.deleteById(bikeId)
+            repository.flush()
         } catch (e: DataIntegrityViolationException) {
-            e.message?.let { message ->
-                if (message.contains("PART_TYPE"))
-                    throw ServiceException(ErrorCodesDomain.BIKE_HAS_FOREIGN_KEY_CONSTRAINT, "Bike is connected to a part type. Delete this first.")
-                if (message.contains("TOUR"))
-                    throw ServiceException(ErrorCodesDomain.BIKE_HAS_FOREIGN_KEY_CONSTRAINT, "Bike is connected to at least one tour. Delete this first.")
-
-                throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR)
-            }
+            // mount_point, tour or maintenance_task rows reference the bike (FK RESTRICT)
+            throw ServiceException(ErrorCodesDomain.BIKE_HAS_FOREIGN_KEY_CONSTRAINT,
+                "Bike is referenced by mount points, tours or maintenance tasks; retire it instead.")
         } catch (e: Exception) {
-            throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND, e.message)
+            throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message, e)
         }
     }
 }

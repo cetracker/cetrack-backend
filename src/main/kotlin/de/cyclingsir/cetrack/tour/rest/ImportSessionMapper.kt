@@ -31,8 +31,8 @@ class ImportSessionMapper {
         startedAt = Instant.ofEpochMilli(t.STARTTIMESTAMP).atOffset(ZoneOffset.UTC),
         distance = t.DISTANCE,
         durationMoving = t.DURATIONMOVING,
-        altUp = t.TOURALTUP,
-        altDown = t.TOURALTDOWN,
+        ascent = t.TOURALTUP,
+        descent = t.TOURALTDOWN,
         powerTotal = t.POWERTOTAL,
         bikeId = t.bikeId
     )

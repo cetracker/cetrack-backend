@@ -183,8 +183,8 @@ class MyTourbookImportService(
                     existing.startYear = incoming.STARTYEAR
                     existing.startMonth = incoming.STARTMONTH
                     existing.startDay = incoming.STARTDAY
-                    existing.altUp = incoming.TOURALTUP
-                    existing.altDown = incoming.TOURALTDOWN
+                    existing.ascent = incoming.TOURALTUP
+                    existing.descent = incoming.TOURALTDOWN
                     existing.powerTotal = incoming.POWERTOTAL
                     existing.bike = incoming.bikeId?.let { bikeRepository.findById(it).orElse(null) }
                     existing.source = TourSource.MYTOURBOOK
@@ -293,8 +293,8 @@ class MyTourbookImportService(
             startYear = mtTour.STARTYEAR,
             startMonth = mtTour.STARTMONTH,
             startDay = mtTour.STARTDAY,
-            altUp = mtTour.TOURALTUP,
-            altDown = mtTour.TOURALTDOWN,
+            ascent = mtTour.TOURALTUP,
+            descent = mtTour.TOURALTDOWN,
             powerTotal = mtTour.POWERTOTAL,
             bike = bikeEntity,
             source = TourSource.MYTOURBOOK

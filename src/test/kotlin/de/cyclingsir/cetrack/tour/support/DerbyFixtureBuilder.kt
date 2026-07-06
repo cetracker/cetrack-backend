@@ -28,8 +28,8 @@ data class TourSpec(
     val person: Int = 0,            // ≠0 → excluded by adapter (TOURPERSON_PERSONID filter)
     val type: Int = 0,              // not in {0,1,2,4,113} → excluded
     val title: String = "Test tour $mtTourId",
-    val altUp: Int = 500,
-    val altDown: Int = 480,
+    val ascent: Int = 500,
+    val descent: Int = 480,
     val powerTotal: Long = 0L,
 )
 
@@ -130,8 +130,8 @@ object DerbyFixtureBuilder {
                     TOURDEVICETIME_RECORDED, POWER_TOTALWORK, TOURTYPE_TYPEID, TOURPERSON_PERSONID)
                    VALUES (${t.mtTourId}, $startYear, $startMonth, $startDay, 8, 0, 1,
                     0, 0, 200, 0, 2,
-                    ${t.distance}, ${t.altUp}, ${t.altDown}, ${t.durationMoving},
-                    0, 0, 0, ${t.altUp}, ${t.altDown},
+                    ${t.distance}, ${t.ascent}, ${t.descent}, ${t.durationMoving},
+                    0, 0, 0, ${t.ascent}, ${t.descent},
                     '${t.title.replace("'", "''")}', ${t.startTimestampMs}, ${t.durationMoving}, ${t.durationMoving},
                     ${t.durationMoving}, ${t.powerTotal}, ${t.type}, ${t.person})"""
             )

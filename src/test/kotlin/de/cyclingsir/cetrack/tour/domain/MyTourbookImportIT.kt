@@ -3,7 +3,7 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
-import de.cyclingsir.cetrack.support.MySQLContainerIT
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
@@ -43,7 +43,7 @@ import java.util.UUID
  * F_drift / F_incompat reuse F1 specs with different dbVersion / omitTable
  */
 @Tag("import-integration")
-class MyTourbookImportIT : MySQLContainerIT() {
+class MyTourbookImportIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var importService: MyTourbookImportService
     @Autowired private lateinit var tourRepository: TourRepository
@@ -429,8 +429,8 @@ class MyTourbookImportIT : MySQLContainerIT() {
                 startYear = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).year.toShort(),
                 startMonth = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).monthValue.toShort(),
                 startDay = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).dayOfMonth.toShort(),
-                altUp = spec.altUp,
-                altDown = spec.altDown,
+                ascent = spec.ascent,
+                descent = spec.descent,
                 powerTotal = spec.powerTotal,
                 bike = bikeEntity,
                 source = source
@@ -451,8 +451,8 @@ class MyTourbookImportIT : MySQLContainerIT() {
                 startYear = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).year.toShort(),
                 startMonth = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).monthValue.toShort(),
                 startDay = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).dayOfMonth.toShort(),
-                altUp = spec.altUp,
-                altDown = spec.altDown,
+                ascent = spec.ascent,
+                descent = spec.descent,
                 powerTotal = spec.powerTotal,
                 bike = bikeEntity
             )

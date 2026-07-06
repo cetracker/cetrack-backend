@@ -45,7 +45,7 @@ class BikeServiceTest {
   }
 
   private fun bikeWith(model: String, id: UUID? = null) =
-    DomainBike(model = model, manufacturer = null, id = id, boughtAt = null, retiredAt = null, createdAt = null)
+    DomainBike(model = model, manufacturer = null, id = id, retiredAt = null, createdAt = null)
 
   @Test
   fun `modifyBike rejects when body id does not match path id`() {

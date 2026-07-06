@@ -51,8 +51,8 @@ class FitSessionMapperTest {
     @Test
     fun `maps elevation, null becomes 0`() {
         val draft = mapper.map(elementRoamSession(), emptyList())
-        assertEquals(91, draft.altUp)
-        assertEquals(79, draft.altDown)
+        assertEquals(91, draft.ascent)
+        assertEquals(79, draft.descent)
     }
 
     @Test
@@ -61,8 +61,8 @@ class FitSessionMapperTest {
         s.totalAscent = null
         s.totalDescent = null
         val draft = mapper.map(s, emptyList())
-        assertEquals(0, draft.altUp)
-        assertEquals(0, draft.altDown)
+        assertEquals(0, draft.ascent)
+        assertEquals(0, draft.descent)
     }
 
     @Test

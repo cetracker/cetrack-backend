@@ -37,8 +37,8 @@ import java.util.UUID
         durationMoving = 5600L,
         durationRecorded = 5689L,
         durationElapsed = 10255L,
-        altUp = 91,
-        altDown = 79,
+        ascent = 91,
+        descent = 79,
         powerTotal = 344410L,
         bike = null,
         startedAt = startedAt,
@@ -63,7 +63,7 @@ import java.util.UUID
             .andExpect(jsonPath("$[0].distance").value(18986))
             .andExpect(jsonPath("$[0].durationRecorded").value(5689))
             .andExpect(jsonPath("$[0].durationElapsed").value(10255))
-            .andExpect(jsonPath("$[0].altUp").value(91))
+            .andExpect(jsonPath("$[0].ascent").value(91))
             .andExpect(jsonPath("$[0].duplicateHint").doesNotExist())
     }
 
@@ -81,8 +81,8 @@ import java.util.UUID
             startYear = 2024.toShort(),
             startMonth = 9.toShort(),
             startDay = 4.toShort(),
-            altUp = 91,
-            altDown = 79,
+            ascent = 91,
+            descent = 79,
             powerTotal = 344410L
         )
         every { fitImportService.parseToDrafts(any()) } returns listOf(

@@ -6,10 +6,10 @@ import jakarta.persistence.EntityListeners
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -23,13 +23,18 @@ class BikeEntity(
     @GeneratedValue
     var id: UUID?,
 
-    @Column(length = 255)
-    var model: @NotNull String,
+    var name: String? = null,
 
-    @Column(length = 255)
+    var model: String? = null,
+
     var manufacturer: String? = null,
 
-    var boughtAt: Instant? = null,
+    var purchaseDate: LocalDate? = null,
+
+    var price: String? = null,
+
+    @Column(columnDefinition = "char(3)")
+    var priceCurrency: String? = null,
 
     var retiredAt: Instant? = null,
 

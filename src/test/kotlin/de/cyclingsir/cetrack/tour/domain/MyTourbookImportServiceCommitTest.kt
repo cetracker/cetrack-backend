@@ -208,8 +208,8 @@ class MyTourbookImportServiceCommitTest {
         assertEquals(2026, persisted.startYear.toInt())
         assertEquals(1, persisted.startMonth.toInt())
         assertEquals(15, persisted.startDay.toInt())
-        assertEquals(200, persisted.altUp)
-        assertEquals(150, persisted.altDown)
+        assertEquals(200, persisted.ascent)
+        assertEquals(150, persisted.descent)
         assertEquals(12_000L, persisted.powerTotal)
         assertEquals(BIKE_A, persisted.bike?.id, "tour must link to the correct bike")
     }
