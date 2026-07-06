@@ -57,6 +57,18 @@ import org.springframework.web.context.request.WebRequest
   }
 
   @Test
+  fun `unexpected 500 renders the shared Error shape with INTERNAL_ERROR`() {
+   val response = centralExceptionHandler.handleServiceException(
+    ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, "boom"),
+    webRequest
+   )
+
+   Assertions.assertEquals(500, response.statusCode.value())
+   val body = Assertions.assertInstanceOf(Error::class.java, response.body)
+   Assertions.assertEquals("INTERNAL_ERROR", body.code)
+  }
+
+  @Test
   fun `legacy error without wireCode keeps the old ErrorDetails shape`() {
    val response = centralExceptionHandler.handleServiceException(
     ServiceException(ErrorCodesDomain.TOUR_DUPLICATE),

@@ -12,4 +12,8 @@ enum class ErrorCodesService(
 
     override val reason: String?
         get() = description
+
+    /** Unexpected 500s render the shared Error shape the specs declare (CE-0084). */
+    override val wireCode: String
+        get() = "INTERNAL_ERROR"
 }

@@ -41,7 +41,7 @@ interface ServiceError : Supplier<ServiceException> {
      * Stable machine-readable code of the shared `Error` schema (common-api.yaml).
      * Non-null on errors of the new domain model: the central handler then emits
      * the generated `Error {code, message, details}` body. Null keeps the legacy
-     * `ErrorDetails` shape (old tour endpoints; CE-0084/0085 retire it).
+     * `ErrorDetails` shape (old tour endpoints; CE-0085 retires it).
      */
     val wireCode: String?
         get() = null
