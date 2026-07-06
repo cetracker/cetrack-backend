@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: h2db
   flyway:
     enabled: false
 
@@ -20,28 +18,3 @@ server:
   port: 8080
   servlet:
     context-path: /api
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: h2db
-  jpa:
-    database: h2
-    hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
-  datasource:
-    url: jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=false
-    username: sa
-    driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
-  sql:
-    init:
-      mode: always
-      platform: h2
-  flyway:
-    enabled: false

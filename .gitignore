@@ -36,8 +36,7 @@ out/
 *.swp
 
 ### Debug Data
-src/main/resources/data-h2.sql
-src/main/resources/data-mysql.sql
+src/main/resources/data-postgres.sql
 
 ### NetBeans ###
 /nbproject/private/
@@ -53,3 +52,7 @@ tours_*
 
 ### VS Code ###
 .vscode/
+
+### tooling artifacts
+graphify-out/
+openapitools.json

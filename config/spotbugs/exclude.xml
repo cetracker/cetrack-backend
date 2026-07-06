@@ -60,9 +60,9 @@
         <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest" />
         <Bug pattern="ODR_OPEN_DATABASE_RESOURCE" />
     </Match>
-    <!-- MySQLContainerIT companion object exposes container reference intentionally -->
+    <!-- PostgreSQLContainerIT companion object exposes container reference intentionally -->
     <Match>
-        <Class name="de.cyclingsir.cetrack.support.MySQLContainerIT$Companion" />
+        <Class name="de.cyclingsir.cetrack.support.PostgreSQLContainerIT$Companion" />
         <Bug pattern="MS_EXPOSE_REP" />
     </Match>
     <!-- Kotlin companion object init generates a SA false positive in bytecode -->
