@@ -1,6 +1,8 @@
 package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.bike.storage.BikeRepository
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
@@ -10,20 +12,19 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
 
-@SpringBootTest
 @Transactional
-class FitImportIT {
+class FitImportIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var fitImportService: FitImportService
     @Autowired private lateinit var tourService: TourService
     @Autowired private lateinit var tourRepository: TourRepository
+    @Autowired private lateinit var bikeRepository: BikeRepository
 
     companion object {
         val BIKE_A: UUID = UUID.fromString("a1111111-0001-0001-0001-000000000001")
@@ -137,6 +138,9 @@ class FitImportIT {
 
     // CE-0072: FIT hint uses distance tolerance — a tour with same startedAt but slightly different distance is surfaced
     @Test
+    @Sql(statements = [
+        "INSERT INTO bike (id, model) VALUES ('a1111111-0001-0001-0001-000000000001', 'Road Bike')"
+    ])
     fun `parseToDrafts surfaces duplicate hint when existing tour has same startedAt and distance within tolerance`() {
         // Parse to discover the real startedAt and distance from the FIT file
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
@@ -159,7 +163,7 @@ class FitImportIT {
             ascent = draft.ascent,
             descent = draft.descent,
             powerTotal = draft.powerTotal,
-            bike = null
+            bike = bikeRepository.getReferenceById(BIKE_A)
         ))
 
         // Re-parse → tolerance match must surface as hint

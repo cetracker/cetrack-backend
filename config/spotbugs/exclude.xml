@@ -14,10 +14,6 @@
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
     <Match>
-        <Class name="~de.cyclingsir.cetrack.part.domain.DomainPart.*" />
-        <Bug pattern="EI_EXPOSE_REP" />
-    </Match>
-    <Match>
         <Class name="~.*\.storage\..*" />
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
@@ -150,5 +146,15 @@
     <Match>
         <Class name="de.cyclingsir.cetrack.tour.rest.TourControllerTest" />
         <Bug code="SA" />
+    </Match>
+    <!-- Kotlin data class: created/closed/membershipChanges Lists are read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.mounting.domain.DomainMountingChanges" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- ServiceException.details: read-only Map handed to the error body once -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.common.errorhandling.ServiceException" />
+        <Bug pattern="EI_EXPOSE_REP" />
     </Match>
 </FindBugsFilter>

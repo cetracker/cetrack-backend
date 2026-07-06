@@ -16,6 +16,7 @@ class TourConstraintIT : PostgreSQLContainerIT() {
     @Autowired private lateinit var bikeRepository: BikeRepository
 
     @Test
+    @org.junit.jupiter.api.Disabled("CE-0084: V1.0 baseline has no uq_tour_started_distance_duration - duplicate-tour protection semantics re-verified there")
     fun `uq_tour_started_distance_duration rejects duplicate tour`() {
         val bike = bikeRepository.saveAndFlush(BikeEntity(
             id = null,

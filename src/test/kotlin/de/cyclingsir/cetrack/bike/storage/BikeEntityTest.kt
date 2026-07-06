@@ -18,7 +18,7 @@ class BikeEntityTest {
 
     @BeforeEach
     fun setUp() {
-        rawBikeEntity = BikeEntity(id, BIKE_MODEL_I)
+        rawBikeEntity = BikeEntity(id, model = BIKE_MODEL_I)
     }
 
     @Test
