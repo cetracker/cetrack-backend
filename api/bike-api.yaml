@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Cycling Equipment API
-  description: The API documentation for tracking cycling equipment and parts - bike realated definitions
-  version: 1.0.0
+  description: The API documentation for tracking cycling equipment - bike related definitions, bike composition (mount points) and mounting
+  version: 2.0.0
   license:
     name: (c) CyclingSir
   contact:
@@ -17,12 +17,16 @@ servers:
 tags:
   - name: Bikes
     description: Bike related definitions
+  - name: MountPoints
+    description: Bike composition - the named slots on a bike that receive components
+  - name: SlotMappings
+    description: Remembered assembly-slot to mount-point resolutions per bike (ADR-0003)
 
 paths:
   /bikes:
     get:
       operationId: getBikes
-      description: returns all unfiltered bikes
+      description: returns all bikes; empty list when none exist
       tags:
         - Bikes
       responses:
@@ -32,12 +36,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bikes'
-        '204':
-          description: No Content
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       operationId: createBike
       description: creates a new bike
@@ -48,18 +48,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Bike'
+              $ref: '#/components/schemas/BikeInput'
       responses:
-        '200':
-          description: o.k.
+        '201':
+          description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bike'
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
   /bikes/{bikeId}:
     parameters:
       - $ref: '#/components/parameters/bikeId'
@@ -75,10 +75,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bike'
-        '400':
-          description: Bad Request
         '404':
-          description: Not Found
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: modifyBike
       description: modifies an existing bike
@@ -89,7 +87,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Bike'
+              $ref: '#/components/schemas/BikeInput'
       responses:
         '200':
           description: o.k.
@@ -98,26 +96,215 @@ paths:
               schema:
                 $ref: '#/components/schemas/Bike'
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Not Found
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
     delete:
-      summary: delete bike
       operationId: deleteBike
-      description: Deletes the bike with the id from the path.
+      description: >
+        Deletes the bike. Rejected with 409 while tours, mount points with
+        mounting history, or maintenance tasks reference it - retire is the
+        lifecycle end for a used bike.
       tags:
         - Bikes
       responses:
-        '200':
-          description: Bike successfully deleted.
-        '400':
-          description: Bad Request
+        '204':
+          description: deleted
         '404':
-          description: Not Found
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
+  /bikes/{bikeId}/action/retire:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+    post:
+      operationId: retireBike
+      description: >
+        Retires the bike at the given (backdatable) time. A retired bike gets
+        no new tours or mountings.
+      tags:
+        - Bikes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetireBikeRequest'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /bikes/{bikeId}/mountPoints:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+    get:
+      operationId: getMountPoints
+      description: returns the bike's composition - all its mount points; empty list when none exist
+      tags:
+        - MountPoints
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MountPoints'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createMountPoint
+      description: adds a mount point to the bike's composition
+      tags:
+        - MountPoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MountPointInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MountPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /bikes/{bikeId}/mountPoints/{mountPointId}:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+      - $ref: '#/components/parameters/mountPointId'
+    put:
+      operationId: modifyMountPoint
+      description: modifies a mount point of the bike's composition
+      tags:
+        - MountPoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MountPointInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MountPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteMountPoint
+      description: >
+        Removes the mount point from the bike's composition. Rejected with 409
+        while mountings (incl. historical ones) or slot mappings reference it.
+      tags:
+        - MountPoints
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /bikes/{bikeId}/mountPoints/{mountPointId}/action/mount:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+      - $ref: '#/components/parameters/mountPointId'
+    post:
+      operationId: mountComponent
+      description: >
+        Mounts a component to this mount point at the given time. A domain
+        service enforces all invariants in one transaction: type match, component
+        not retired, bike not retired, auto-dismount of the mount point's previous
+        occupant and of the component's own current mounting, and ADR-0001 §2
+        membership propagation. A component that is member of a NOT-mounted
+        assembly is rejected with 409 code ASSEMBLY_MEMBER_GUIDED_CHOICE whose
+        details name the two options (mount the whole assembly / remove membership
+        first, ADR-0001 §3).
+      tags:
+        - MountPoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MountRequest'
+      responses:
+        '200':
+          description: mounted; effects envelope with created and auto-closed mountings
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/MountingChanges'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /bikes/{bikeId}/slotMappings:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+    get:
+      operationId: getSlotMappings
+      description: >
+        returns the bike's remembered assembly-slot resolutions (ADR-0003);
+        empty list when none exist. Created only by the assembly mount flow.
+      tags:
+        - SlotMappings
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlotMappings'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /bikes/{bikeId}/slotMappings/{slotMappingId}:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+      - $ref: '#/components/parameters/slotMappingId'
+    delete:
+      operationId: deleteSlotMapping
+      description: >
+        Forgets a remembered slot resolution so the next assembly mount asks
+        again (reset of a wrong answer, ADR-0003).
+      tags:
+        - SlotMappings
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   parameters:
@@ -128,33 +315,222 @@ components:
       schema:
         type: string
         format: uuid
+    mountPointId:
+      name: mountPointId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    slotMappingId:
+      name: slotMappingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
   schemas:
     Bike:
       type: object
-      required:
-       - model
+      description: >
+        A physical bicycle. At least one of `name` or `model` must be non-empty
+        so it is always identifiable; enforced by domain validation (400), not
+        by the schema.
       properties:
         id:
-            type: string
-            format: uuid
-            description: id of the created bike
-            readOnly: true
-        model:
-            type: string
-            description: bike's model name
-        manufacturer:
-            type: string
-            description: bike's manufacturer
-        boughtAt:
           type: string
-          format: date-time
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: free-text display name; optional if model is given
+        model:
+          type: string
+          description: bike's model name
+        manufacturer:
+          type: string
+          description: bike's manufacturer
+        purchaseDate:
+          type: string
+          format: date
+        price:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+          description: purchase price as a decimal-formatted string (e.g. "10.57"); display-only
+        priceCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code for price (e.g. "EUR")
         retiredAt:
           type: string
           format: date-time
+          readOnly: true
+          description: set via the retire action only
         createdAt:
           type: string
           format: date-time
+          readOnly: true
+    BikeInput:
+      type: object
+      description: editable subset of Bike; at least one of name or model required (domain validation)
+      properties:
+        name:
+          type: string
+        model:
+          type: string
+        manufacturer:
+          type: string
+        purchaseDate:
+          type: string
+          format: date
+        price:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+        priceCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
     Bikes:
       type: array
       items:
         $ref: '#/components/schemas/Bike'
+    RetireBikeRequest:
+      type: object
+      required:
+        - at
+      properties:
+        at:
+          type: string
+          format: date-time
+          description: retirement time; backdatable
+    MountPoint:
+      type: object
+      description: >
+        A named slot on one specific bike that receives components of exactly
+        one component type. The set of a bike's mount points is its composition.
+      required:
+        - name
+        - componentTypeId
+        - mandatory
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        bikeId:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: mount point name (e.g. "front tire")
+        componentTypeId:
+          type: string
+          format: uuid
+          description: the single component type this mount point accepts
+        positionId:
+          type: string
+          format: uuid
+          description: optional position qualifier (drives ADR-0003 slot resolution)
+        mandatory:
+          type: boolean
+          description: can the bike not complete a tour without this mount point filled?
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    MountPointInput:
+      type: object
+      required:
+        - name
+        - componentTypeId
+        - mandatory
+      properties:
+        name:
+          type: string
+        componentTypeId:
+          type: string
+          format: uuid
+        positionId:
+          type: string
+          format: uuid
+        mandatory:
+          type: boolean
+    MountPoints:
+      type: array
+      items:
+        $ref: '#/components/schemas/MountPoint'
+    MountRequest:
+      type: object
+      required:
+        - componentId
+        - at
+      properties:
+        componentId:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+          description: mount time; backdatable
+    SlotMapping:
+      type: object
+      description: >
+        A remembered, user-made resolution of one assembly slot to one mount
+        point on this bike (ADR-0003). Read/delete only - created by the
+        assembly mount flow.
+      required:
+        - id
+        - assemblySlotId
+        - bikeId
+        - mountPointId
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        assemblySlotId:
+          type: string
+          format: uuid
+        bikeId:
+          type: string
+          format: uuid
+        mountPointId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    SlotMappings:
+      type: array
+      items:
+        $ref: '#/components/schemas/SlotMapping'

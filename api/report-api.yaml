@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: >
+    The API documentation for tracking cycling equipment - derived reports.
+    Mileage is computed server-side from tours intersected with mounting
+    intervals (domain model §5).
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Reports
+    description: Derived reports over equipment usage
+
+paths:
+  /reports/mileage:
+    get:
+      operationId: getMileageReport
+      description: >
+        Mileage rows derived from tours: for scope=components (default) one row
+        per component whose mounting intervals overlap tours (optionally
+        restricted to one component, one bike, and/or a time frame); for
+        scope=bikes one total row per bike. Time frame filters tours by their
+        start time; from/to are optional and independent ("this year", "A to B",
+        "A to now"). Empty list when nothing matches.
+        Known gap: no pagination yet.
+      tags:
+        - Reports
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - components
+              - bikes
+            default: components
+        - name: componentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: bikeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MileageReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    MileageItem:
+      type: object
+      description: >
+        One mileage row. For scope=components the component identity fields are
+        set; for scope=bikes the bike fields. Carries raw identity fields so
+        the client composes the display identity with the same rule used
+        elsewhere.
+      required:
+        - distance
+        - durationMoving
+        - ascent
+        - descent
+      properties:
+        componentId:
+          type: string
+          format: uuid
+          description: set for scope=components
+        label:
+          type: string
+          description: the component's label (scope=components)
+        manufacturer:
+          type: string
+        model:
+          type: string
+        serialNumber:
+          type: string
+        bikeId:
+          type: string
+          format: uuid
+          description: set for scope=bikes; for scope=components with bikeId filter, the restricting bike
+        bikeName:
+          type: string
+          description: set for scope=bikes; may be empty when the bike has no name
+        bikeModel:
+          type: string
+          description: set for scope=bikes; bike display identity is name, else model (same rule as elsewhere)
+        distance:
+          type: integer
+          format: int64
+          description: total distance of usage in meters
+        durationMoving:
+          type: integer
+          format: int64
+          description: total time of usage (moving) in seconds
+        ascent:
+          type: integer
+          format: int64
+          description: total altitude climbed in meters
+        descent:
+          type: integer
+          format: int64
+          description: accumulated descent in meters
+        powerTotal:
+          type: integer
+          format: int64
+          description: total power in joules
+    MileageReport:
+      type: array
+      items:
+        $ref: '#/components/schemas/MileageItem'

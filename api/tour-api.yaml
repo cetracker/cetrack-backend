@@ -320,8 +320,8 @@ components:
        - title
        - distance
        - durationMoving
-       - altUp
-       - altDown
+       - ascent
+       - descent
        - powerTotal
        - startedAt
        - startYear
@@ -343,11 +343,11 @@ components:
           type: integer
           format: int64
           minimum: 0
-        altUp:
+        ascent:
           type: integer
           minimum: 0
           description: tour's summed up elevation in meters
-        altDown:
+        descent:
           type: integer
           minimum: 0
           description: tour's summed up descent in meters
@@ -399,8 +399,8 @@ components:
         - durationMoving
         - durationRecorded
         - durationElapsed
-        - altUp
-        - altDown
+        - ascent
+        - descent
         - powerTotal
         - startedAt
         - startYear
@@ -432,10 +432,10 @@ components:
           description: >
             FIT total_elapsed_time / MT TOURDEVICETIME_ELAPSED. 0 if unavailable.
             Used as part of the dedup key.
-        altUp:
+        ascent:
           type: integer
           minimum: 0
-        altDown:
+        descent:
           type: integer
           minimum: 0
         powerTotal:
@@ -612,10 +612,10 @@ components:
           format: int64
           minimum: 0
           description: seconds
-        altUp:
+        ascent:
           type: integer
           minimum: 0
-        altDown:
+        descent:
           type: integer
           minimum: 0
         powerTotal:
@@ -732,8 +732,8 @@ components:
         - durationMoving
         - durationRecorded
         - durationElapsed
-        - altUp
-        - altDown
+        - ascent
+        - descent
         - powerTotal
         - startedAt
         - startYear
@@ -761,11 +761,11 @@ components:
           format: int64
           minimum: 0
           description: FIT total_elapsed_time. 0 if not present in session.
-        altUp:
+        ascent:
           type: integer
           minimum: 0
           description: 0 when not available in FIT session (e.g. Strava exports)
-        altDown:
+        descent:
           type: integer
           minimum: 0
           description: 0 when not available in FIT session

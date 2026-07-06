@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: >
+    The API documentation for tracking cycling equipment - recurring maintenance
+    tasks per bike and their performed events.
+    First draft - revisitable at CE-0088 plan time under the api-designer gate.
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: MaintenanceTasks
+    description: Recurring maintenance needs per bike, due by distance and/or time interval
+
+paths:
+  /maintenanceTasks:
+    get:
+      operationId: getMaintenanceTasks
+      description: >
+        returns maintenance tasks, optionally filtered by bike and/or due
+        state; empty list when none match
+      tags:
+        - MaintenanceTasks
+      parameters:
+        - name: bikeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: due
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTasks'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createMaintenanceTask
+      description: creates a new maintenance task; at least one of distanceInterval / timeInterval required (domain validation, 400)
+      tags:
+        - MaintenanceTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTaskInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /maintenanceTasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/taskId'
+    get:
+      operationId: getMaintenanceTask
+      description: returns a single maintenance task incl. derived due state
+      tags:
+        - MaintenanceTasks
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: modifyMaintenanceTask
+      description: modifies an existing maintenance task
+      tags:
+        - MaintenanceTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceTaskInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteMaintenanceTask
+      description: Deletes the task and its event history (the task aggregate owns its events).
+      tags:
+        - MaintenanceTasks
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /maintenanceTasks/{taskId}/events:
+    parameters:
+      - $ref: '#/components/parameters/taskId'
+    get:
+      operationId: getMaintenanceEvents
+      description: returns the task's performed events, newest first; empty list when none exist
+      tags:
+        - MaintenanceTasks
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceEvents'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createMaintenanceEvent
+      description: records one performed occurrence of the task
+      tags:
+        - MaintenanceTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaintenanceEventInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceEvent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /maintenanceTasks/{taskId}/events/{eventId}:
+    parameters:
+      - $ref: '#/components/parameters/taskId'
+      - $ref: '#/components/parameters/eventId'
+    delete:
+      operationId: deleteMaintenanceEvent
+      description: removes a mistakenly recorded event (data-entry correction)
+      tags:
+        - MaintenanceTasks
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    taskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    eventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    MaintenanceTask:
+      type: object
+      description: >
+        A recurring maintenance need on one bike, due at a distance and/or time
+        interval (e.g. renew chain wax every 800 km). Read model carries the
+        derived due state.
+      required:
+        - bikeId
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        bikeId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        distanceInterval:
+          type: integer
+          format: int64
+          description: due-interval by accumulated bike distance in meters
+        timeInterval:
+          type: string
+          format: duration
+          description: due-interval by elapsed time, ISO-8601 duration (e.g. "P90D")
+        due:
+          allOf:
+            - $ref: '#/components/schemas/MaintenanceDue'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    MaintenanceTaskInput:
+      type: object
+      description: at least one of distanceInterval / timeInterval required (domain validation, 400)
+      required:
+        - bikeId
+        - name
+      properties:
+        bikeId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        distanceInterval:
+          type: integer
+          format: int64
+        timeInterval:
+          type: string
+          format: duration
+    MaintenanceTasks:
+      type: array
+      items:
+        $ref: '#/components/schemas/MaintenanceTask'
+    MaintenanceDue:
+      type: object
+      description: >
+        derived due state: bike mileage/time since the last performed event
+        (or since tracking began when no event exists) vs. the intervals
+      required:
+        - due
+      properties:
+        due:
+          type: boolean
+        lastPerformedAt:
+          type: string
+          format: date-time
+        distanceSinceLast:
+          type: integer
+          format: int64
+          description: meters ridden since the last event
+        distanceRemaining:
+          type: integer
+          format: int64
+          description: meters until due (negative when overdue); only when distanceInterval set
+        timeSinceLast:
+          type: string
+          format: duration
+        timeRemaining:
+          type: integer
+          format: int64
+          description: seconds until due (negative when overdue); only when timeInterval set
+    MaintenanceEvent:
+      type: object
+      description: one performed occurrence of a maintenance task at a point in time
+      required:
+        - performedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        maintenanceTaskId:
+          type: string
+          format: uuid
+          readOnly: true
+        performedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    MaintenanceEventInput:
+      type: object
+      required:
+        - performedAt
+      properties:
+        performedAt:
+          type: string
+          format: date-time
+    MaintenanceEvents:
+      type: array
+      items:
+        $ref: '#/components/schemas/MaintenanceEvent'

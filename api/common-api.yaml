@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: >
+    Shared schemas for the Cycling Equipment API. This file defines no paths;
+    it is only a $ref target for the other spec files. Every schema here is
+    defined once and must never be redefined in another file.
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+
+paths: {}
+
+components:
+  schemas:
+    Error:
+      type: object
+      description: >
+        Machine-readable error. `code` drives client flows (e.g. the ADR-0001 §3
+        guided choice or unresolved-slot handling); `message` is human-readable;
+        `details` carries the flow-specific payload (e.g. candidate mount points,
+        violated precondition, guided-choice options).
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: stable machine-readable error code (e.g. TYPE_MISMATCH, COMPONENT_RETIRED, MOUNTING_OVERLAP, UNRESOLVED_SLOTS, MEMBER_MOUNTED_ELSEWHERE, ASSEMBLY_INCOMPLETE, IN_USE, ASSEMBLY_MEMBER_GUIDED_CHOICE)
+        message:
+          type: string
+          description: human-readable explanation
+        details:
+          type: object
+          additionalProperties: true
+          description: flow-specific structured payload
+    Mounting:
+      type: object
+      description: >
+        Temporal fact: one Component occupies one MountPoint over a time interval.
+        Never created or edited directly - only produced by mount/dismount actions
+        and adjusted via the correct/void correction commands. Denormalized read
+        projection: carries bikeId and mountPointName for resolvability.
+      required:
+        - id
+        - componentId
+        - mountPointId
+        - bikeId
+        - mountPointName
+        - mountedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        componentId:
+          type: string
+          format: uuid
+        mountPointId:
+          type: string
+          format: uuid
+        bikeId:
+          type: string
+          format: uuid
+          description: bike owning the mount point (denormalized for read convenience)
+        mountPointName:
+          type: string
+          description: name of the mount point (denormalized for read convenience; always resolved)
+        assemblyMountingId:
+          type: string
+          format: uuid
+          description: provenance - set when this mounting is governed by an assembly mounting
+        mountedAt:
+          type: string
+          format: date-time
+        dismountedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: null/absent while the mounting is active
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    MembershipChange:
+      type: object
+      description: >
+        One assembly-membership side effect of a mount/dismount/member action
+        (ADR-0001 §2 auto-propagation).
+      required:
+        - componentId
+        - assemblySlotId
+        - action
+        - at
+      properties:
+        componentId:
+          type: string
+          format: uuid
+        assemblySlotId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [added, removed]
+        at:
+          type: string
+          format: date-time
+    MountingChanges:
+      type: object
+      description: >
+        Effects envelope returned by every action that creates or closes Mountings.
+        Auto-dismounts and membership propagation (ADR-0001 §2) are domain-mandated
+        user notifications; clients must invalidate caches for every listed fact.
+      properties:
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mounting'
+        closed:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mounting'
+        membershipChanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembershipChange'
