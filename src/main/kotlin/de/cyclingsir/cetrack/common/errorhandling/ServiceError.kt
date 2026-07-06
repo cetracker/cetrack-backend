@@ -38,6 +38,15 @@ interface ServiceError : Supplier<ServiceException> {
     val reason: String?
 
     /**
+     * Stable machine-readable code of the shared `Error` schema (common-api.yaml).
+     * Non-null on errors of the new domain model: the central handler then emits
+     * the generated `Error {code, message, details}` body. Null keeps the legacy
+     * `ErrorDetails` shape (old tour endpoints; CE-0084/0085 retire it).
+     */
+    val wireCode: String?
+        get() = null
+
+    /**
      * Stream-Api Support.
      *
      * @return ServiceException containing the given Error

@@ -3,7 +3,7 @@ info:
   title: Cycling Equipment API
   description: >
     The API documentation for tracking cycling equipment - derived reports.
-    Mileage is computed server-side from tours intersected with mounting
+    Mileage is computed server-side from tours covered by mounting
     intervals (domain model §5).
   version: 2.0.0
   license:
@@ -27,11 +27,16 @@ paths:
       operationId: getMileageReport
       description: >
         Mileage rows derived from tours: for scope=components (default) one row
-        per component whose mounting intervals overlap tours (optionally
-        restricted to one component, one bike, and/or a time frame); for
-        scope=bikes one total row per bike. Time frame filters tours by their
-        start time; from/to are optional and independent ("this year", "A to B",
-        "A to now"). Empty list when nothing matches.
+        per component, summing the tours whose whole interval [startedAt,
+        startedAt + elapsed) is covered by one of the component's mountings on
+        the tour's bike (domain-model.md §5 - a mid-tour swap counts the tour
+        for neither component). Optionally restricted to one component, one
+        bike, and/or a time frame. For scope=bikes one total row per bike
+        (with componentId: that component's per-bike breakdown). Time frame
+        filters tours by their start time; from/to are optional and independent
+        ("this year", "A to B", "A to now"). A tour without duration data
+        (zero-width interval) counts when a mounting spans its startedAt.
+        Empty list when nothing matches.
         Known gap: no pagination yet.
       tags:
         - Reports

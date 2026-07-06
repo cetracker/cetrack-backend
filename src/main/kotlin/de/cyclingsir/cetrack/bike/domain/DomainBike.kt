@@ -1,21 +1,28 @@
 package de.cyclingsir.cetrack.bike.domain
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 /**
  * Initially created on 2/1/23.
  */
 data class DomainBike(
-    val model: String,
+    val id: UUID? = null,
 
-    val manufacturer: String?,
+    val name: String? = null,
 
-    val id: UUID?,
+    val model: String? = null,
 
-    val boughtAt: Instant?,
+    val manufacturer: String? = null,
 
-    val retiredAt: Instant?,
+    val purchaseDate: LocalDate? = null,
 
-    val createdAt: Instant?
+    val price: String? = null,
+
+    val priceCurrency: String? = null,
+
+    val retiredAt: Instant? = null,
+
+    val createdAt: Instant? = null
 )

@@ -90,8 +90,10 @@ repositories {
 // multiple api specs:
 // https://stackoverflow.com/a/73081035/2664521
 val openapiSpecs = mapOf(
-    "part" to "api/parts-api.yaml",
     "bike" to "api/bike-api.yaml",
+    "catalog" to "api/catalog-api.yaml",
+    "component" to "api/component-api.yaml",
+    "report" to "api/report-api.yaml",
     "tour" to "api/tour-api.yaml"
 )
 // The first spec key "owns" the shared generated files: supporting files (ApiUtil.kt,
@@ -104,7 +106,15 @@ val openApiSharedFiles = listOf(
     "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/rest/ApiUtil.kt",
     "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/rest/Exceptions.kt",
     "src/main/kotlin/org/openapitools/SpringDocConfiguration.kt",
-    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/Bike.kt"
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/Bike.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/Error.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/Mounting.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/MountingChanges.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/MembershipChange.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/SlotMapping.kt",
+    // divergent per-spec enum converters; dispensable because enum constant names equal the
+    // wire values, so Spring's default String->enum binding covers the query params
+    "src/main/kotlin/org/openapitools/configuration/EnumConverterConfiguration.kt"
 )
 openapiSpecs.forEach {
     println("$rootDir/${it.value}")

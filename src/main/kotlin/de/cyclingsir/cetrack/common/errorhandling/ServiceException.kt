@@ -9,6 +9,10 @@ class ServiceException : RuntimeException {
     @Transient
     private val error: ServiceError
 
+    @Transient
+    var details: Map<String, Any>? = null
+        private set
+
     /**
      * Recommended constructor for yielding a complete error without detail message.
      *
@@ -47,6 +51,19 @@ class ServiceException : RuntimeException {
      */
     constructor(error: ServiceError, message: String?, cause: Throwable?) : super(message, cause) {
         this.error = error
+    }
+
+    /**
+     * Constructor for errors carrying a structured payload for the shared
+     * `Error.details` field (e.g. the ADR-0001 §3 guided-choice options).
+     *
+     * @param error describing the exception details
+     * @param message for adding dynamic exception details
+     * @param details flow-specific structured payload
+     */
+    constructor(error: ServiceError, message: String?, details: Map<String, Any>) : super(message) {
+        this.error = error
+        this.details = details
     }
 
     /**

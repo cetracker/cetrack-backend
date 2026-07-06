@@ -3,7 +3,7 @@ package de.cyclingsir.cetrack.tour.domain
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
-import de.cyclingsir.cetrack.support.MySQLContainerIT
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import de.cyclingsir.cetrack.tour.storage.ImportIgnoreRepository
 import de.cyclingsir.cetrack.tour.storage.ImportSessionRepository
 import de.cyclingsir.cetrack.tour.storage.ImportStateRepository
@@ -43,7 +43,7 @@ import java.util.UUID
  * F_drift / F_incompat reuse F1 specs with different dbVersion / omitTable
  */
 @Tag("import-integration")
-class MyTourbookImportIT : MySQLContainerIT() {
+class MyTourbookImportIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var importService: MyTourbookImportService
     @Autowired private lateinit var tourRepository: TourRepository
@@ -135,15 +135,19 @@ class MyTourbookImportIT : MySQLContainerIT() {
         // (BikeEntity uses @GeneratedValue which causes merge() to throw StaleObjectStateException
         //  when the entity has a pre-set UUID but no corresponding row yet)
         jdbcTemplate.update(
-            "INSERT INTO bike (id, model, manufacturer, created_at) VALUES (UNHEX(?), ?, '', NOW(6)) ON DUPLICATE KEY UPDATE model=model",
-            BIKE_A.toString().replace("-", ""), "Bike A"
+            "INSERT INTO bike (id, model, manufacturer, created_at) VALUES (?, ?, '', now()) ON CONFLICT (id) DO NOTHING",
+            BIKE_A, "Bike A"
         )
         jdbcTemplate.update(
-            "INSERT INTO bike (id, model, manufacturer, created_at) VALUES (UNHEX(?), ?, '', NOW(6)) ON DUPLICATE KEY UPDATE model=model",
-            BIKE_B.toString().replace("-", ""), "Bike B"
+            "INSERT INTO bike (id, model, manufacturer, created_at) VALUES (?, ?, '', now()) ON CONFLICT (id) DO NOTHING",
+            BIKE_B, "Bike B"
         )
-        // Reset import_state baseline version
-        jdbcTemplate.update("UPDATE import_state SET last_db_version=?, updated_at=NOW(6) WHERE id=1", DB_VERSION_BASELINE)
+        // Reset import_state baseline version (upsert - the fresh V1.0 schema seeds no row)
+        jdbcTemplate.update(
+            "INSERT INTO import_state (id, last_db_version, updated_at) VALUES (1, ?, now()) " +
+                "ON CONFLICT (id) DO UPDATE SET last_db_version = EXCLUDED.last_db_version, updated_at = now()",
+            DB_VERSION_BASELINE
+        )
     }
 
     @AfterEach
@@ -429,8 +433,8 @@ class MyTourbookImportIT : MySQLContainerIT() {
                 startYear = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).year.toShort(),
                 startMonth = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).monthValue.toShort(),
                 startDay = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).dayOfMonth.toShort(),
-                altUp = spec.altUp,
-                altDown = spec.altDown,
+                ascent = spec.ascent,
+                descent = spec.descent,
                 powerTotal = spec.powerTotal,
                 bike = bikeEntity,
                 source = source
@@ -451,8 +455,8 @@ class MyTourbookImportIT : MySQLContainerIT() {
                 startYear = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).year.toShort(),
                 startMonth = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).monthValue.toShort(),
                 startDay = Instant.ofEpochMilli(spec.startTimestampMs).atZone(java.time.ZoneOffset.UTC).dayOfMonth.toShort(),
-                altUp = spec.altUp,
-                altDown = spec.altDown,
+                ascent = spec.ascent,
+                descent = spec.descent,
                 powerTotal = spec.powerTotal,
                 bike = bikeEntity
             )

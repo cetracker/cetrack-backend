@@ -85,14 +85,14 @@ class TourService(
             durationMoving = mtTour.DURATIONMOVING,
             durationRecorded = mtTour.TIMERECORDEDDEVICE ?: 0L,
             durationElapsed = mtTour.TIMEELAPSEDDEVICE ?: 0L,
-            altUp = mtTour.TOURALTUP,
-            altDown = mtTour.TOURALTDOWN,
+            ascent = mtTour.TOURALTUP,
+            descent = mtTour.TOURALTDOWN,
             powerTotal = mtTour.POWERTOTAL,
             startedAt = instantStarted,
             startYear = mtTour.STARTYEAR,
             startMonth = mtTour.STARTMONTH,
             startDay = mtTour.STARTDAY,
-            bike = DomainBike("", null, mtTour.bikeId, null, null, null),
+            bike = DomainBike(id = mtTour.bikeId),
             createdAt = null,
             source = TourSource.MYTOURBOOK
         )

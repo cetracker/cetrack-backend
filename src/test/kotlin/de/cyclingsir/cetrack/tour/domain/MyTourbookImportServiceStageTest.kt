@@ -365,7 +365,7 @@ class MyTourbookImportServiceStageTest {
             distance = baseDistance, durationMoving = 5400L,
             startedAt = Instant.parse("2026-01-15T08:00:00Z"),
             startYear = 2026, startMonth = 1, startDay = 15,
-            altUp = 200, altDown = 200, powerTotal = 0L, bike = null
+            ascent = 200, descent = 200, powerTotal = 0L, bike = null
         )
 
         // in-tolerance candidate: ignoreRepo miss, tourRepo hit

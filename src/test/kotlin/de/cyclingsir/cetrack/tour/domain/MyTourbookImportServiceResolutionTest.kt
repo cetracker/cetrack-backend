@@ -102,8 +102,8 @@ class MyTourbookImportServiceResolutionTest {
         startYear = 2026.toShort(),
         startMonth = 1.toShort(),
         startDay = 15.toShort(),
-        altUp = 100,
-        altDown = 80,
+        ascent = 100,
+        descent = 80,
         powerTotal = 0L,
         bike = bikeId?.let { BikeEntity(id = it, model = "Bike") }
     )

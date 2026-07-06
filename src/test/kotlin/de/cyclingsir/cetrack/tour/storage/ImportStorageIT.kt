@@ -1,23 +1,27 @@
 package de.cyclingsir.cetrack.tour.storage
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import de.cyclingsir.cetrack.bike.storage.BikeEntity
+import de.cyclingsir.cetrack.bike.storage.BikeRepository
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
 
-@SpringBootTest
 @Transactional
-class ImportStorageIT {
+class ImportStorageIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var tourRepository: TourRepository
+    @Autowired private lateinit var bikeRepository: BikeRepository
     @Autowired private lateinit var sessionRepository: ImportSessionRepository
     @Autowired private lateinit var stateRepository: ImportStateRepository
+
+    private fun aBike() = bikeRepository.save(BikeEntity(id = null, model = "Import bike"))
 
     private fun aTourEntity(mtTourId: String? = "9000000000001") = TourEntity(
         id = null,
@@ -29,9 +33,10 @@ class ImportStorageIT {
         startYear = 2026.toShort(),
         startMonth = 1.toShort(),
         startDay = 15.toShort(),
-        altUp = 200,
-        altDown = 150,
-        powerTotal = 0L
+        ascent = 200,
+        descent = 150,
+        powerTotal = 0L,
+        bike = aBike()
     )
 
     // #1

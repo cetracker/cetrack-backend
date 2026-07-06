@@ -1,19 +1,18 @@
 package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.tour.storage.TourRepository
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
-@SpringBootTest
 @Transactional
-class TracerBulletIT {
+class TracerBulletIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var importService: MyTourbookImportService
     @Autowired private lateinit var tourRepository: TourRepository
@@ -50,8 +49,8 @@ class TracerBulletIT {
         importService.commit(session.sessionId, listOf(FIRST_BIKE_A_TOUR))
 
         // Verify tour was persisted with correct fields
-        val tours = tourRepository.findAll()
-        assertEquals(1, tours.size, "exactly one tour should be committed")
+        val tours = tourRepository.findAll().filter { it.mtTourId == FIRST_BIKE_A_TOUR }
+        assertEquals(1, tours.size, "exactly one tour should be committed for $FIRST_BIKE_A_TOUR")
         val persisted = tours.first()
         assertEquals(FIRST_BIKE_A_TOUR, persisted.mtTourId)
         assertEquals(BIKE_A, persisted.bike?.id, "tour must be linked to bike A")

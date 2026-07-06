@@ -1,9 +1,12 @@
 package de.cyclingsir.cetrack.common.errorhandling
 
+import de.cyclingsir.cetrack.infrastructure.api.model.Error
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
@@ -20,6 +23,18 @@ class CentralExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleServiceException(serviceException: ServiceException, webRequest: WebRequest?) : ResponseEntity<Any> {
         if (webRequest == null) {
             throw serviceException
+        }
+        serviceException.getError().wireCode?.let { wireCode ->
+            // new-model endpoints: shared machine-readable Error shape (common-api.yaml)
+            val reason = serviceException.getError().reason
+            val message = serviceException.message
+                ?.takeUnless { it == ServiceException.UNSPECIFIED }
+                ?.let { "$reason: $it" }
+                ?: reason.orEmpty()
+            return ResponseEntity
+                .status(serviceException.getError().httpStatus)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Error(code = wireCode, message = message, details = serviceException.details))
         }
         return ErrorDetails(serviceException.getError().code,
             serviceException.javaClass.name,
@@ -39,6 +54,26 @@ class CentralExceptionHandler : ResponseEntityExceptionHandler() {
         return handleExceptionInternal(
             ex, ed, supplyHeaders(), HttpStatus.valueOf(ed.status), req
         )
+    }
+
+    /**
+     * Bean-validation failures on the new-model inputs must render as the shared
+     * Error schema (every spec declares 400 as common-api.yaml Error), not as
+     * Spring's default ProblemDetail.
+     */
+    override fun handleMethodArgumentNotValid(
+        ex: MethodArgumentNotValidException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest
+    ): ResponseEntity<Any>? {
+        val fieldErrors = ex.bindingResult.fieldErrors.joinToString("; ") {
+            "${it.field}: ${it.defaultMessage}"
+        }
+        return ResponseEntity
+            .status(status)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Error(code = "DATA_INVALID", message = fieldErrors.ifBlank { "Request validation failed" }))
     }
 
     private fun supplyHeaders(): HttpHeaders {

@@ -49,9 +49,9 @@ class TourEntity(
 
     var startDay: Short,
 
-    var altUp: Int,
+    var ascent: Int,
 
-    var altDown: Int,
+    var descent: Int,
 
     var powerTotal: Long,
 

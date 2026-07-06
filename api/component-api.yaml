@@ -502,7 +502,11 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: explicit null re-opens the mounting only if no overlap results
+          description: >
+            sets the dismount time when provided. Null/omitted keeps the
+            current value - it does NOT re-open the mounting in this version
+            (re-open via void + re-mount; null-based re-opening is the CE-0084
+            target once the generated model can distinguish absent from null).
     Mountings:
       type: array
       items:

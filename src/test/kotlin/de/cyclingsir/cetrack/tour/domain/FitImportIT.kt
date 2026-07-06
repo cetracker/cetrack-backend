@@ -1,6 +1,8 @@
 package de.cyclingsir.cetrack.tour.domain
 
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.bike.storage.BikeRepository
+import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
@@ -10,20 +12,19 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.ZoneOffset
 import java.util.UUID
 
-@SpringBootTest
 @Transactional
-class FitImportIT {
+class FitImportIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var fitImportService: FitImportService
     @Autowired private lateinit var tourService: TourService
     @Autowired private lateinit var tourRepository: TourRepository
+    @Autowired private lateinit var bikeRepository: BikeRepository
 
     companion object {
         val BIKE_A: UUID = UUID.fromString("a1111111-0001-0001-0001-000000000001")
@@ -47,8 +48,8 @@ class FitImportIT {
         assertTrue(draft.durationMoving <= draft.durationRecorded,
             "durationMoving must be <= durationRecorded")
         // ELEMNT ROAM file has elevation data from device
-        assertEquals(91, draft.altUp)
-        assertEquals(79, draft.altDown)
+        assertEquals(91, draft.ascent)
+        assertEquals(79, draft.descent)
         assertEquals(344410L, draft.powerTotal)
         assertEquals(TourSource.FIT, draft.source)
         assertTrue(drafts[0].existingMatches.isEmpty(), "no duplicates expected on first import")
@@ -81,7 +82,7 @@ class FitImportIT {
         val draft = drafts[0].draft
 
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
         val created = tourService.addTour(draft.copy(title = "ELEMNT ROAM Ride", bike = bike), TourSource.FIT)
 
@@ -102,7 +103,7 @@ class FitImportIT {
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
         val draft = drafts[0].draft
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
 
         // First create succeeds
@@ -123,7 +124,7 @@ class FitImportIT {
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
         val draft = drafts[0].draft
         val bike = de.cyclingsir.cetrack.bike.domain.DomainBike(
-            model = "Road Bike", manufacturer = null, id = BIKE_A, boughtAt = null, retiredAt = null, createdAt = null
+            model = "Road Bike", manufacturer = null, id = BIKE_A, retiredAt = null, createdAt = null
         )
 
         // Persist it first
@@ -137,6 +138,9 @@ class FitImportIT {
 
     // CE-0072: FIT hint uses distance tolerance — a tour with same startedAt but slightly different distance is surfaced
     @Test
+    @Sql(statements = [
+        "INSERT INTO bike (id, model) VALUES ('a1111111-0001-0001-0001-000000000001', 'Road Bike')"
+    ])
     fun `parseToDrafts surfaces duplicate hint when existing tour has same startedAt and distance within tolerance`() {
         // Parse to discover the real startedAt and distance from the FIT file
         val drafts = fitImportService.parseToDrafts(loadFit("fit-fixture/2024-09-04-071701-ELEMNT_ROAM.fit"))
@@ -156,10 +160,10 @@ class FitImportIT {
             startYear = seededAt.atZone(ZoneOffset.UTC).year.toShort(),
             startMonth = seededAt.atZone(ZoneOffset.UTC).monthValue.toShort(),
             startDay = seededAt.atZone(ZoneOffset.UTC).dayOfMonth.toShort(),
-            altUp = draft.altUp,
-            altDown = draft.altDown,
+            ascent = draft.ascent,
+            descent = draft.descent,
             powerTotal = draft.powerTotal,
-            bike = null
+            bike = bikeRepository.getReferenceById(BIKE_A)
         ))
 
         // Re-parse → tolerance match must surface as hint
