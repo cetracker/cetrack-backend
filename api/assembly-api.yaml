@@ -4,7 +4,7 @@ info:
   description: >
     The API documentation for tracking cycling equipment - component assemblies:
     named physical groups of components mounted to a bike as one unit.
-    First draft - revisitable at CE-0086 plan time under the api-designer gate.
+    Finalized at CE-0086 plan time under the api-designer gate.
   version: 2.0.0
   license:
     name: (c) CyclingSir
@@ -113,8 +113,8 @@ paths:
     delete:
       operationId: deleteAssembly
       description: >
-        Deletes the assembly. Rejected with 409 while membership or mounting
-        history exists.
+        Deletes the assembly. Rejected with 409 (ASSEMBLY_IN_USE) while
+        membership or mounting history exists.
       tags:
         - Assemblies
       responses:
@@ -186,8 +186,9 @@ paths:
     delete:
       operationId: deleteAssemblySlot
       description: >
-        Removes the slot. Rejected with 409 while membership history or slot
-        mappings reference it - end its validity interval instead.
+        Removes the slot. Rejected with 409 (ASSEMBLY_SLOT_IN_USE) while
+        membership history or slot mappings reference it - end its validity
+        interval instead.
       tags:
         - Assemblies
       responses:
@@ -226,8 +227,10 @@ paths:
         match the slot's accepted type; component must not be retired, not be
         member of another assembly, and not be mounted elsewhere. While the
         assembly is MOUNTED, the new member is also mounted onto the slot's
-        resolved mount point - requiring the resolution to be known (slot
-        mapping or prior mounting), else 409.
+        resolved mount point (ADR-0003 steps 1-4); an optional mountPointId
+        answers an otherwise-unresolved slot and is persisted as a SlotMapping
+        (ask-once). mountPointId is ignored (400 if given) while the assembly
+        is not mounted - there is no bike to key a SlotMapping.
       tags:
         - Assemblies
       requestBody:
@@ -330,9 +333,10 @@ paths:
         (ADR-0003 - position filter, stored slot mapping, or a slotResolution
         passed here, which is then persisted as a slot mapping); all member
         mountings are created/adopted in one transaction. Any conflict rejects
-        the whole mount with 409 (codes: ASSEMBLY_INCOMPLETE, UNRESOLVED_SLOTS
-        with candidates in details, MEMBER_MOUNTED_ELSEWHERE, TYPE_MISMATCH,
-        BIKE_RETIRED).
+        the whole mount with 409 - final codes: ASSEMBLY_INCOMPLETE,
+        UNRESOLVED_SLOTS (candidates in details), SLOT_UNMOUNTABLE,
+        SLOT_TARGET_COLLISION, MEMBER_MOUNTED_ELSEWHERE, MOUNTING_GOVERNED,
+        ASSEMBLY_ALREADY_MOUNTED, BIKE_RETIRED.
       tags:
         - Assemblies
       requestBody:
@@ -585,6 +589,12 @@ components:
         from:
           type: string
           format: date-time
+        mountPointId:
+          type: string
+          format: uuid
+          description: >
+            Answers resolution for this member while the assembly is mounted;
+            persisted as a SlotMapping. Ignored (400) while unmounted.
     RemoveMemberRequest:
       type: object
       required:
@@ -622,12 +632,26 @@ components:
         mountPointId:
           type: string
           format: uuid
+    Candidate:
+      type: object
+      description: one bike mount point eligible to receive a slot's component type
+      required:
+        - mountPointId
+        - mountPointName
+      properties:
+        mountPointId:
+          type: string
+          format: uuid
+        mountPointName:
+          type: string
+        positionId:
+          type: string
+          format: uuid
     PlannedSlot:
       type: object
-      description: resolution state of one filled slot in a mount plan
+      description: resolution state of one slot in a mount plan
       required:
         - slotId
-        - componentId
         - state
       properties:
         slotId:
@@ -636,12 +660,14 @@ components:
         componentId:
           type: string
           format: uuid
+          description: absent when state is empty (no active member in the slot)
         state:
           type: string
           enum:
             - resolved
             - unresolved
             - impossible
+            - empty
         mountPointId:
           type: string
           format: uuid
@@ -652,16 +678,32 @@ components:
             - uniqueCandidate
             - positionFilter
             - slotMapping
-          description: set when state is resolved
-        candidateMountPointIds:
+          description: >
+            set when state is resolved; uniqueCandidate = single candidate
+            pre-position-filter, positionFilter = the position filter reduced
+            candidates to one, slotMapping = a stored SlotMapping matched
+        willDismountComponentId:
+          type: string
+          format: uuid
+          description: >
+            set when state is resolved and the target mount point is currently
+            occupied by a direct (non-member) mounting that will be evicted
+        candidates:
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: '#/components/schemas/Candidate'
           description: set when state is unresolved - the user picks one
+        reasonCode:
+          type: string
+          enum:
+            - noCandidate
+            - positionFilterEmpty
+            - memberMountedElsewhere
+            - occupiedByGovernedMounting
+          description: set when state is impossible - machine-readable cause
         reason:
           type: string
-          description: set when state is impossible (no candidate, member mounted elsewhere, ...)
+          description: set when state is impossible - human-readable cause
     MountPlan:
       type: object
       required:
@@ -682,7 +724,12 @@ components:
           format: date-time
         mountable:
           type: boolean
-          description: true when the assembly is complete and no slot is impossible
+          description: >
+            true when the assembly is complete and every slot is resolved or
+            empty (no slot is unresolved or impossible); still may require
+            slotResolutions in the mount call for slots the client left
+            unresolved after asking the user - the frontend keys its dialog
+            off each PlannedSlot's state == unresolved, not off this flag alone
         slots:
           type: array
           items:

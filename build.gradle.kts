@@ -91,6 +91,7 @@ repositories {
 // https://stackoverflow.com/a/73081035/2664521
 val openapiSpecs = mapOf(
     "bike" to "api/bike-api.yaml",
+    "assembly" to "api/assembly-api.yaml",
     "catalog" to "api/catalog-api.yaml",
     "component" to "api/component-api.yaml",
     "report" to "api/report-api.yaml",
