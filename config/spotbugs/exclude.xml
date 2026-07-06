@@ -170,4 +170,39 @@
         <Class name="de.cyclingsir.cetrack.common.errorhandling.CentralExceptionHandlerTest" />
         <Bug code="SA" />
     </Match>
+    <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.rest.AssemblyControllerTest" />
+        <Bug code="SA" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.maintenance.domain.MaintenanceServiceTest" />
+        <Bug code="SA" />
+    </Match>
+    <!-- Kotlin data class List fields (slots/candidates/rememberedSlotMappings) are read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.DomainAssembly" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMountResult" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.DomainMountPlan" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.DomainPlannedSlot" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.SlotResolutionOutcome$Unresolved" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- mountPointNames map is keyed from the same planned list feeding created/closed; lookup is guaranteed non-null -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.assembly.domain.AssemblyMountingService" />
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
+    </Match>
 </FindBugsFilter>
