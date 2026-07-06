@@ -10,6 +10,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.util.UUID
 
 /**
@@ -83,6 +84,22 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
             throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }
         return mapper.map(bikeEntity)
+    }
+
+    /**
+     * retire(bike, at) - domain-model.md: a retired bike gets no new tours or
+     * mountings; existing mountings stay (no dismount precondition, unlike
+     * component retire). Backdatable per spec.
+     */
+    @Transactional
+    fun retireBike(bikeId: UUID, at: Instant): DomainBike {
+        val existing = repository.findById(bikeId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
+        if (existing.retiredAt != null) {
+            throw ServiceException(ErrorCodesDomain.BIKE_ALREADY_RETIRED)
+        }
+        existing.retiredAt = at
+        return mapper.map(repository.saveAndFlush(existing))
     }
 
     fun deleteBike(bikeId: UUID) {

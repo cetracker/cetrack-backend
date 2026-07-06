@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import java.time.Instant
 import java.util.Optional
 import java.util.UUID
 
@@ -139,6 +140,44 @@ class BikeServiceTest {
     }
     Assertions.assertEquals(ErrorCodesService.INTERNAL_SERVER_ERROR.code, ex.getError().code)
     Assertions.assertEquals(500, ex.getError().httpStatus)
+  }
+
+  @Test
+  fun `retireBike stamps retiredAt and maps the result`() {
+    val at = Instant.parse("2024-06-01T00:00:00Z")!!
+    val entity = BikeEntity(id = UUID_BIKE_A, model = "Tarmac")
+    every { repository.findById(UUID_BIKE_A) } returns Optional.of(entity)
+    every { repository.saveAndFlush(entity) } returns entity
+    every { mapper.map(entity) } returns bikeWith(model = "Tarmac", id = UUID_BIKE_A).copy(retiredAt = at)
+
+    val result = bikeService.retireBike(UUID_BIKE_A, at)
+
+    Assertions.assertEquals(at, entity.retiredAt)
+    Assertions.assertEquals(at, result.retiredAt)
+  }
+
+  @Test
+  fun `retireBike returns not found when bike does not exist`() {
+    every { repository.findById(UUID_BIKE_A) } returns Optional.empty()
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      bikeService.retireBike(UUID_BIKE_A, Instant.now())
+    }
+    Assertions.assertEquals(ErrorCodesDomain.BIKE_NOT_FOUND.code, ex.getError().code)
+  }
+
+  @Test
+  fun `retireBike rejects an already retired bike`() {
+    val entity = BikeEntity(id = UUID_BIKE_A, model = "Tarmac")
+    entity.retiredAt = Instant.parse("2024-01-01T00:00:00Z")
+    every { repository.findById(UUID_BIKE_A) } returns Optional.of(entity)
+
+    val ex = Assertions.assertThrows(ServiceException::class.java) {
+      bikeService.retireBike(UUID_BIKE_A, Instant.now())
+    }
+    Assertions.assertEquals(ErrorCodesDomain.BIKE_ALREADY_RETIRED.code, ex.getError().code)
+    Assertions.assertEquals(409, ex.getError().httpStatus)
+    verify(exactly = 0) { repository.saveAndFlush(any()) }
   }
 
   @Test

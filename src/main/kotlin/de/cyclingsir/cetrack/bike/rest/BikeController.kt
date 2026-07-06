@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.bike.rest
 import de.cyclingsir.cetrack.bike.domain.BikeService
 import de.cyclingsir.cetrack.infrastructure.api.model.Bike
 import de.cyclingsir.cetrack.infrastructure.api.model.BikeInput
+import de.cyclingsir.cetrack.infrastructure.api.model.RetireBikeRequest
 import de.cyclingsir.cetrack.infrastructure.api.rest.BikesApi
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
@@ -46,4 +47,10 @@ class BikeController(private val service: BikeService, private val mapper: BikeD
     override fun getBikes(): ResponseEntity<List<Bike>> {
         return ResponseEntity.ok(/* body = */ service.getBikes().map(mapper::map))
     }
+
+    override fun retireBike(
+        @PathVariable("bikeId") bikeId: UUID,
+        @Valid @RequestBody retireBikeRequest: RetireBikeRequest
+    ): ResponseEntity<Bike> =
+        ResponseEntity.ok(mapper.map(service.retireBike(bikeId, retireBikeRequest.at.toInstant())))
 }

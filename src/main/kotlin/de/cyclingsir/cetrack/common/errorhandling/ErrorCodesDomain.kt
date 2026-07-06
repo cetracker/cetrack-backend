@@ -15,6 +15,7 @@ enum class ErrorCodesDomain(
     BIKE_ID_MISMATCH(303, 400, "Path id does not match the bike id in the body", "DATA_INVALID"),
     BIKE_NOT_IDENTIFIABLE(304, 400, "A bike must have at least a name or a model", "BIKE_NOT_IDENTIFIABLE"),
     BIKE_PRICE_CURRENCY_MISMATCH(305, 400, "Purchase price and currency code must be provided together", "PRICE_CURRENCY_MISMATCH"),
+    BIKE_ALREADY_RETIRED(306, 409, "Bike is already retired", "BIKE_ALREADY_RETIRED"),
 
 //  Tour domain
     TOUR_DUPLICATE(400, 409, "Tour already exists"),
