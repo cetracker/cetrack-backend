@@ -12,9 +12,10 @@ class FlywayMigrationIT : PostgreSQLContainerIT() {
     private lateinit var flyway: Flyway
 
     @Test
-    fun `all migrations apply cleanly on real MySQL and Hibernate validate passes`() {
+    fun `fresh CUET baseline applies cleanly on PostgreSQL`() {
         val applied = flyway.info().applied()
         assertThat(applied).isNotEmpty
-        assertThat(applied.map { it.version?.version }).contains("1.0", "1.1", "1.2", "1.3", "1.4", "1.5")
+        assertThat(applied.map { it.version?.version }).containsExactly("1.0")
+        assertThat(applied.all { it.state.isApplied }).isTrue()
     }
 }
