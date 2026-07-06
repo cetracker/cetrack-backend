@@ -1,0 +1,729 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: >
+    The API documentation for tracking cycling equipment - component assemblies:
+    named physical groups of components mounted to a bike as one unit.
+    First draft - revisitable at CE-0086 plan time under the api-designer gate.
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Assemblies
+    description: Component assemblies, their slots, membership and mounting as a unit
+
+paths:
+  /assemblies:
+    get:
+      operationId: getAssemblies
+      description: returns all component assemblies; empty list when none exist
+      tags:
+        - Assemblies
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assemblies'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createAssembly
+      description: creates a new component assembly
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssemblyInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assembly'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    get:
+      operationId: getAssembly
+      description: >
+        returns the assembly with its slots and their membership at the given
+        time (default now), plus the derived complete flag (every active slot
+        has an active member)
+      tags:
+        - Assemblies
+      parameters:
+        - name: at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assembly'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: modifyAssembly
+      description: modifies name/position of an existing assembly
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssemblyInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assembly'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteAssembly
+      description: >
+        Deletes the assembly. Rejected with 409 while membership or mounting
+        history exists.
+      tags:
+        - Assemblies
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/slots:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: createAssemblySlot
+      description: adds a slot to the assembly (slots may be added/removed over time via validity interval)
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssemblySlotInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblySlot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/slots/{slotId}:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+      - $ref: '#/components/parameters/slotId'
+    put:
+      operationId: modifyAssemblySlot
+      description: modifies a slot (name, accepted type, validity interval)
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssemblySlotInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblySlot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteAssemblySlot
+      description: >
+        Removes the slot. Rejected with 409 while membership history or slot
+        mappings reference it - end its validity interval instead.
+      tags:
+        - Assemblies
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/mountings:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    get:
+      operationId: getAssemblyMountings
+      description: returns the assembly's mounting history (when it was on which bike); empty list when none exist
+      tags:
+        - Assemblies
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMountings'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /assemblies/{assemblyId}/action/addMember:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: addAssemblyMember
+      description: >
+        Adds a component to a slot from the given time. Component type must
+        match the slot's accepted type; component must not be retired, not be
+        member of another assembly, and not be mounted elsewhere. While the
+        assembly is MOUNTED, the new member is also mounted onto the slot's
+        resolved mount point - requiring the resolution to be known (slot
+        mapping or prior mounting), else 409.
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '200':
+          description: member added; effects envelope (mounting created when assembly is mounted)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/MountingChanges'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/action/removeMember:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: removeAssemblyMember
+      description: >
+        Ends a component's membership at the given time. While the assembly is
+        MOUNTED, the member's governed mounting is closed as well (ADR-0001 §2
+        in reverse); the effects envelope reports it.
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveMemberRequest'
+      responses:
+        '200':
+          description: member removed; effects envelope
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/MountingChanges'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/action/planMount:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: planMountAssembly
+      description: >
+        Dry-run resolution for mounting this assembly on a bike (ADR-0003):
+        for every filled slot, candidates = the bike's mount points accepting
+        the slot's type, filtered by the assembly's position when set, then a
+        stored slot mapping. Returns the full plan - resolved slots and
+        unresolved slots with their candidates - without changing anything.
+        The client asks the user once for each unresolved slot, then calls
+        mount with slotResolutions. Genuine impossibilities (incomplete
+        assembly, no candidate for a slot, member mounted elsewhere) are
+        reported per slot in the plan, not as an error status.
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanMountRequest'
+      responses:
+        '200':
+          description: resolution plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MountPlan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/action/mount:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: mountAssembly
+      description: >
+        Mounts the complete assembly on a bike as one unit, atomically
+        (ADR-0001 §1): every filled slot is resolved to one mount point
+        (ADR-0003 - position filter, stored slot mapping, or a slotResolution
+        passed here, which is then persisted as a slot mapping); all member
+        mountings are created/adopted in one transaction. Any conflict rejects
+        the whole mount with 409 (codes: ASSEMBLY_INCOMPLETE, UNRESOLVED_SLOTS
+        with candidates in details, MEMBER_MOUNTED_ELSEWHERE, TYPE_MISMATCH,
+        BIKE_RETIRED).
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MountAssemblyRequest'
+      responses:
+        '200':
+          description: mounted; result incl. effects envelope and remembered slot mappings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMountResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/action/dismount:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+    post:
+      operationId: dismountAssembly
+      description: >
+        Closes the assembly mounting and all member mountings it governs at
+        the given time.
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DismountAssemblyRequest'
+      responses:
+        '200':
+          description: dismounted; result incl. effects envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMountResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    assemblyId:
+      name: assemblyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    slotId:
+      name: slotId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    Assembly:
+      type: object
+      description: >
+        A named physical group of components mounted to a bike as one unit.
+        The read model carries the slots with their membership at the
+        requested time and the derived complete flag.
+      required:
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        positionId:
+          type: string
+          format: uuid
+          description: optional position ("front wheel" is front on every bike, ADR-0003)
+        complete:
+          type: boolean
+          readOnly: true
+          description: every active slot has an active member (precondition to mount)
+        mounted:
+          type: boolean
+          readOnly: true
+          description: has an active assembly mounting
+        slots:
+          type: array
+          readOnly: true
+          items:
+            $ref: '#/components/schemas/AssemblySlot'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    AssemblyInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        positionId:
+          type: string
+          format: uuid
+    Assemblies:
+      type: array
+      items:
+        $ref: '#/components/schemas/Assembly'
+    AssemblySlot:
+      type: object
+      description: >
+        A slot within an assembly accepting exactly one component type. The
+        read model carries the member active at the requested time.
+      required:
+        - name
+        - componentTypeId
+        - validFrom
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        componentTypeId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+        memberComponentId:
+          type: string
+          format: uuid
+          readOnly: true
+          description: component occupying the slot at the requested time, if any
+        memberFrom:
+          type: string
+          format: date-time
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    AssemblySlotInput:
+      type: object
+      required:
+        - name
+        - componentTypeId
+        - validFrom
+      properties:
+        name:
+          type: string
+        componentTypeId:
+          type: string
+          format: uuid
+        validFrom:
+          type: string
+          format: date-time
+        validTo:
+          type: string
+          format: date-time
+    AssemblyMounting:
+      type: object
+      description: temporal fact - the assembly as a unit on a bike over a time interval
+      required:
+        - id
+        - assemblyId
+        - bikeId
+        - mountedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        assemblyId:
+          type: string
+          format: uuid
+        bikeId:
+          type: string
+          format: uuid
+        mountedAt:
+          type: string
+          format: date-time
+        dismountedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    AssemblyMountings:
+      type: array
+      items:
+        $ref: '#/components/schemas/AssemblyMounting'
+    AddMemberRequest:
+      type: object
+      required:
+        - componentId
+        - slotId
+        - from
+      properties:
+        componentId:
+          type: string
+          format: uuid
+        slotId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date-time
+    RemoveMemberRequest:
+      type: object
+      required:
+        - componentId
+        - to
+      properties:
+        componentId:
+          type: string
+          format: uuid
+        to:
+          type: string
+          format: date-time
+    PlanMountRequest:
+      type: object
+      required:
+        - bikeId
+        - at
+      properties:
+        bikeId:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+    SlotResolution:
+      type: object
+      description: one slot resolved to one mount point
+      required:
+        - slotId
+        - mountPointId
+      properties:
+        slotId:
+          type: string
+          format: uuid
+        mountPointId:
+          type: string
+          format: uuid
+    PlannedSlot:
+      type: object
+      description: resolution state of one filled slot in a mount plan
+      required:
+        - slotId
+        - componentId
+        - state
+      properties:
+        slotId:
+          type: string
+          format: uuid
+        componentId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+            - resolved
+            - unresolved
+            - impossible
+        mountPointId:
+          type: string
+          format: uuid
+          description: set when state is resolved
+        resolvedBy:
+          type: string
+          enum:
+            - uniqueCandidate
+            - positionFilter
+            - slotMapping
+          description: set when state is resolved
+        candidateMountPointIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: set when state is unresolved - the user picks one
+        reason:
+          type: string
+          description: set when state is impossible (no candidate, member mounted elsewhere, ...)
+    MountPlan:
+      type: object
+      required:
+        - assemblyId
+        - bikeId
+        - at
+        - mountable
+        - slots
+      properties:
+        assemblyId:
+          type: string
+          format: uuid
+        bikeId:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        mountable:
+          type: boolean
+          description: true when the assembly is complete and no slot is impossible
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannedSlot'
+    MountAssemblyRequest:
+      type: object
+      required:
+        - bikeId
+        - at
+      properties:
+        bikeId:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        slotResolutions:
+          type: array
+          description: user answers for slots the plan reported unresolved; persisted as slot mappings
+          items:
+            $ref: '#/components/schemas/SlotResolution'
+    DismountAssemblyRequest:
+      type: object
+      required:
+        - at
+      properties:
+        at:
+          type: string
+          format: date-time
+    AssemblyMountResult:
+      type: object
+      required:
+        - assemblyMounting
+        - changes
+      properties:
+        assemblyMounting:
+          $ref: '#/components/schemas/AssemblyMounting'
+        changes:
+          $ref: './common-api.yaml#/components/schemas/MountingChanges'
+        rememberedSlotMappings:
+          type: array
+          description: slot mappings persisted from this mount's slotResolutions (ADR-0003 ask-once)
+          items:
+            $ref: './bike-api.yaml#/components/schemas/SlotMapping'
