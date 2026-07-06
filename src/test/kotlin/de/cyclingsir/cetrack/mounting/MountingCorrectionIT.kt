@@ -16,7 +16,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.context.WebApplicationContext
 import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
@@ -29,6 +36,10 @@ class MountingCorrectionIT : PostgreSQLContainerIT() {
     @Autowired private lateinit var bikeService: BikeService
     @Autowired private lateinit var compositionService: BikeCompositionService
     @Autowired private lateinit var jdbc: JdbcTemplate
+    @Autowired private lateinit var wac: WebApplicationContext
+
+    // real context converters: proves the wire-level absent-vs-null distinction
+    private val mvc: MockMvc by lazy { MockMvcBuilders.webAppContextSetup(wac).build() }
 
     private val t1: Instant = Instant.parse("2024-01-01T00:00:00Z")
     private val t2: Instant = Instant.parse("2024-02-01T00:00:00Z")
@@ -81,6 +92,63 @@ class MountingCorrectionIT : PostgreSQLContainerIT() {
 
         val ex = assertThrows<ServiceException> { mountingService.correct(first.id, null, t3) }
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_OVERLAP)
+    }
+
+    @Test
+    fun `correct re-opens a closed mounting on explicit re-open`() {
+        val f = fixture()
+        mountingService.mount(f.bikeId, f.mountPointId, f.componentId, t1)
+        mountingService.dismount(f.componentId, t2)
+        val mounting = mountingService.getMountings(f.componentId, null, null, null).single()
+
+        val reopened = mountingService.correct(mounting.id, null, null, reopenDismount = true)
+
+        assertThat(reopened.dismountedAt).isNull()
+        assertThat(mountingService.getMountings(f.componentId, null, null, t3).single().id)
+            .isEqualTo(mounting.id)
+    }
+
+    @Test
+    fun `re-open is rejected when the open-ended interval would overlap`() {
+        val f = fixture()
+        val otherMountPoint = compositionService.addMountPoint(
+            DomainMountPoint(bikeId = f.bikeId, componentTypeId = f.typeId, name = "mp2")
+        ).id!!
+        mountingService.mount(f.bikeId, f.mountPointId, f.componentId, t1)
+        mountingService.mount(f.bikeId, otherMountPoint, f.componentId, t2) // closes the first at t2
+        val first = mountingService.getMountings(f.componentId, f.mountPointId, null, null).single()
+
+        val ex = assertThrows<ServiceException> {
+            mountingService.correct(first.id, null, null, reopenDismount = true)
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_OVERLAP)
+    }
+
+    @Test
+    fun `wire tri-state - omitted keeps, explicit null re-opens, null mountedAt is 400`() {
+        val f = fixture()
+        mountingService.mount(f.bikeId, f.mountPointId, f.componentId, t1)
+        mountingService.dismount(f.componentId, t2)
+        val id = mountingService.getMountings(f.componentId, null, null, null).single().id
+        val path = "/mountings/$id/action/correct"
+
+        // omitted dismountedAt keeps the current value
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+            .content("""{"mountedAt":"2024-01-15T00:00:00Z"}"""))
+            .andExpect(status().isOk)
+        assertThat(mountingService.getMounting(id).dismountedAt).isEqualTo(t2)
+
+        // explicit null dismountedAt re-opens
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+            .content("""{"dismountedAt":null}"""))
+            .andExpect(status().isOk)
+        assertThat(mountingService.getMounting(id).dismountedAt).isNull()
+
+        // explicit null mountedAt is invalid
+        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+            .content("""{"mountedAt":null}"""))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("CORRECTION_INVALID"))
     }
 
     @Test

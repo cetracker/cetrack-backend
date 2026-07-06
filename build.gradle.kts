@@ -152,6 +152,13 @@ openapiSpecs.forEach {
                 "integer+int16" to "kotlin.Short"
             )
         )
+        // hand-written tri-state model (presence-tracking setters distinguish absent
+        // from explicit null - re-open semantics); kotlin-spring can't express this
+        schemaMappings.set(
+            mapOf(
+                "CorrectMountingRequest" to "de.cyclingsir.cetrack.mounting.rest.CorrectMountingRequest"
+            )
+        )
 
         if (it.key != openApiOwningSpec) {
             val specKey = it.key

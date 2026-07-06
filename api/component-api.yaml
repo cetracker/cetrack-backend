@@ -267,8 +267,10 @@ paths:
       operationId: correctMounting
       description: >
         Administrative correction of a data-entry error: adjusts mountedAt
-        and/or dismountedAt of this fact. Re-validated like a mount (no
-        overlaps per component and per mount point) - violation returns 409.
+        and/or dismountedAt of this fact. An explicit null dismountedAt
+        re-opens the mounting (makes it active again). Re-validated like a
+        mount (no overlaps per component and per mount point, re-opened
+        mountings count as open-ended) - violation returns 409.
         409 also while the mounting is governed by an assembly mounting
         (correction cascades are out of scope until CE-0086). Never changes
         componentId or mountPointId - that is void + re-mount.
@@ -493,20 +495,28 @@ components:
             - sold
     CorrectMountingRequest:
       type: object
-      description: at least one of mountedAt / dismountedAt must be present (domain validation, 400)
+      description: >
+        the request must carry at least one of mountedAt / dismountedAt (an
+        explicit-null dismountedAt counts - it is a re-open); an empty body
+        is 400 (domain validation).
       properties:
         mountedAt:
           type: string
           format: date-time
+          description: >
+            sets the mount time when provided; omitted keeps the current
+            value. Explicit null is invalid (400) - a mounting always has a
+            mount time.
         dismountedAt:
           type: string
           format: date-time
           nullable: true
           description: >
-            sets the dismount time when provided. Null/omitted keeps the
-            current value - it does NOT re-open the mounting in this version
-            (re-open via void + re-mount; null-based re-opening is the CE-0084
-            target once the generated model can distinguish absent from null).
+            tri-state - a value sets the dismount time, omitted keeps the
+            current value, explicit null re-opens the mounting (clears the
+            dismount time; rejected with 409 when another mounting on the
+            same mount point or of the same component would overlap the
+            then open-ended interval).
     Mountings:
       type: array
       items:

@@ -124,21 +124,29 @@ class MountingService(
 
     /**
      * Administrative correction of a data-entry error - re-validated like a
-     * mount (no overlaps per component and per mount point).
+     * mount (no overlaps per component and per mount point). Tri-state
+     * dismountedAt: a value sets it, null keeps the current value,
+     * [reopenDismount] clears it - the mounting becomes active again with an
+     * open-ended interval (spec: explicit-null dismountedAt).
      */
     @Transactional
-    fun correct(mountingId: UUID, mountedAt: Instant?, dismountedAt: Instant?): DomainMounting {
+    fun correct(
+        mountingId: UUID,
+        mountedAt: Instant?,
+        dismountedAt: Instant?,
+        reopenDismount: Boolean = false,
+    ): DomainMounting {
         val mounting = mountingRepository.findById(mountingId)
             .orElseThrow { ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND) }
         if (mounting.assemblyMountingId != null) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED,
                 "Correction cascades are out of scope until CE-0086.")
         }
-        if (mountedAt == null && dismountedAt == null) {
+        if (mountedAt == null && dismountedAt == null && !reopenDismount) {
             throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID)
         }
         val newMountedAt = mountedAt ?: mounting.mountedAt
-        val newDismountedAt = dismountedAt ?: mounting.dismountedAt
+        val newDismountedAt = if (reopenDismount) null else dismountedAt ?: mounting.dismountedAt
         if (newDismountedAt != null && !newDismountedAt.isAfter(newMountedAt)) {
             throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID,
                 "dismountedAt must be after mountedAt.")

@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.mounting.rest
 
-import de.cyclingsir.cetrack.infrastructure.api.model.CorrectMountingRequest
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.Mounting
 import de.cyclingsir.cetrack.infrastructure.api.rest.MountingsApi
 import de.cyclingsir.cetrack.mounting.domain.MountingService
@@ -36,16 +37,23 @@ class MountingController(
     override fun correctMounting(
         @PathVariable("mountingId") mountingId: UUID,
         @Valid @RequestBody correctMountingRequest: CorrectMountingRequest
-    ): ResponseEntity<Mounting> =
-        ResponseEntity.ok(
+    ): ResponseEntity<Mounting> {
+        if (correctMountingRequest.mountedAtPresent && correctMountingRequest.mountedAt == null) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID,
+                "mountedAt cannot be null - a mounting always has a mount time.")
+        }
+        return ResponseEntity.ok(
             mapper.map(
                 service.correct(
                     mountingId,
                     correctMountingRequest.mountedAt?.toInstant(),
-                    correctMountingRequest.dismountedAt?.toInstant()
+                    correctMountingRequest.dismountedAt?.toInstant(),
+                    reopenDismount = correctMountingRequest.dismountedAtPresent
+                        && correctMountingRequest.dismountedAt == null
                 )
             )
         )
+    }
 
     override fun voidMounting(@PathVariable("mountingId") mountingId: UUID): ResponseEntity<Unit> {
         service.void(mountingId)
