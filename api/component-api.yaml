@@ -1,0 +1,508 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: The API documentation for tracking cycling equipment - components and mounting history
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Components
+    description: Physical, individually tracked components with their own lifecycle
+  - name: Mountings
+    description: Read access and corrections for mounting facts (component occupies mount point over a time interval)
+
+paths:
+  /components:
+    get:
+      operationId: getComponents
+      description: >
+        returns components, optionally filtered by type and/or lifecycle status
+        (mount pickers use componentTypeId + status=inStock); empty list when
+        none match
+      tags:
+        - Components
+      parameters:
+        - name: componentTypeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ComponentStatus'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Components'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createComponent
+      description: creates a new component (lifecycle starts in stock)
+      tags:
+        - Components
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /components/{componentId}:
+    parameters:
+      - $ref: '#/components/parameters/componentId'
+    get:
+      operationId: getComponent
+      description: returns a single component
+      tags:
+        - Components
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: modifyComponent
+      description: modifies an existing component (editable subset; lifecycle fields change via actions only)
+      tags:
+        - Components
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentInput'
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteComponent
+      description: >
+        Deletes the component. Allowed only while it was never mounted and never
+        an assembly member (data-entry mistake); otherwise 409 - retirement is
+        the lifecycle end for a used component.
+      tags:
+        - Components
+      responses:
+        '204':
+          description: deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /components/{componentId}/action/dismount:
+    parameters:
+      - $ref: '#/components/parameters/componentId'
+    post:
+      operationId: dismountComponent
+      description: >
+        Closes the component's active mounting at the given time. 409 when the
+        component is not mounted, or when its mounting is governed by an
+        assembly mounting (dismount the assembly instead).
+      tags:
+        - Components
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DismountRequest'
+      responses:
+        '200':
+          description: dismounted; effects envelope
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/MountingChanges'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /components/{componentId}/action/retire:
+    parameters:
+      - $ref: '#/components/parameters/componentId'
+    post:
+      operationId: retireComponent
+      description: >
+        Ends the component's lifecycle at the given (backdatable) time; it can
+        never be mounted or join an assembly again. Precondition: no active
+        mounting and no active assembly membership - violation returns 409
+        whose Error.details names the failed precondition.
+      tags:
+        - Components
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetireComponentRequest'
+      responses:
+        '200':
+          description: retired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /mountings:
+    get:
+      operationId: getMountings
+      description: >
+        returns mounting facts filtered by any combination of component, mount
+        point, bike and point in time. activeAt returns the mountings whose
+        interval contains that instant - with bikeId this is the "bike at time
+        X" view; with mountPointId alone it is the mount point history. Empty
+        list when none match. Known gap: no pagination yet.
+      tags:
+        - Mountings
+      parameters:
+        - name: componentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: mountPointId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: bikeId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: activeAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mountings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /mountings/{mountingId}:
+    parameters:
+      - $ref: '#/components/parameters/mountingId'
+    get:
+      operationId: getMounting
+      description: returns a single mounting fact
+      tags:
+        - Mountings
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Mounting'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /mountings/{mountingId}/action/correct:
+    parameters:
+      - $ref: '#/components/parameters/mountingId'
+    post:
+      operationId: correctMounting
+      description: >
+        Administrative correction of a data-entry error: adjusts mountedAt
+        and/or dismountedAt of this fact. Re-validated like a mount (no
+        overlaps per component and per mount point) - violation returns 409.
+        409 also while the mounting is governed by an assembly mounting
+        (correction cascades are out of scope until CE-0086). Never changes
+        componentId or mountPointId - that is void + re-mount.
+      tags:
+        - Mountings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectMountingRequest'
+      responses:
+        '200':
+          description: corrected
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Mounting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /mountings/{mountingId}/action/void:
+    parameters:
+      - $ref: '#/components/parameters/mountingId'
+    post:
+      operationId: voidMounting
+      description: >
+        Administrative removal of a mounting that never happened (erratum).
+        Distinct from dismounting: the fact is erased, not closed. 409 while
+        the mounting is governed by an assembly mounting.
+      tags:
+        - Mountings
+      responses:
+        '204':
+          description: voided
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    componentId:
+      name: componentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    mountingId:
+      name: mountingId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    ComponentStatus:
+      type: string
+      description: >
+        derived lifecycle state. inAssembly = active member of a NOT-mounted
+        assembly (direct mount triggers the ADR-0001 §3 guided choice);
+        mounted covers direct and via-assembly mountings alike.
+      enum:
+        - inStock
+        - inAssembly
+        - mounted
+        - retired
+    Component:
+      type: object
+      description: >
+        A single physical, individually tracked component with its own lifecycle
+        from purchase to retirement. Always of exactly one component type.
+      required:
+        - componentTypeId
+        - label
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        componentTypeId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          description: free-text display label
+        manufacturer:
+          type: string
+          description: who made it
+        model:
+          type: string
+        serialNumber:
+          type: string
+          description: manufacturer serial number, disambiguates identical components
+        vendor:
+          type: string
+          description: where the component was purchased (distinct from manufacturer)
+        purchaseDate:
+          type: string
+          format: date
+        price:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+          description: purchase price as a decimal-formatted string (e.g. "10.57"); display-only
+        priceCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code for price (e.g. "EUR")
+        retiredAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: set via the retire action only
+        retirementKind:
+          type: string
+          enum:
+            - scrapped
+            - sold
+          readOnly: true
+          description: set via the retire action only
+        status:
+          allOf:
+            - $ref: '#/components/schemas/ComponentStatus'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    ComponentInput:
+      type: object
+      description: editable subset of Component
+      required:
+        - componentTypeId
+        - label
+      properties:
+        componentTypeId:
+          type: string
+          format: uuid
+        label:
+          type: string
+        manufacturer:
+          type: string
+        model:
+          type: string
+        serialNumber:
+          type: string
+        vendor:
+          type: string
+        purchaseDate:
+          type: string
+          format: date
+        price:
+          type: string
+          pattern: '^\d+(\.\d+)?$'
+        priceCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          minLength: 3
+          maxLength: 3
+    Components:
+      type: array
+      items:
+        $ref: '#/components/schemas/Component'
+    DismountRequest:
+      type: object
+      required:
+        - at
+      properties:
+        at:
+          type: string
+          format: date-time
+          description: dismount time; backdatable
+    RetireComponentRequest:
+      type: object
+      required:
+        - at
+        - kind
+      properties:
+        at:
+          type: string
+          format: date-time
+          description: retirement time; backdatable
+        kind:
+          type: string
+          enum:
+            - scrapped
+            - sold
+    CorrectMountingRequest:
+      type: object
+      description: at least one of mountedAt / dismountedAt must be present (domain validation, 400)
+      properties:
+        mountedAt:
+          type: string
+          format: date-time
+        dismountedAt:
+          type: string
+          format: date-time
+          description: explicit null re-opens the mounting only if no overlap results
+    Mountings:
+      type: array
+      items:
+        $ref: './common-api.yaml#/components/schemas/Mounting'
