@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack.common.errorhandling
 
+import de.cyclingsir.cetrack.infrastructure.api.model.Error
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -20,6 +21,18 @@ class CentralExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleServiceException(serviceException: ServiceException, webRequest: WebRequest?) : ResponseEntity<Any> {
         if (webRequest == null) {
             throw serviceException
+        }
+        serviceException.getError().wireCode?.let { wireCode ->
+            // new-model endpoints: shared machine-readable Error shape (common-api.yaml)
+            val reason = serviceException.getError().reason
+            val message = serviceException.message
+                ?.takeUnless { it == ServiceException.UNSPECIFIED }
+                ?.let { "$reason: $it" }
+                ?: reason.orEmpty()
+            return ResponseEntity
+                .status(serviceException.getError().httpStatus)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Error(code = wireCode, message = message, details = serviceException.details))
         }
         return ErrorDetails(serviceException.getError().code,
             serviceException.javaClass.name,

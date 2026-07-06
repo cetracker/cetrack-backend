@@ -5,8 +5,12 @@ import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.Component
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentInput
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentStatus
+import de.cyclingsir.cetrack.infrastructure.api.model.DismountRequest
+import de.cyclingsir.cetrack.infrastructure.api.model.MountingChanges
 import de.cyclingsir.cetrack.infrastructure.api.model.RetireComponentRequest
 import de.cyclingsir.cetrack.infrastructure.api.rest.ComponentsApi
+import de.cyclingsir.cetrack.mounting.domain.MountingService
+import de.cyclingsir.cetrack.mounting.rest.MountingDomain2ApiMapper
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -21,7 +25,17 @@ import java.util.UUID
 class ComponentController(
     private val service: ComponentService,
     private val mapper: ComponentDomain2ApiMapper,
+    private val mountingService: MountingService,
+    private val mountingMapper: MountingDomain2ApiMapper,
 ) : ComponentsApi {
+
+    override fun dismountComponent(
+        @PathVariable("componentId") componentId: UUID,
+        @Valid @RequestBody dismountRequest: DismountRequest
+    ): ResponseEntity<MountingChanges> =
+        ResponseEntity.ok(
+            mountingMapper.map(mountingService.dismount(componentId, dismountRequest.at.toInstant()))
+        )
 
     override fun getComponents(
         @Valid @RequestParam(value = "componentTypeId", required = false) componentTypeId: UUID?,
