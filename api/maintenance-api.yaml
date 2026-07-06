@@ -4,7 +4,6 @@ info:
   description: >
     The API documentation for tracking cycling equipment - recurring maintenance
     tasks per bike and their performed events.
-    First draft - revisitable at CE-0088 plan time under the api-designer gate.
   version: 2.0.0
   license:
     name: (c) CyclingSir
@@ -92,7 +91,9 @@ paths:
           $ref: '#/components/responses/NotFound'
     put:
       operationId: modifyMaintenanceTask
-      description: modifies an existing maintenance task
+      description: >
+        modifies an existing maintenance task; bikeId is immutable - a
+        request that changes it is rejected with 400
       tags:
         - MaintenanceTasks
       requestBody:
@@ -131,7 +132,9 @@ paths:
       - $ref: '#/components/parameters/taskId'
     get:
       operationId: getMaintenanceEvents
-      description: returns the task's performed events, newest first; empty list when none exist
+      description: >
+        returns the task's performed events, newest first; empty list when
+        none exist. Known gap: no pagination yet.
       tags:
         - MaintenanceTasks
       responses:
@@ -240,11 +243,13 @@ components:
         distanceInterval:
           type: integer
           format: int64
+          minimum: 1
           description: due-interval by accumulated bike distance in meters
         timeInterval:
-          type: string
-          format: duration
-          description: due-interval by elapsed time, ISO-8601 duration (e.g. "P90D")
+          type: integer
+          format: int64
+          minimum: 1
+          description: due-interval by elapsed time in seconds
         due:
           allOf:
             - $ref: '#/components/schemas/MaintenanceDue'
@@ -268,9 +273,11 @@ components:
         distanceInterval:
           type: integer
           format: int64
+          minimum: 1
         timeInterval:
-          type: string
-          format: duration
+          type: integer
+          format: int64
+          minimum: 1
     MaintenanceTasks:
       type: array
       items:
@@ -279,7 +286,10 @@ components:
       type: object
       description: >
         derived due state: bike mileage/time since the last performed event
-        (or since tracking began when no event exists) vs. the intervals
+        (or since tracking began, i.e. the bike's full tour history, when no
+        event exists) vs. the intervals. due = (distanceInterval set AND
+        distanceSinceLast >= distanceInterval) OR (timeInterval set AND
+        timeSinceLast >= timeInterval).
       required:
         - due
       properties:
@@ -291,14 +301,15 @@ components:
         distanceSinceLast:
           type: integer
           format: int64
-          description: meters ridden since the last event
+          description: meters ridden since the last event (or since the first tour, when no event exists)
         distanceRemaining:
           type: integer
           format: int64
           description: meters until due (negative when overdue); only when distanceInterval set
         timeSinceLast:
-          type: string
-          format: duration
+          type: integer
+          format: int64
+          description: seconds elapsed since the last event (or since the first tour, when no event exists)
         timeRemaining:
           type: integer
           format: int64
@@ -307,6 +318,8 @@ components:
       type: object
       description: one performed occurrence of a maintenance task at a point in time
       required:
+        - id
+        - maintenanceTaskId
         - performedAt
       properties:
         id:

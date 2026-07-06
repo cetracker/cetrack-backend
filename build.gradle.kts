@@ -94,6 +94,7 @@ val openapiSpecs = mapOf(
     "assembly" to "api/assembly-api.yaml",
     "catalog" to "api/catalog-api.yaml",
     "component" to "api/component-api.yaml",
+    "maintenance" to "api/maintenance-api.yaml",
     "report" to "api/report-api.yaml",
     "tour" to "api/tour-api.yaml"
 )
