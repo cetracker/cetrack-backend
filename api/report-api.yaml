@@ -128,7 +128,10 @@ components:
           description: set for scope=bikes; for scope=components with bikeId filter, the restricting bike
         bikeName:
           type: string
-          description: set for scope=bikes
+          description: set for scope=bikes; may be empty when the bike has no name
+        bikeModel:
+          type: string
+          description: set for scope=bikes; bike display identity is name, else model (same rule as elsewhere)
         distance:
           type: integer
           format: int64

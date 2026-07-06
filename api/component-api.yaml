@@ -501,6 +501,7 @@ components:
         dismountedAt:
           type: string
           format: date-time
+          nullable: true
           description: explicit null re-opens the mounting only if no overlap results
     Mountings:
       type: array

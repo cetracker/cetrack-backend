@@ -300,9 +300,9 @@ components:
           type: string
           format: duration
         timeRemaining:
-          type: string
-          format: duration
-          description: time until due (negative when overdue); only when timeInterval set
+          type: integer
+          format: int64
+          description: seconds until due (negative when overdue); only when timeInterval set
     MaintenanceEvent:
       type: object
       description: one performed occurrence of a maintenance task at a point in time

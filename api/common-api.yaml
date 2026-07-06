@@ -55,6 +55,7 @@ components:
         - componentId
         - mountPointId
         - bikeId
+        - mountPointName
         - mountedAt
       properties:
         id:
@@ -73,7 +74,7 @@ components:
           description: bike owning the mount point (denormalized for read convenience)
         mountPointName:
           type: string
-          description: name of the mount point (denormalized for read convenience)
+          description: name of the mount point (denormalized for read convenience; always resolved)
         assemblyMountingId:
           type: string
           format: uuid
@@ -84,6 +85,7 @@ components:
         dismountedAt:
           type: string
           format: date-time
+          nullable: true
           description: null/absent while the mounting is active
         createdAt:
           type: string
