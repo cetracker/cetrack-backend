@@ -21,7 +21,6 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -129,9 +128,10 @@ class MyTourbookImportServiceResolutionTest {
         return ImportSessionEntity(SESSION_ID, "PENDING", DB_VERSION, payload)
     }
 
-    // #35
+    // #35 — updatedAt stamping moved to TourEntity's @PreUpdate (ImportConstraintIT
+    // proves it on PG); a mocked repository never fires JPA callbacks
     @Test
-    fun `REPLACE overwrites matched tour fields and stamps updatedAt`() {
+    fun `REPLACE overwrites matched tour fields`() {
         every { sessionRepository.findById(SESSION_ID) } returns Optional.of(sessionWithWarning())
         every { tourRepository.findById(EXISTING_TOUR_ID) } returns Optional.of(anExistingTour())
         val saved = slot<TourEntity>()
@@ -144,7 +144,6 @@ class MyTourbookImportServiceResolutionTest {
         assertEquals("Tour $MT_TOUR_ID", updated.title)
         assertEquals(30_000, updated.distance)
         assertEquals(5400L, updated.durationMoving)
-        assertNotNull(updated.updatedAt, "updatedAt must be stamped on REPLACE")
         assertNull(updated.createdAt, "createdAt must remain null (not set by Replace)")
     }
 

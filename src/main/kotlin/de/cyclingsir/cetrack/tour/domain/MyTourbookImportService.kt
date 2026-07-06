@@ -188,7 +188,6 @@ class MyTourbookImportService(
                     existing.powerTotal = incoming.POWERTOTAL
                     existing.bike = incoming.bikeId?.let { bikeRepository.findById(it).orElse(null) }
                     existing.source = TourSource.MYTOURBOOK
-                    existing.updatedAt = Instant.now()
                     tourRepository.save(existing)
                 }
                 "IMPORT_NEW" -> {

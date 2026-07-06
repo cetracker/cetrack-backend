@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.PreUpdate
 import jakarta.persistence.Table
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.CreatedDate
@@ -67,4 +68,10 @@ class TourEntity(
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     var source: TourSource = TourSource.MYTOURBOOK
-)
+) {
+    /** UPDATE only (unlike @UpdateTimestamp) - a fresh import keeps updatedAt null. */
+    @PreUpdate
+    fun stampUpdatedAt() {
+        updatedAt = Instant.now()
+    }
+}
