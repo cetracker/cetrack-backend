@@ -81,7 +81,12 @@ enum class ErrorCodesDomain(
     ALREADY_MEMBER(828, 409, "Component is already an active member of an assembly", "ALREADY_MEMBER"),
 
 //  Report domain (CE-0083)
-    REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID");
+    REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID"),
+
+//  Maintenance domain (CE-0088)
+    MAINTENANCE_TASK_NOT_FOUND(1000, 404, "Maintenance task not found", "NOT_FOUND"),
+    MAINTENANCE_TASK_DATA_INVALID(1001, 400, "Maintenance task data violates a constraint", "DATA_INVALID"),
+    MAINTENANCE_EVENT_NOT_FOUND(1002, 404, "Maintenance event not found", "NOT_FOUND");
 
     override val reason: String?
         get() = description
