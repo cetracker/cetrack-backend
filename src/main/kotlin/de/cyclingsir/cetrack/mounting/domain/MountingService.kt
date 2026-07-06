@@ -114,9 +114,11 @@ class MountingService(
         return DomainMountingChanges(closed = listOf(toDomain(active)))
     }
 
+    @Transactional(readOnly = true)
     fun getMountings(componentId: UUID?, mountPointId: UUID?, bikeId: UUID?, activeAt: Instant?): List<DomainMounting> =
         mountingRepository.findWithPlace(componentId, mountPointId, bikeId, activeAt).map(::toDomain)
 
+    @Transactional(readOnly = true)
     fun getMounting(mountingId: UUID): DomainMounting =
         mountingRepository.findWithPlaceById(mountingId)
             ?.let(::toDomain)

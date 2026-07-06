@@ -24,11 +24,13 @@ class BikeCompositionService(
     private val slotMappingRepository: SlotMappingRepository,
 ) {
 
+    @Transactional(readOnly = true)
     fun getMountPoints(bikeId: UUID): List<DomainMountPoint> {
         requireBike(bikeId)
         return mountPointRepository.findAllByBikeId(bikeId).map(::toDomain)
     }
 
+    @Transactional
     fun addMountPoint(mountPoint: DomainMountPoint): DomainMountPoint {
         requireBike(mountPoint.bikeId)
         val entity = MountPointEntity(
@@ -69,6 +71,7 @@ class BikeCompositionService(
         }
     }
 
+    @Transactional
     fun deleteMountPoint(bikeId: UUID, mountPointId: UUID) {
         val existing = mountPointRepository.findByIdAndBikeId(mountPointId, bikeId)
             ?: throw ServiceException(ErrorCodesDomain.MOUNT_POINT_NOT_FOUND)
@@ -82,6 +85,7 @@ class BikeCompositionService(
         }
     }
 
+    @Transactional(readOnly = true)
     fun getSlotMappings(bikeId: UUID): List<DomainSlotMapping> {
         requireBike(bikeId)
         return slotMappingRepository.findAllByBikeId(bikeId).map {
@@ -89,6 +93,7 @@ class BikeCompositionService(
         }
     }
 
+    @Transactional
     fun deleteSlotMapping(bikeId: UUID, slotMappingId: UUID) {
         val existing = slotMappingRepository.findByIdAndBikeId(slotMappingId, bikeId)
             ?: throw ServiceException(ErrorCodesDomain.SLOT_MAPPING_NOT_FOUND)

@@ -10,7 +10,7 @@ spring:
       datetime:
         adjust-dates-to-context-time-zone: false
   jpa:
-    open-in-view: true
+    open-in-view: false
 server:
   port: 8080
   servlet:

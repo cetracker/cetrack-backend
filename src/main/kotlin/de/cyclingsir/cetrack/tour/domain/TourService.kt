@@ -12,6 +12,7 @@ import de.cyclingsir.cetrack.tour.storage.TourEntity
 import de.cyclingsir.cetrack.tour.storage.TourRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.util.UUID
 
@@ -29,6 +30,7 @@ class TourService(
     private val bikeRepository: BikeRepository
 ) {
 
+    @Transactional
     fun addTour(tour: DomainTour, source: TourSource = TourSource.MANUAL): DomainTour {
         val stamped = tour.copy(mtTourId = genMtId(tour.startedAt, tour.distance), source = source)
         val bikeEntity = stamped.bike?.let { bikeMapper.map(it) }
@@ -46,16 +48,19 @@ class TourService(
         return domainTour
     }
 
+    @Transactional(readOnly = true)
     fun getTour(tourId: UUID) : DomainTour {
         val tourEntity = repository.findById(tourId).get()
         return mapper.map(jpa = tourEntity)
     }
 
+    @Transactional(readOnly = true)
     fun getTours(): List<DomainTour> {
         val tourEntities: List<TourEntity> = repository.findAll()
         return tourEntities.map(mapper::map)
     }
 
+    @Transactional
     fun importTours(tours: List<DomainMTTour>) {
         val duplicates = tours.filter {
             val startedAt = Instant.ofEpochMilli(it.STARTTIMESTAMP)
@@ -98,6 +103,7 @@ class TourService(
         )
     }
 
+    @Transactional
     fun relateTourToBike(tourId: UUID, bikeId: UUID): DomainTour {
         val domainBike = bikeService.getBike(bikeId)
         val tourEntity = repository.findById(tourId).get()

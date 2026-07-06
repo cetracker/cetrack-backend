@@ -22,14 +22,17 @@ class CatalogService(
     private val mapper: CatalogDomain2StorageMapper,
 ) {
 
+    @Transactional(readOnly = true)
     fun getComponentTypes(): List<DomainComponentType> =
         componentTypeRepository.findAll().map(mapper::map)
 
+    @Transactional(readOnly = true)
     fun getComponentType(id: UUID): DomainComponentType =
         componentTypeRepository.findById(id)
             .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_TYPE_NOT_FOUND) }
             .let(mapper::map)
 
+    @Transactional
     fun addComponentType(componentType: DomainComponentType): DomainComponentType = try {
         mapper.map(componentTypeRepository.saveAndFlush(mapper.map(componentType)))
     } catch (e: DataIntegrityViolationException) {
@@ -49,6 +52,7 @@ class CatalogService(
         }
     }
 
+    @Transactional
     fun deleteComponentType(id: UUID) {
         if (!componentTypeRepository.existsById(id)) {
             throw ServiceException(ErrorCodesDomain.COMPONENT_TYPE_NOT_FOUND)
@@ -62,14 +66,17 @@ class CatalogService(
         }
     }
 
+    @Transactional(readOnly = true)
     fun getPositions(): List<DomainPosition> =
         positionRepository.findAll().map(mapper::map)
 
+    @Transactional(readOnly = true)
     fun getPosition(id: UUID): DomainPosition =
         positionRepository.findById(id)
             .orElseThrow { ServiceException(ErrorCodesDomain.POSITION_NOT_FOUND) }
             .let(mapper::map)
 
+    @Transactional
     fun addPosition(position: DomainPosition): DomainPosition = try {
         mapper.map(positionRepository.saveAndFlush(mapper.map(position)))
     } catch (e: DataIntegrityViolationException) {
@@ -88,6 +95,7 @@ class CatalogService(
         }
     }
 
+    @Transactional
     fun deletePosition(id: UUID) {
         if (!positionRepository.existsById(id)) {
             throw ServiceException(ErrorCodesDomain.POSITION_NOT_FOUND)

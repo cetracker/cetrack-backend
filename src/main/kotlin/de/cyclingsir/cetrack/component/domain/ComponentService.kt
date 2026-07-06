@@ -17,6 +17,7 @@ class ComponentService(
     private val mapper: ComponentDomain2StorageMapper,
 ) {
 
+    @Transactional(readOnly = true)
     fun getComponents(componentTypeId: UUID?, status: DomainComponentStatus?): List<DomainComponent> {
         val entities = componentTypeId
             ?.let { repository.findAllByComponentTypeId(it) }
@@ -28,12 +29,14 @@ class ComponentService(
             .filter { status == null || it.status == status }
     }
 
+    @Transactional(readOnly = true)
     fun getComponent(componentId: UUID): DomainComponent {
         val entity = repository.findById(componentId)
             .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND) }
         return mapper.map(entity).copy(status = deriveStatus(entity))
     }
 
+    @Transactional
     fun addComponent(component: DomainComponent): DomainComponent {
         requireIdentifiable(component)
         requirePricePair(component)
@@ -82,6 +85,7 @@ class ComponentService(
      * never mounted and never an assembly member; retirement is the lifecycle
      * end for a used component (spec, domain-model.md §3).
      */
+    @Transactional
     fun deleteComponent(componentId: UUID) {
         if (!repository.existsById(componentId)) {
             throw ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND)

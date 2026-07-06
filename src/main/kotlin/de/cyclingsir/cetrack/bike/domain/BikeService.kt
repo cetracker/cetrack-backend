@@ -21,6 +21,7 @@ private val logger = KotlinLogging.logger {}
 @Service
 class BikeService(private val repository: BikeRepository, private val mapper: BikeDomain2StorageMapper) {
 
+    @Transactional
     fun addBike(bike: DomainBike): DomainBike {
         requireIdentifiable(bike)
         requirePricePair(bike)
@@ -31,6 +32,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         return domainBike
     }
 
+    @Transactional(readOnly = true)
     fun getBike(bikeId: UUID) : DomainBike {
         val bikeEntity = repository.findById(bikeId)
             .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
@@ -38,6 +40,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     @SuppressWarnings("BC_BAD_CAST_TO_ABSTRACT_COLLECTION")
+    @Transactional(readOnly = true)
     fun getBikes(): List<DomainBike> {
         val bikeEntities: List<BikeEntity> = repository.findAll()
         return bikeEntities.map(mapper::map)
@@ -102,6 +105,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         return mapper.map(repository.saveAndFlush(existing))
     }
 
+    @Transactional
     fun deleteBike(bikeId: UUID) {
         if (!repository.existsById(bikeId)) throw ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND)
         try {
