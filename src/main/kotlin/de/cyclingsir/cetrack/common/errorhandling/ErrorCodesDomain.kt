@@ -59,7 +59,10 @@ enum class ErrorCodesDomain(
     MOUNTING_BACKDATED(809, 400, "Time must be after the start of every mounting it closes", "MOUNTING_BACKDATED"),
     ASSEMBLY_MEMBER_GUIDED_CHOICE(810, 409, "Component is a member of a not-mounted assembly", "ASSEMBLY_MEMBER_GUIDED_CHOICE"),
     CORRECTION_INVALID(811, 400, "At least one of mountedAt/dismountedAt must be provided and form a valid interval", "CORRECTION_INVALID"),
-    SLOT_MAPPING_NOT_FOUND(812, 404, "Slot mapping not found on this bike", "NOT_FOUND");
+    SLOT_MAPPING_NOT_FOUND(812, 404, "Slot mapping not found on this bike", "NOT_FOUND"),
+
+//  Report domain (CE-0083)
+    REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID");
 
     override val reason: String?
         get() = description

@@ -53,6 +53,14 @@ class CatalogCrudIT : PostgreSQLContainerIT() {
     }
 
     @Test
+    fun `duplicate position name is rejected`() {
+        val name = "front-${UUID.randomUUID()}"
+        service.addPosition(DomainPosition(name = name))
+        val ex = assertThrows<ServiceException> { service.addPosition(DomainPosition(name = name)) }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.POSITION_DATA_INVALID)
+    }
+
+    @Test
     fun `position round trip and delete guard`() {
         val position = service.addPosition(DomainPosition(name = "front-${UUID.randomUUID()}"))
         assertThat(position.id).isNotNull()

@@ -73,6 +73,30 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
     }
 
     @Test
+    fun `unknown component type is rejected as invalid data`() {
+        val ex = assertThrows<ServiceException> {
+            service.addComponent(DomainComponent(componentTypeId = UUID.randomUUID(), label = "orphan"))
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_DATA_INVALID)
+    }
+
+    @Test
+    fun `type can't change while mounted`() {
+        val typeId = newType()
+        val component = newComponent(typeId)
+        seedMounting(component.id!!, typeId)
+
+        val ex = assertThrows<ServiceException> {
+            service.modifyComponent(component.id!!, component.copy(componentTypeId = newType()))
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_IN_USE)
+
+        // renaming stays possible while mounted
+        val renamed = service.modifyComponent(component.id!!, component.copy(label = "renamed"))
+        assertThat(renamed.label).isEqualTo("renamed")
+    }
+
+    @Test
     fun `price without currency is rejected`() {
         val ex = assertThrows<ServiceException> {
             service.addComponent(DomainComponent(componentTypeId = newType(), label = "odd", price = "10.50"))

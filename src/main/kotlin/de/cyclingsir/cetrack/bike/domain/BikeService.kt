@@ -78,7 +78,7 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
         val bikeEntity = try {
             repository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.BIKE_DATA_INVALID, e.message ?: "Invalid bike data", e)
+            throw ServiceException(ErrorCodesDomain.BIKE_DATA_INVALID, "Bike data violates a constraint.", e)
         } catch (e: Exception) {
             throw ServiceException(ErrorCodesService.INTERNAL_SERVER_ERROR, e.message ?: "Persisting failed", e)
         }

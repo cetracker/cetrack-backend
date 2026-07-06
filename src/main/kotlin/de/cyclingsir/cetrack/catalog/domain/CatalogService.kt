@@ -33,7 +33,7 @@ class CatalogService(
     fun addComponentType(componentType: DomainComponentType): DomainComponentType = try {
         mapper.map(componentTypeRepository.saveAndFlush(mapper.map(componentType)))
     } catch (e: DataIntegrityViolationException) {
-        throw ServiceException(ErrorCodesDomain.COMPONENT_TYPE_DATA_INVALID, e.message, e)
+        throw ServiceException(ErrorCodesDomain.COMPONENT_TYPE_DATA_INVALID, "Name must be unique.", e)
     }
 
     @Transactional
@@ -45,7 +45,7 @@ class CatalogService(
         return try {
             mapper.map(componentTypeRepository.saveAndFlush(existing))
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.COMPONENT_TYPE_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.COMPONENT_TYPE_DATA_INVALID, "Name must be unique.", e)
         }
     }
 
@@ -73,7 +73,7 @@ class CatalogService(
     fun addPosition(position: DomainPosition): DomainPosition = try {
         mapper.map(positionRepository.saveAndFlush(mapper.map(position)))
     } catch (e: DataIntegrityViolationException) {
-        throw ServiceException(ErrorCodesDomain.POSITION_DATA_INVALID, e.message, e)
+        throw ServiceException(ErrorCodesDomain.POSITION_DATA_INVALID, "Name must be unique.", e)
     }
 
     @Transactional
@@ -84,7 +84,7 @@ class CatalogService(
         return try {
             mapper.map(positionRepository.saveAndFlush(existing))
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.POSITION_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.POSITION_DATA_INVALID, "Name must be unique.", e)
         }
     }
 

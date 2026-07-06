@@ -7,6 +7,7 @@ import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.storage.ComponentRepository
 import de.cyclingsir.cetrack.mounting.storage.MountingEntity
 import de.cyclingsir.cetrack.mounting.storage.MountingRepository
+import de.cyclingsir.cetrack.mounting.storage.MountingWithPlace
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
@@ -80,7 +81,7 @@ class MountingService(
                 MountingEntity(id = null, componentId = componentId, mountPointId = mountPointId, mountedAt = at)
             )
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, e.message, e)
+            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
         }
         logger.info { "Mounted $componentId at $mountPointId ($at); closed ${toClose.map { it.id }}" }
 
@@ -114,17 +115,11 @@ class MountingService(
     }
 
     fun getMountings(componentId: UUID?, mountPointId: UUID?, bikeId: UUID?, activeAt: Instant?): List<DomainMounting> =
-        mountingRepository.findWithPlace(componentId, mountPointId, bikeId, activeAt).map {
-            DomainMounting(it.id, it.componentId, it.mountPointId, it.bikeId, it.mountPointName,
-                it.assemblyMountingId, it.mountedAt, it.dismountedAt, it.createdAt)
-        }
+        mountingRepository.findWithPlace(componentId, mountPointId, bikeId, activeAt).map(::toDomain)
 
     fun getMounting(mountingId: UUID): DomainMounting =
         mountingRepository.findWithPlaceById(mountingId)
-            ?.let {
-                DomainMounting(it.id, it.componentId, it.mountPointId, it.bikeId, it.mountPointName,
-                    it.assemblyMountingId, it.mountedAt, it.dismountedAt, it.createdAt)
-            }
+            ?.let(::toDomain)
             ?: throw ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND)
 
     /**
@@ -158,7 +153,7 @@ class MountingService(
         try {
             mountingRepository.saveAndFlush(mounting)
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, e.message, e)
+            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
         }
         return getMounting(mountingId)
     }
@@ -174,8 +169,21 @@ class MountingService(
         mountingRepository.delete(mounting)
     }
 
+    private fun toDomain(projection: MountingWithPlace) = DomainMounting(
+        id = projection.id,
+        componentId = projection.componentId,
+        mountPointId = projection.mountPointId,
+        bikeId = projection.bikeId,
+        mountPointName = projection.mountPointName,
+        assemblyMountingId = projection.assemblyMountingId,
+        mountedAt = projection.mountedAt,
+        dismountedAt = projection.dismountedAt,
+        createdAt = projection.createdAt
+    )
+
     private fun toDomain(entity: MountingEntity): DomainMounting {
-        val mountPoint = mountPointRepository.findById(entity.mountPointId).orElseThrow()
+        val mountPoint = mountPointRepository.findById(entity.mountPointId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.MOUNT_POINT_NOT_FOUND) }
         return DomainMounting(
             id = entity.id!!,
             componentId = entity.componentId,

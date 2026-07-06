@@ -21,11 +21,11 @@ data class DomainMounting(
 
 /**
  * Effects envelope of every action creating or closing Mountings (ADR-0001 §2
- * changes are domain-mandated notifications). membershipChanges stays empty
- * until CE-0086 - no mounted assembly can exist before assemblies ship.
+ * changes are domain-mandated notifications). The wire envelope also carries
+ * membershipChanges - a typed domain field arrives with CE-0086, when a
+ * mounted assembly can exist at all.
  */
 data class DomainMountingChanges(
     val created: List<DomainMounting> = emptyList(),
-    val closed: List<DomainMounting> = emptyList(),
-    val membershipChanges: List<Nothing> = emptyList()
+    val closed: List<DomainMounting> = emptyList()
 )

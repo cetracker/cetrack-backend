@@ -35,11 +35,13 @@ class ComponentService(
     }
 
     fun addComponent(component: DomainComponent): DomainComponent {
+        requireIdentifiable(component)
         requirePricePair(component)
         val entity = try {
             repository.saveAndFlush(mapper.map(component))
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID,
+                "Component references an unknown component type or violates a constraint.", e)
         }
         return mapper.map(entity).copy(status = DomainComponentStatus.IN_STOCK)
     }
@@ -48,7 +50,15 @@ class ComponentService(
     fun modifyComponent(componentId: UUID, component: DomainComponent): DomainComponent {
         val existing = repository.findById(componentId)
             .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND) }
+        requireIdentifiable(component)
         requirePricePair(component)
+        if (existing.componentTypeId != component.componentTypeId
+            && (repository.hasActiveMounting(componentId) || repository.hasActiveMembership(componentId))
+        ) {
+            // otherwise the mount-time type-match invariant (domain-model.md §2) would silently break
+            throw ServiceException(ErrorCodesDomain.COMPONENT_IN_USE,
+                "Type can't change while the component is mounted or an assembly member; dismount/remove first.")
+        }
         existing.componentTypeId = component.componentTypeId
         existing.label = component.label
         existing.manufacturer = component.manufacturer
@@ -61,7 +71,8 @@ class ComponentService(
         val entity = try {
             repository.saveAndFlush(existing)
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID,
+                "Component references an unknown component type or violates a constraint.", e)
         }
         return mapper.map(entity).copy(status = deriveStatus(entity))
     }
@@ -78,7 +89,13 @@ class ComponentService(
         if (repository.wasEverMounted(componentId) || repository.wasEverMember(componentId)) {
             throw ServiceException(ErrorCodesDomain.COMPONENT_IN_USE)
         }
-        repository.deleteById(componentId)
+        try {
+            repository.deleteById(componentId)
+            repository.flush()
+        } catch (e: DataIntegrityViolationException) {
+            // race with a concurrent mount/membership between the checks and the delete
+            throw ServiceException(ErrorCodesDomain.COMPONENT_IN_USE)
+        }
     }
 
     /**
@@ -106,6 +123,13 @@ class ComponentService(
         return mapper.map(entity).copy(status = DomainComponentStatus.RETIRED)
     }
 
+    /** The display identity must not be blank (successor of the old part rule). */
+    private fun requireIdentifiable(component: DomainComponent) {
+        if (component.label.isBlank()) {
+            throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID, "Label must not be blank.")
+        }
+    }
+
     private fun requirePricePair(component: DomainComponent) {
         val hasPrice = !component.price.isNullOrBlank()
         val hasCurrency = !component.priceCurrency.isNullOrBlank()
@@ -114,21 +138,27 @@ class ComponentService(
         }
     }
 
-    private fun deriveStatus(entity: ComponentEntity): DomainComponentStatus = when {
-        entity.retiredAt != null -> DomainComponentStatus.RETIRED
-        repository.hasActiveMounting(entity.id!!) -> DomainComponentStatus.MOUNTED
-        repository.hasActiveMembership(entity.id!!) -> DomainComponentStatus.IN_ASSEMBLY
-        else -> DomainComponentStatus.IN_STOCK
-    }
+    private fun deriveStatus(entity: ComponentEntity): DomainComponentStatus = statusOf(
+        retired = entity.retiredAt != null,
+        mounted = repository.hasActiveMounting(entity.id!!),
+        member = repository.hasActiveMembership(entity.id!!)
+    )
 
     private fun deriveStatus(
         entity: ComponentEntity,
         activelyMounted: Set<UUID>,
         activeMembers: Set<UUID>,
-    ): DomainComponentStatus = when {
-        entity.retiredAt != null -> DomainComponentStatus.RETIRED
-        entity.id in activelyMounted -> DomainComponentStatus.MOUNTED
-        entity.id in activeMembers -> DomainComponentStatus.IN_ASSEMBLY
+    ): DomainComponentStatus = statusOf(
+        retired = entity.retiredAt != null,
+        mounted = entity.id in activelyMounted,
+        member = entity.id in activeMembers
+    )
+
+    /** Single source of the status precedence (domain-model.md §3). */
+    internal fun statusOf(retired: Boolean, mounted: Boolean, member: Boolean): DomainComponentStatus = when {
+        retired -> DomainComponentStatus.RETIRED
+        mounted -> DomainComponentStatus.MOUNTED
+        member -> DomainComponentStatus.IN_ASSEMBLY
         else -> DomainComponentStatus.IN_STOCK
     }
 }

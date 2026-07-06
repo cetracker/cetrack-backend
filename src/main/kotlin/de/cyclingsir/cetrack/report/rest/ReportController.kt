@@ -1,5 +1,7 @@
 package de.cyclingsir.cetrack.report.rest
 
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.MileageItem
 import de.cyclingsir.cetrack.infrastructure.api.rest.ReportsApi
 import de.cyclingsir.cetrack.report.domain.DomainMileageItem
@@ -22,7 +24,11 @@ class ReportController(private val service: ReportService) : ReportsApi {
         @Valid @RequestParam(value = "from", required = false) from: OffsetDateTime?,
         @Valid @RequestParam(value = "to", required = false) to: OffsetDateTime?
     ): ResponseEntity<List<MileageItem>> {
-        val mileageScope = if (scope == "bikes") MileageScope.BIKES else MileageScope.COMPONENTS
+        val mileageScope = when (scope) {
+            "components" -> MileageScope.COMPONENTS
+            "bikes" -> MileageScope.BIKES
+            else -> throw ServiceException(ErrorCodesDomain.REPORT_SCOPE_INVALID, "got '$scope'")
+        }
         val items = service.mileage(mileageScope, componentId, bikeId, from?.toInstant(), to?.toInstant())
         return ResponseEntity.ok(items.map(::toApi))
     }

@@ -42,7 +42,8 @@ class BikeCompositionService(
         return try {
             toDomain(mountPointRepository.saveAndFlush(entity))
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.MOUNT_POINT_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.MOUNT_POINT_DATA_INVALID,
+                "Mount point references an unknown component type or position.", e)
         }
     }
 
@@ -63,7 +64,8 @@ class BikeCompositionService(
         return try {
             toDomain(mountPointRepository.saveAndFlush(existing))
         } catch (e: DataIntegrityViolationException) {
-            throw ServiceException(ErrorCodesDomain.MOUNT_POINT_DATA_INVALID, e.message, e)
+            throw ServiceException(ErrorCodesDomain.MOUNT_POINT_DATA_INVALID,
+                "Mount point references an unknown component type or position.", e)
         }
     }
 

@@ -127,6 +127,13 @@ class MountDismountIT : PostgreSQLContainerIT() {
         jdbc.update("UPDATE bike SET retired_at = now() WHERE id = ?", bikeId)
         val exBike = assertThrows<ServiceException> { mountingService.mount(bikeId, mountPointId, component, t2) }
         assertThat(exBike.getError()).isEqualTo(ErrorCodesDomain.BIKE_RETIRED)
+
+        // a mount point of a different bike is not found on this one
+        val otherBike = newBike()
+        val exForeignMp = assertThrows<ServiceException> {
+            mountingService.mount(otherBike, mountPointId, component, t2)
+        }
+        assertThat(exForeignMp.getError()).isEqualTo(ErrorCodesDomain.MOUNT_POINT_NOT_FOUND)
     }
 
     @Test

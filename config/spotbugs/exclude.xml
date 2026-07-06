@@ -157,4 +157,17 @@
         <Class name="de.cyclingsir.cetrack.common.errorhandling.ServiceException" />
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
+    <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.component.rest.ComponentControllerTest" />
+        <Bug code="SA" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.component.domain.ComponentServiceTest" />
+        <Bug code="SA" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.common.errorhandling.CentralExceptionHandlerTest" />
+        <Bug code="SA" />
+    </Match>
 </FindBugsFilter>
