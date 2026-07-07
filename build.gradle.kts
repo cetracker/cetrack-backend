@@ -268,8 +268,8 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-    // avoid param waring. see: https://youtrack.jetbrains.com/issue/KT-73255
-    kotlin.compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+    // Kotlin 2.4 applies param-property by default; see: https://youtrack.jetbrains.com/issue/KT-73255
+    kotlin.compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
     dependsOn(openapiSpecs.keys.map { "openApiGenerate-$it" })
 }
 
@@ -331,6 +331,10 @@ tasks.bootRun {
     if (System.getProperty("spring.profiles.active") != null) {
         args = listOf("--spring.profiles.active=${System.getProperty("spring.profiles.active")}")
     }
+}
+
+tasks.withType<Test> {
+    jvmArgs("-Xshare:off", "--sun-misc-unsafe-memory-access=allow")
 }
 
 tasks.named<Test>("test") {

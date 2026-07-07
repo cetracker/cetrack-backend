@@ -53,8 +53,8 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
         val modified = service.modifyMaintenanceTask(task.id!!, task.copy(name = "renewed wax"))
         assertThat(modified.name).isEqualTo("renewed wax")
 
-        service.deleteMaintenanceTask(task.id!!)
-        assertThrows<ServiceException> { service.getMaintenanceTask(task.id!!) }
+        service.deleteMaintenanceTask(task.id)
+        assertThrows<ServiceException> { service.getMaintenanceTask(task.id) }
     }
 
     @Test
@@ -88,15 +88,15 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
         val older = Instant.parse("2025-01-01T00:00:00Z")
         val newer = Instant.parse("2025-06-01T00:00:00Z")
         service.addMaintenanceEvent(task.id!!, older)
-        val newestEvent = service.addMaintenanceEvent(task.id!!, newer)
+        val newestEvent = service.addMaintenanceEvent(task.id, newer)
 
-        val events = service.getMaintenanceEvents(task.id!!)
+        val events = service.getMaintenanceEvents(task.id)
         assertThat(events).hasSize(2)
         assertThat(events.first().id).isEqualTo(newestEvent.id)
         assertThat(events.map { it.performedAt }).containsExactly(newer, older)
 
-        service.deleteMaintenanceTask(task.id!!)
-        assertThrows<ServiceException> { service.getMaintenanceEvents(task.id!!) }
+        service.deleteMaintenanceTask(task.id)
+        assertThrows<ServiceException> { service.getMaintenanceEvents(task.id) }
     }
 
     @Test
@@ -107,9 +107,9 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
         )
         val event = service.addMaintenanceEvent(task.id!!, Instant.now())
 
-        service.deleteMaintenanceEvent(task.id!!, event.id!!)
+        service.deleteMaintenanceEvent(task.id, event.id!!)
 
-        assertThat(service.getMaintenanceEvents(task.id!!)).isEmpty()
+        assertThat(service.getMaintenanceEvents(task.id)).isEmpty()
     }
 
     @Test
@@ -166,9 +166,9 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
         val firstEventAt = Instant.parse("2025-01-15T00:00:00Z")
         val secondEventAt = Instant.parse("2025-03-01T00:00:00Z")
         service.addMaintenanceEvent(task.id!!, firstEventAt)
-        service.addMaintenanceEvent(task.id!!, secondEventAt)
+        service.addMaintenanceEvent(task.id, secondEventAt)
 
-        val events = service.getMaintenanceEvents(task.id!!)
+        val events = service.getMaintenanceEvents(task.id)
         assertThat(events).hasSize(2)
         val (newest, oldest) = events[0] to events[1]
         assertThat(oldest.performedAt).isEqualTo(firstEventAt)
@@ -176,7 +176,7 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
         assertThat(newest.performedAt).isEqualTo(secondEventAt)
         assertThat(newest.distanceSincePrevious).isEqualTo(200_000L) // between the two events
 
-        val distanceSinceLast = service.getMaintenanceTask(task.id!!).due?.distanceSinceLast
+        val distanceSinceLast = service.getMaintenanceTask(task.id).due?.distanceSinceLast
         val partitionedTotal = events.sumOf { it.distanceSincePrevious ?: 0 } + (distanceSinceLast ?: 0)
         assertThat(partitionedTotal).isEqualTo(600_000L) // sum of all three tours
     }

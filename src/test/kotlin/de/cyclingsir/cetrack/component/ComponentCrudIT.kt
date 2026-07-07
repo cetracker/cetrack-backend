@@ -90,8 +90,8 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         val modified = service.modifyComponent(component.id!!, component.copy(manufacturer = "Conti"))
         assertThat(modified.manufacturer).isEqualTo("Conti")
 
-        service.deleteComponent(component.id!!)
-        assertThrows<ServiceException> { service.getComponent(component.id!!) }
+        service.deleteComponent(component.id)
+        assertThrows<ServiceException> { service.getComponent(component.id) }
     }
 
     @Test
@@ -109,12 +109,12 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         seedMounting(component.id!!, typeId)
 
         val ex = assertThrows<ServiceException> {
-            service.modifyComponent(component.id!!, component.copy(componentTypeId = newType()))
+            service.modifyComponent(component.id, component.copy(componentTypeId = newType()))
         }
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_IN_USE)
 
         // renaming stays possible while mounted
-        val renamed = service.modifyComponent(component.id!!, component.copy(label = "renamed"))
+        val renamed = service.modifyComponent(component.id, component.copy(label = "renamed"))
         assertThat(renamed.label).isEqualTo("renamed")
     }
 
@@ -137,9 +137,9 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         service.retireComponent(retired.id!!, Instant.now(), DomainRetirementKind.SOLD)
         val inStock = newComponent(typeId)
 
-        assertThat(service.getComponent(mounted.id!!).status).isEqualTo(DomainComponentStatus.MOUNTED)
-        assertThat(service.getComponent(member.id!!).status).isEqualTo(DomainComponentStatus.IN_ASSEMBLY)
-        assertThat(service.getComponent(retired.id!!).status).isEqualTo(DomainComponentStatus.RETIRED)
+        assertThat(service.getComponent(mounted.id).status).isEqualTo(DomainComponentStatus.MOUNTED)
+        assertThat(service.getComponent(member.id).status).isEqualTo(DomainComponentStatus.IN_ASSEMBLY)
+        assertThat(service.getComponent(retired.id).status).isEqualTo(DomainComponentStatus.RETIRED)
         assertThat(service.getComponent(inStock.id!!).status).isEqualTo(DomainComponentStatus.IN_STOCK)
 
         val stockOnly = service.getComponents(typeId, DomainComponentStatus.IN_STOCK)
@@ -158,11 +158,11 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         seedMembership(member.id!!, typeId)
         val inStock = newComponent(typeId)
 
-        assertThat(service.getComponent(direct.id!!).directlyMounted).isTrue()
+        assertThat(service.getComponent(direct.id).directlyMounted).isTrue()
         // governed mounting reports status=mounted like a direct one, but is NOT directlyMounted
-        assertThat(service.getComponent(governed.id!!).status).isEqualTo(DomainComponentStatus.MOUNTED)
-        assertThat(service.getComponent(governed.id!!).directlyMounted).isFalse()
-        assertThat(service.getComponent(member.id!!).directlyMounted).isFalse()
+        assertThat(service.getComponent(governed.id).status).isEqualTo(DomainComponentStatus.MOUNTED)
+        assertThat(service.getComponent(governed.id).directlyMounted).isFalse()
+        assertThat(service.getComponent(member.id).directlyMounted).isFalse()
         assertThat(service.getComponent(inStock.id!!).directlyMounted).isFalse()
 
         // getComponents (list path) uses a separate derivation - must agree with getComponent
@@ -179,9 +179,9 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         val component = newComponent(typeId)
         seedMounting(component.id!!, typeId, dismountedAt = Instant.parse("2024-02-01T00:00:00Z"))
 
-        assertThat(service.getComponent(component.id!!).status).isEqualTo(DomainComponentStatus.IN_STOCK)
+        assertThat(service.getComponent(component.id).status).isEqualTo(DomainComponentStatus.IN_STOCK)
 
-        val ex = assertThrows<ServiceException> { service.deleteComponent(component.id!!) }
+        val ex = assertThrows<ServiceException> { service.deleteComponent(component.id) }
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_IN_USE)
     }
 
@@ -191,14 +191,14 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         val mounted = newComponent(typeId)
         seedMounting(mounted.id!!, typeId)
         val exMounted = assertThrows<ServiceException> {
-            service.retireComponent(mounted.id!!, Instant.now(), DomainRetirementKind.SCRAPPED)
+            service.retireComponent(mounted.id, Instant.now(), DomainRetirementKind.SCRAPPED)
         }
         assertThat(exMounted.getError()).isEqualTo(ErrorCodesDomain.RETIRE_PRECONDITION_FAILED)
 
         val member = newComponent(typeId)
         seedMembership(member.id!!, typeId)
         val exMember = assertThrows<ServiceException> {
-            service.retireComponent(member.id!!, Instant.now(), DomainRetirementKind.SCRAPPED)
+            service.retireComponent(member.id, Instant.now(), DomainRetirementKind.SCRAPPED)
         }
         assertThat(exMember.getError()).isEqualTo(ErrorCodesDomain.RETIRE_PRECONDITION_FAILED)
 
@@ -208,7 +208,7 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         assertThat(retired.retiredAt).isEqualTo(Instant.parse("2025-01-01T00:00:00Z"))
 
         val exAgain = assertThrows<ServiceException> {
-            service.retireComponent(free.id!!, Instant.now(), DomainRetirementKind.SOLD)
+            service.retireComponent(free.id, Instant.now(), DomainRetirementKind.SOLD)
         }
         assertThat(exAgain.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_RETIRED)
     }

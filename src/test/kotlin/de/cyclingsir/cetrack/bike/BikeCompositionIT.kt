@@ -53,7 +53,7 @@ class BikeCompositionIT : PostgreSQLContainerIT() {
         assertThat(modified.name).isEqualTo("front tyre")
         assertThat(modified.mandatory).isFalse()
 
-        compositionService.deleteMountPoint(bikeId, created.id!!)
+        compositionService.deleteMountPoint(bikeId, created.id)
         assertThat(compositionService.getMountPoints(bikeId)).isEmpty()
 
         val exUnknownBike = assertThrows<ServiceException> { compositionService.getMountPoints(UUID.randomUUID()) }
@@ -73,16 +73,16 @@ class BikeCompositionIT : PostgreSQLContainerIT() {
         mountingService.mount(bikeId, mountPoint.id!!, componentId, Instant.parse("2024-01-01T00:00:00Z"))
 
         val exType = assertThrows<ServiceException> {
-            compositionService.modifyMountPoint(bikeId, mountPoint.id!!, mountPoint.copy(componentTypeId = newType()))
+            compositionService.modifyMountPoint(bikeId, mountPoint.id, mountPoint.copy(componentTypeId = newType()))
         }
         assertThat(exType.getError()).isEqualTo(ErrorCodesDomain.MOUNT_POINT_IN_USE)
 
         // renaming stays possible while mounted
-        compositionService.modifyMountPoint(bikeId, mountPoint.id!!, mountPoint.copy(name = "renamed"))
+        compositionService.modifyMountPoint(bikeId, mountPoint.id, mountPoint.copy(name = "renamed"))
 
         mountingService.dismount(componentId, Instant.parse("2024-02-01T00:00:00Z"))
         val exDelete = assertThrows<ServiceException> {
-            compositionService.deleteMountPoint(bikeId, mountPoint.id!!)
+            compositionService.deleteMountPoint(bikeId, mountPoint.id)
         }
         assertThat(exDelete.getError()).isEqualTo(ErrorCodesDomain.MOUNT_POINT_IN_USE)
     }

@@ -28,7 +28,7 @@ class FitSessionMapper {
             }
         }
 
-        val powerTotal = session.totalWork?.toLong()
+        val powerTotal = session.totalWork
             ?: session.avgPower?.let { it.toLong() * durationRecorded }
             ?: 0L
 

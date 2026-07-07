@@ -55,6 +55,6 @@ class MaintenanceMileageDao(private val jdbc: JdbcTemplate) {
         }
         return jdbc.queryForObject(sql.toString(), { rs, _ ->
             rs.getLong("dist")
-        }, *params.toTypedArray()) ?: 0
+        }, *params.toTypedArray())
     }
 }

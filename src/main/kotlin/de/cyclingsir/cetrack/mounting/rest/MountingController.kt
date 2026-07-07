@@ -34,6 +34,7 @@ class MountingController(
     override fun getMounting(@PathVariable("mountingId") mountingId: UUID): ResponseEntity<Mounting> =
         ResponseEntity.ok(mapper.map(service.getMounting(mountingId)))
 
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
     override fun correctMounting(
         @PathVariable("mountingId") mountingId: UUID,
         @Valid @RequestBody correctMountingRequest: CorrectMountingRequest

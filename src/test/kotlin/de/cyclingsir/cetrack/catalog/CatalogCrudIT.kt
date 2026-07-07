@@ -27,8 +27,8 @@ class CatalogCrudIT : PostgreSQLContainerIT() {
         val modified = service.modifyComponentType(created.id!!, created.copy(description = "hoop of rubber"))
         assertThat(modified.description).isEqualTo("hoop of rubber")
 
-        service.deleteComponentType(created.id!!)
-        assertThrows<ServiceException> { service.getComponentType(created.id!!) }
+        service.deleteComponentType(created.id)
+        assertThrows<ServiceException> { service.getComponentType(created.id) }
     }
 
     @Test
