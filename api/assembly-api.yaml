@@ -267,9 +267,14 @@ paths:
       operationId: addAssemblyMember
       description: >
         Adds a component to a slot from the given time. Component type must
-        match the slot's accepted type; component must not be retired, not be
-        member of another assembly, and not be mounted elsewhere. When the
-        slot is already occupied, this is an atomic swap: the occupant's
+        match the slot's accepted type; component must not be retired and must
+        not already be a member of another assembly. A currently
+        directly-mounted component MAY be added to a NOT-mounted assembly -
+        the membership does not dismount it; it stays directly mounted until
+        the assembly is itself mounted later (at which point same-mount-point
+        adoption or a different-mount-point conflict applies, per
+        mountAssembly below). When the slot is already occupied, this is an
+        atomic swap: the occupant's
         membership is closed at the given time (and, while the assembly is
         MOUNTED, its governed mounting too) before the new member is added -
         parity with the bike-side auto-dismount on mountComponent. While the

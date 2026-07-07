@@ -25,9 +25,11 @@ paths:
     get:
       operationId: getComponents
       description: >
-        returns components, optionally filtered by type and/or lifecycle status
-        (mount pickers use componentTypeId + status=inStock); empty list when
-        none match
+        returns components, optionally filtered by type and/or lifecycle status;
+        empty list when none match. The assembly slot picker filters by
+        componentTypeId only (a component may join a not-yet-mounted assembly
+        while directlyMounted elsewhere); the bike mount picker still uses
+        status=inStock by default.
       tags:
         - Components
       parameters:
@@ -363,9 +365,12 @@ components:
     ComponentStatus:
       type: string
       description: >
-        derived lifecycle state. inAssembly = active member of a NOT-mounted
-        assembly (direct mount triggers the ADR-0001 §3 guided choice);
-        mounted covers direct and via-assembly mountings alike.
+        derived lifecycle summary (single-valued). inAssembly = active member of
+        a NOT-mounted assembly (direct mount triggers the ADR-0001 §3 guided
+        choice); mounted covers direct and via-assembly mountings alike and
+        takes precedence when a component is both directly mounted and an
+        assembly member. Use directlyMounted on Component to tell the two
+        mount kinds apart.
       enum:
         - inStock
         - inAssembly
@@ -430,6 +435,16 @@ components:
           allOf:
             - $ref: '#/components/schemas/ComponentStatus'
           readOnly: true
+        directlyMounted:
+          type: boolean
+          readOnly: true
+          description: >
+            true when the component currently occupies a bike mount point via
+            its OWN (direct, non-governed) mounting, independent of status.
+            Distinguishes a directly-mounted component from one that reports
+            status=mounted only because its assembly is mounted. Lets pickers
+            offer the component while flagging it as mounted elsewhere.
+            Absent/false = not directly mounted.
         createdAt:
           type: string
           format: date-time
