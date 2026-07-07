@@ -41,6 +41,7 @@ class MaintenanceDomain2ApiMapper {
         id = domain.id!!,
         maintenanceTaskId = domain.maintenanceTaskId,
         performedAt = domain.performedAt.atOffset(ZoneOffset.UTC),
-        createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
+        createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC),
+        distanceSincePrevious = domain.distanceSincePrevious
     )
 }

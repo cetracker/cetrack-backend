@@ -35,4 +35,26 @@ class MaintenanceMileageDao(private val jdbc: JdbcTemplate) {
             SinceLast(rs.getLong("dist"), rs.getTimestamp("first_tour")?.toInstant())
         }, *params.toTypedArray())
     }
+
+    /**
+     * SUM(tour.distance) for the bike in the half-open interval
+     * (fromExclusive, toInclusive]; either bound may be null (unbounded on
+     * that side). Bounds are appended only when non-null, matching [sinceLast],
+     * to avoid PG's "could not determine data type" on a bound JDBC null.
+     */
+    fun distanceBetween(bikeId: UUID, fromExclusive: Instant?, toInclusive: Instant?): Long {
+        val sql = StringBuilder("SELECT COALESCE(SUM(distance), 0) AS dist FROM tour WHERE bike_id = ?")
+        val params = mutableListOf<Any>(bikeId)
+        fromExclusive?.let {
+            sql.append(" AND started_at > ?")
+            params.add(java.sql.Timestamp.from(it))
+        }
+        toInclusive?.let {
+            sql.append(" AND started_at <= ?")
+            params.add(java.sql.Timestamp.from(it))
+        }
+        return jdbc.queryForObject(sql.toString(), { rs, _ ->
+            rs.getLong("dist")
+        }, *params.toTypedArray()) ?: 0
+    }
 }

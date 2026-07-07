@@ -17,7 +17,8 @@ data class DomainMaintenanceEvent(
     val id: UUID? = null,
     val maintenanceTaskId: UUID,
     val performedAt: Instant,
-    val createdAt: Instant? = null
+    val createdAt: Instant? = null,
+    val distanceSincePrevious: Long? = null
 )
 
 /** Derived (domain-model.md §5.4): never stored, computed from tour history + events vs. the task's intervals. */

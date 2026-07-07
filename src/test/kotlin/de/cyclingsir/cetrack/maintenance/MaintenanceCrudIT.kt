@@ -4,6 +4,7 @@ import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.maintenance.domain.DomainMaintenanceTask
 import de.cyclingsir.cetrack.maintenance.domain.MaintenanceService
+import de.cyclingsir.cetrack.maintenance.storage.MaintenanceMileageDao
 import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -17,6 +18,7 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
 
     @Autowired private lateinit var service: MaintenanceService
     @Autowired private lateinit var jdbc: JdbcTemplate
+    @Autowired private lateinit var mileageDao: MaintenanceMileageDao
 
     private fun newBike(): UUID {
         val bikeId = UUID.randomUUID()
@@ -129,5 +131,53 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
 
         val dueOnly = service.getMaintenanceTasks(bikeId = null, due = true)
         assertThat(dueOnly.map { it.id }).contains(dueTask.id).doesNotContain(notDueTask.id)
+    }
+
+    @Test
+    fun `distanceBetween sums tours within bounds, boundary is inclusive on toInclusive only`() {
+        val bikeId = newBike()
+        val t1 = Instant.parse("2025-01-01T00:00:00Z")
+        val t2 = Instant.parse("2025-02-01T00:00:00Z")
+        val t3 = Instant.parse("2025-03-01T00:00:00Z")
+        seedTour(bikeId, t1, 100_000) // on fromExclusive boundary - excluded
+        seedTour(bikeId, t2, 200_000) // strictly inside
+        seedTour(bikeId, t3, 300_000) // on toInclusive boundary - included
+
+        assertThat(mileageDao.distanceBetween(bikeId, t1, t3)).isEqualTo(500_000L)
+        assertThat(mileageDao.distanceBetween(bikeId, null, t2)).isEqualTo(300_000L)
+        assertThat(mileageDao.distanceBetween(bikeId, t2, null)).isEqualTo(300_000L)
+        assertThat(mileageDao.distanceBetween(bikeId, null, null)).isEqualTo(600_000L)
+        assertThat(mileageDao.distanceBetween(bikeId, t3, null)).isEqualTo(0L)
+    }
+
+    @Test
+    fun `getMaintenanceEvents partitions bike mileage across event intervals`() {
+        val bikeId = newBike()
+        val task = service.addMaintenanceTask(
+            DomainMaintenanceTask(bikeId = bikeId, name = "chain wax", distanceInterval = 800_000L)
+        )
+        val beforeFirst = Instant.parse("2025-01-01T00:00:00Z")
+        val betweenEvents = Instant.parse("2025-02-01T00:00:00Z")
+        val afterSecond = Instant.parse("2025-04-01T00:00:00Z")
+        seedTour(bikeId, beforeFirst, 100_000)
+        seedTour(bikeId, betweenEvents, 200_000)
+        seedTour(bikeId, afterSecond, 300_000)
+
+        val firstEventAt = Instant.parse("2025-01-15T00:00:00Z")
+        val secondEventAt = Instant.parse("2025-03-01T00:00:00Z")
+        service.addMaintenanceEvent(task.id!!, firstEventAt)
+        service.addMaintenanceEvent(task.id!!, secondEventAt)
+
+        val events = service.getMaintenanceEvents(task.id!!)
+        assertThat(events).hasSize(2)
+        val (newest, oldest) = events[0] to events[1]
+        assertThat(oldest.performedAt).isEqualTo(firstEventAt)
+        assertThat(oldest.distanceSincePrevious).isEqualTo(100_000L) // since first tour
+        assertThat(newest.performedAt).isEqualTo(secondEventAt)
+        assertThat(newest.distanceSincePrevious).isEqualTo(200_000L) // between the two events
+
+        val distanceSinceLast = service.getMaintenanceTask(task.id!!).due?.distanceSinceLast
+        val partitionedTotal = events.sumOf { it.distanceSincePrevious ?: 0 } + (distanceSinceLast ?: 0)
+        assertThat(partitionedTotal).isEqualTo(600_000L) // sum of all three tours
     }
 }

@@ -72,8 +72,13 @@ class MaintenanceService(
 
     @Transactional(readOnly = true)
     fun getMaintenanceEvents(taskId: UUID): List<DomainMaintenanceEvent> {
-        findTaskOrThrow(taskId)
-        return eventRepository.findAllByMaintenanceTaskIdOrderByPerformedAtDesc(taskId).map(mapper::map)
+        val task = findTaskOrThrow(taskId)
+        val events = eventRepository.findAllByMaintenanceTaskIdOrderByPerformedAtDesc(taskId)
+        return events.mapIndexed { i, e ->
+            val prevPerformedAt = events.getOrNull(i + 1)?.performedAt
+            val dist = mileageDao.distanceBetween(task.bikeId, prevPerformedAt, e.performedAt)
+            mapper.map(e).copy(distanceSincePrevious = dist)
+        }
     }
 
     @Transactional

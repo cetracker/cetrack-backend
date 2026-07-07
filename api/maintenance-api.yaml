@@ -337,6 +337,14 @@ components:
           type: string
           format: date-time
           readOnly: true
+        distanceSincePrevious:
+          type: integer
+          format: int64
+          readOnly: true
+          description: >
+            meters ridden between the previous (older) event and this one; for
+            the oldest event, meters since the first tracked tour for the
+            bike. 0 when no tours fall in the interval.
     MaintenanceEventInput:
       type: object
       required:
