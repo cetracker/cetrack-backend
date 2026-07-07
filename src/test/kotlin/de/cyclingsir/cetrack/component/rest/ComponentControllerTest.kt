@@ -65,12 +65,13 @@ class ComponentControllerTest {
     @Test
     fun `getComponents binds componentTypeId and status query params`() {
         every { service.getComponents(typeId, DomainComponentStatus.MOUNTED) } returns listOf(
-            aComponent().copy(status = DomainComponentStatus.MOUNTED)
+            aComponent().copy(status = DomainComponentStatus.MOUNTED, directlyMounted = true)
         )
 
         mvc.perform(get("/components").param("componentTypeId", typeId.toString()).param("status", "mounted"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].status").value("mounted"))
+            .andExpect(jsonPath("$[0].directlyMounted").value(true))
     }
 
     @Test

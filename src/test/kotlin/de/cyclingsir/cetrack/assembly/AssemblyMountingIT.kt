@@ -385,6 +385,8 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
         assertThat(result.changes.created).isEmpty() // adopted, not re-created
         val adopted = mountingService.getMountings(componentId, null, null, null).single()
         assertThat(adopted.assemblyMountingId).isEqualTo(result.assemblyMounting.id)
+        // adoption makes the mounting governed - no longer directlyMounted
+        assertThat(componentService.getComponent(componentId).directlyMounted).isFalse()
     }
 
     @Test
@@ -501,6 +503,26 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
         )
         assertThat(assemblyService.getAssembly(f.assemblyId, Instant.now()).slots.single().memberComponentId).isEqualTo(newMember)
         assertThat(assemblyService.getMemberships(null, f.componentId, null).single().memberTo).isEqualTo(t2)
+    }
+
+    @Test
+    fun `addMember swap on an unmounted assembly leaves the new member's own direct mounting untouched - CE-0106`() {
+        val f = fixture()
+        val newMember = newComponent(f.typeId)
+        val elsewhereBike = newBike()
+        val elsewhereMountPoint = newMountPoint(elsewhereBike, f.typeId)
+        mountingService.mount(elsewhereBike, elsewhereMountPoint, newMember, t1)
+
+        val changes = mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t2, null)
+
+        assertThat(changes.membershipChanges).containsExactlyInAnyOrder(
+            DomainMembershipChange(f.componentId, f.slotId, DomainMembershipAction.REMOVED, t2),
+            DomainMembershipChange(newMember, f.slotId, DomainMembershipAction.ADDED, t2),
+        )
+        val newMemberMounting = mountingService.getMountings(newMember, null, null, null).single()
+        assertThat(newMemberMounting.dismountedAt).isNull()
+        assertThat(newMemberMounting.mountPointId).isEqualTo(elsewhereMountPoint)
+        assertThat(componentService.getComponent(newMember).directlyMounted).isTrue()
     }
 
     @Test
