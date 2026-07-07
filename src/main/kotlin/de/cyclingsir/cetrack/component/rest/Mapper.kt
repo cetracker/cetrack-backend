@@ -27,6 +27,7 @@ class ComponentDomain2ApiMapper {
         retiredAt = domain.retiredAt?.atOffset(ZoneOffset.UTC),
         retirementKind = domain.retirementKind?.let { Component.RetirementKind.forValue(it.name.lowercase()) },
         status = domain.status?.let(::map),
+        directlyMounted = domain.directlyMounted,
         createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
     )
 

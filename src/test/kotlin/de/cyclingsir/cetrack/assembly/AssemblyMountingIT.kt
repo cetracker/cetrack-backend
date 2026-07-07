@@ -346,6 +346,72 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
     }
 
     @Test
+    fun `addMember accepts a directly-mounted component into an unmounted assembly - CE-0106`() {
+        val typeId = newType()
+        val componentId = newComponent(typeId)
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, typeId)
+        mountingService.mount(bikeId, mountPointId, componentId, t1)
+
+        val assemblyId = assemblyService.createAssembly(DomainAssembly(name = "spare")).id!!
+        val slotId = assemblyService.createAssemblySlot(
+            assemblyId, DomainAssemblySlot(assemblyId = assemblyId, name = "slot", componentTypeId = typeId, validFrom = t1)
+        ).id!!
+
+        val changes = mountingAssemblyService.addMember(assemblyId, componentId, slotId, t2, mountPointId = null)
+        assertThat(changes.created).isEmpty()
+        assertThat(assemblyService.getAssembly(assemblyId, Instant.now()).slots.single().memberComponentId).isEqualTo(componentId)
+        // still directly mounted on the bike - adding to the unmounted assembly did not dismount it
+        val activeMounting = mountingService.getMountings(componentId, null, null, null).single()
+        assertThat(activeMounting.dismountedAt).isNull()
+        assertThat(activeMounting.mountPointId).isEqualTo(mountPointId)
+    }
+
+    @Test
+    fun `later mounting the assembly at the member's same mount point adopts it - CE-0106`() {
+        val typeId = newType()
+        val componentId = newComponent(typeId)
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, typeId)
+        mountingService.mount(bikeId, mountPointId, componentId, t1)
+
+        val assemblyId = assemblyService.createAssembly(DomainAssembly(name = "spare")).id!!
+        val slotId = assemblyService.createAssemblySlot(
+            assemblyId, DomainAssemblySlot(assemblyId = assemblyId, name = "slot", componentTypeId = typeId, validFrom = t1)
+        ).id!!
+        mountingAssemblyService.addMember(assemblyId, componentId, slotId, t2, mountPointId = null)
+
+        val result = mountingAssemblyService.mountAssembly(assemblyId, bikeId, Instant.parse("2024-03-01T00:00:00Z"), emptyList())
+        assertThat(result.changes.created).isEmpty() // adopted, not re-created
+        val adopted = mountingService.getMountings(componentId, null, null, null).single()
+        assertThat(adopted.assemblyMountingId).isEqualTo(result.assemblyMounting.id)
+    }
+
+    @Test
+    fun `later mounting the assembly while the member is directly mounted elsewhere is rejected - CE-0106`() {
+        val typeId = newType()
+        val componentId = newComponent(typeId)
+        val elsewhereBike = newBike()
+        val elsewhereMountPoint = newMountPoint(elsewhereBike, typeId)
+        mountingService.mount(elsewhereBike, elsewhereMountPoint, componentId, t1)
+
+        val assemblyId = assemblyService.createAssembly(DomainAssembly(name = "spare")).id!!
+        val slotId = assemblyService.createAssemblySlot(
+            assemblyId, DomainAssemblySlot(assemblyId = assemblyId, name = "slot", componentTypeId = typeId, validFrom = t1)
+        ).id!!
+        mountingAssemblyService.addMember(assemblyId, componentId, slotId, t2, mountPointId = null)
+
+        val targetBike = newBike()
+        newMountPoint(targetBike, typeId)
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.mountAssembly(assemblyId, targetBike, Instant.parse("2024-03-01T00:00:00Z"), emptyList())
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE)
+        // untouched - still mounted on the original bike
+        assertThat(mountingService.getMountings(componentId, null, null, null).single().dismountedAt).isNull()
+    }
+
+    @Test
     fun `addMember mountPointId is rejected while the assembly is not mounted`() {
         val typeId = newType()
         val assemblyId = assemblyService.createAssembly(DomainAssembly(name = "compose")).id!!

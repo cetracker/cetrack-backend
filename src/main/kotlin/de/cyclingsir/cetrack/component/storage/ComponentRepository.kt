@@ -50,4 +50,24 @@ interface ComponentRepository : JpaRepository<ComponentEntity, UUID> {
         value = "SELECT DISTINCT am.component_id FROM assembly_membership am WHERE am.member_to IS NULL"
     )
     fun activeMemberComponentIds(): List<UUID>
+
+    @Query(
+        nativeQuery = true,
+        value = """
+            SELECT EXISTS(
+                SELECT 1 FROM mounting m
+                WHERE m.component_id = :id AND m.dismounted_at IS NULL AND m.assembly_mounting_id IS NULL
+            )
+        """
+    )
+    fun hasActiveDirectMounting(@Param("id") id: UUID): Boolean
+
+    @Query(
+        nativeQuery = true,
+        value = """
+            SELECT DISTINCT m.component_id FROM mounting m
+            WHERE m.dismounted_at IS NULL AND m.assembly_mounting_id IS NULL
+        """
+    )
+    fun directlyMountedComponentIds(): List<UUID>
 }

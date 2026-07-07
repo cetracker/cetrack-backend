@@ -30,5 +30,6 @@ data class DomainComponent(
     val retiredAt: Instant? = null,
     val retirementKind: DomainRetirementKind? = null,
     val status: DomainComponentStatus? = null,
+    val directlyMounted: Boolean = false,
     val createdAt: Instant? = null
 )

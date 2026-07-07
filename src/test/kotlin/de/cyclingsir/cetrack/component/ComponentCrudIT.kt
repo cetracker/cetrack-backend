@@ -45,6 +45,28 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         )
     }
 
+    /** A mounting governed by a mounted assembly (assembly_mounting_id set) - not a direct mounting. */
+    private fun seedGovernedMounting(componentId: UUID, typeId: UUID) {
+        val bikeId = UUID.randomUUID()
+        val mountPointId = UUID.randomUUID()
+        val assemblyId = UUID.randomUUID()
+        val assemblyMountingId = UUID.randomUUID()
+        jdbc.update("INSERT INTO bike (id, model) VALUES (?, ?)", bikeId, "seed bike")
+        jdbc.update(
+            "INSERT INTO mount_point (id, bike_id, component_type_id, name) VALUES (?, ?, ?, ?)",
+            mountPointId, bikeId, typeId, "seed mp"
+        )
+        jdbc.update("INSERT INTO component_assembly (id, name) VALUES (?, ?)", assemblyId, "seed assembly")
+        jdbc.update(
+            "INSERT INTO assembly_mounting (id, assembly_id, bike_id, mounted_at) VALUES (?, ?, ?, ?)",
+            assemblyMountingId, assemblyId, bikeId, java.sql.Timestamp.from(Instant.parse("2024-01-01T00:00:00Z"))
+        )
+        jdbc.update(
+            "INSERT INTO mounting (component_id, mount_point_id, assembly_mounting_id, mounted_at) VALUES (?, ?, ?, ?)",
+            componentId, mountPointId, assemblyMountingId, java.sql.Timestamp.from(Instant.parse("2024-01-01T00:00:00Z"))
+        )
+    }
+
     private fun seedMembership(componentId: UUID, typeId: UUID, memberTo: Instant? = null) {
         val assemblyId = UUID.randomUUID()
         val slotId = UUID.randomUUID()
@@ -123,6 +145,32 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
         val stockOnly = service.getComponents(typeId, DomainComponentStatus.IN_STOCK)
         assertThat(stockOnly.map { it.id }).containsExactly(inStock.id)
         assertThat(service.getComponents(typeId, null)).hasSize(4)
+    }
+
+    @Test
+    fun `directlyMounted is true only for a component's own direct mounting - CE-0106`() {
+        val typeId = newType()
+        val direct = newComponent(typeId)
+        seedMounting(direct.id!!, typeId)
+        val governed = newComponent(typeId)
+        seedGovernedMounting(governed.id!!, typeId)
+        val member = newComponent(typeId)
+        seedMembership(member.id!!, typeId)
+        val inStock = newComponent(typeId)
+
+        assertThat(service.getComponent(direct.id!!).directlyMounted).isTrue()
+        // governed mounting reports status=mounted like a direct one, but is NOT directlyMounted
+        assertThat(service.getComponent(governed.id!!).status).isEqualTo(DomainComponentStatus.MOUNTED)
+        assertThat(service.getComponent(governed.id!!).directlyMounted).isFalse()
+        assertThat(service.getComponent(member.id!!).directlyMounted).isFalse()
+        assertThat(service.getComponent(inStock.id!!).directlyMounted).isFalse()
+
+        // getComponents (list path) uses a separate derivation - must agree with getComponent
+        val listed = service.getComponents(typeId, null).associateBy { it.id }
+        assertThat(listed[direct.id]!!.directlyMounted).isTrue()
+        assertThat(listed[governed.id]!!.directlyMounted).isFalse()
+        assertThat(listed[member.id]!!.directlyMounted).isFalse()
+        assertThat(listed[inStock.id]!!.directlyMounted).isFalse()
     }
 
     @Test

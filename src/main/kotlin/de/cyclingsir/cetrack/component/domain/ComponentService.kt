@@ -24,8 +24,14 @@ class ComponentService(
             ?: repository.findAll()
         val mounted = repository.activelyMountedComponentIds().toSet()
         val members = repository.activeMemberComponentIds().toSet()
+        val directlyMounted = repository.directlyMountedComponentIds().toSet()
         return entities
-            .map { entity -> mapper.map(entity).copy(status = deriveStatus(entity, mounted, members)) }
+            .map { entity ->
+                mapper.map(entity).copy(
+                    status = deriveStatus(entity, mounted, members),
+                    directlyMounted = entity.id in directlyMounted,
+                )
+            }
             .filter { status == null || it.status == status }
     }
 
@@ -33,7 +39,10 @@ class ComponentService(
     fun getComponent(componentId: UUID): DomainComponent {
         val entity = repository.findById(componentId)
             .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND) }
-        return mapper.map(entity).copy(status = deriveStatus(entity))
+        return mapper.map(entity).copy(
+            status = deriveStatus(entity),
+            directlyMounted = repository.hasActiveDirectMounting(entity.id!!),
+        )
     }
 
     @Transactional
@@ -77,7 +86,10 @@ class ComponentService(
             throw ServiceException(ErrorCodesDomain.COMPONENT_DATA_INVALID,
                 "Component references an unknown component type or violates a constraint.", e)
         }
-        return mapper.map(entity).copy(status = deriveStatus(entity))
+        return mapper.map(entity).copy(
+            status = deriveStatus(entity),
+            directlyMounted = repository.hasActiveDirectMounting(entity.id!!),
+        )
     }
 
     /**

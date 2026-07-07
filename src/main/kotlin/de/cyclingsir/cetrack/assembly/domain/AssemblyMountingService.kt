@@ -240,10 +240,10 @@ class AssemblyMountingService(
                 throw ServiceException(ErrorCodesDomain.ASSEMBLY_DATA_INVALID,
                     "mountPointId is not allowed while the assembly is not mounted.")
             }
-            if (mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId) != null) {
-                throw ServiceException(ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE,
-                    "Component is directly mounted; dismount it before adding it to an unmounted assembly.")
-            }
+            // A directly-mounted component MAY join a not-yet-mounted assembly (CE-0106):
+            // membership is a composition fact, not a location fact - the component stays
+            // directly mounted until the assembly itself is mounted (adoption or conflict
+            // then applies, see mountMemberIntoGovernedSlot / planSlot).
             DomainMountingChanges()
         } else {
             mountMemberIntoGovernedSlot(assembly, slot.componentTypeId, slotId, componentId,
