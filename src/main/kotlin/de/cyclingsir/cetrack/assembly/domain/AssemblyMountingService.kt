@@ -16,6 +16,8 @@ import de.cyclingsir.cetrack.bike.storage.SlotMappingRepository
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.storage.ComponentRepository
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipAction
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipChange
 import de.cyclingsir.cetrack.mounting.domain.DomainMounting
 import de.cyclingsir.cetrack.mounting.domain.DomainMountingChanges
 import de.cyclingsir.cetrack.mounting.storage.MountingEntity
@@ -227,12 +229,13 @@ class AssemblyMountingService(
         if (membershipRepository.findByComponentIdAndMemberToIsNull(componentId) != null) {
             throw ServiceException(ErrorCodesDomain.ALREADY_MEMBER)
         }
-        if (membershipRepository.findByAssemblySlotIdAndMemberToIsNull(slotId) != null) {
-            throw ServiceException(ErrorCodesDomain.SLOT_OCCUPIED)
-        }
+        // Occupied slot -> atomic swap: close the occupant (+ its governed mounting) before adding the new member,
+        // parity with bike-side mountComponent auto-dismount. Ordering is load-bearing (see class doc / A4 plan).
+        val occupant = membershipRepository.findByAssemblySlotIdAndMemberToIsNull(slotId)
+        val swapChanges = if (occupant != null) removeMember(occupant.componentId, from) else DomainMountingChanges()
 
         val activeAssemblyMounting = assemblyMountingRepository.findByAssemblyIdAndDismountedAtIsNull(assemblyId)
-        val changes = if (activeAssemblyMounting == null) {
+        val branch = if (activeAssemblyMounting == null) {
             if (mountPointId != null) {
                 throw ServiceException(ErrorCodesDomain.ASSEMBLY_DATA_INVALID,
                     "mountPointId is not allowed while the assembly is not mounted.")
@@ -250,7 +253,14 @@ class AssemblyMountingService(
         membershipRepository.saveAndFlush(
             AssemblyMembershipEntity(id = null, componentId = componentId, assemblySlotId = slotId, memberFrom = from)
         )
-        return changes
+        val membershipChanges = listOfNotNull(
+            occupant?.let { DomainMembershipChange(it.componentId, slotId, DomainMembershipAction.REMOVED, from) }
+        ) + DomainMembershipChange(componentId, slotId, DomainMembershipAction.ADDED, from)
+        return DomainMountingChanges(
+            created = branch.created,
+            closed = swapChanges.closed + branch.closed,
+            membershipChanges = membershipChanges,
+        )
     }
 
     @Transactional

@@ -73,12 +73,45 @@ interface AssemblySlotRepository : JpaRepository<AssemblySlotEntity, UUID> {
     fun hasSlotMappings(@Param("slotId") slotId: UUID): Boolean
 }
 
+/**
+ * Joined read projection of one membership with the owning assembly
+ * (mirrors MountingWithPlace) - denormalized like Mounting.bikeId.
+ */
+interface MembershipWithAssembly {
+    val id: UUID
+    val componentId: UUID
+    val assemblySlotId: UUID
+    val assemblyId: UUID
+    val memberFrom: Instant
+    val memberTo: Instant?
+    val createdAt: Instant?
+}
+
 @Repository
 interface AssemblyMembershipRepository : JpaRepository<AssemblyMembershipEntity, UUID> {
 
     fun findByComponentIdAndMemberToIsNull(componentId: UUID): AssemblyMembershipEntity?
 
     fun findByAssemblySlotIdAndMemberToIsNull(assemblySlotId: UUID): AssemblyMembershipEntity?
+
+    @Query(
+        """SELECT am.id AS id, am.component_id AS componentId, am.assembly_slot_id AS assemblySlotId,
+                  s.assembly_id AS assemblyId, am.member_from AS memberFrom, am.member_to AS memberTo,
+                  am.created_at AS createdAt
+           FROM assembly_membership am
+           JOIN assembly_slot s ON s.id = am.assembly_slot_id
+           WHERE (CAST(:slotId AS uuid) IS NULL OR am.assembly_slot_id = :slotId)
+             AND (CAST(:componentId AS uuid) IS NULL OR am.component_id = :componentId)
+             AND (CAST(:activeAt AS timestamptz) IS NULL
+                  OR (am.member_from <= :activeAt AND (am.member_to IS NULL OR am.member_to > :activeAt)))
+           ORDER BY am.member_from DESC""",
+        nativeQuery = true
+    )
+    fun findWithAssembly(
+        @Param("slotId") slotId: UUID?,
+        @Param("componentId") componentId: UUID?,
+        @Param("activeAt") activeAt: Instant?,
+    ): List<MembershipWithAssembly>
 }
 
 @Repository

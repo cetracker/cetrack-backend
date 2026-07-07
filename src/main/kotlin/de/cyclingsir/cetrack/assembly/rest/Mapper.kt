@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.assembly.rest
 
 import de.cyclingsir.cetrack.assembly.domain.DomainAssembly
+import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMembership
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMounting
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMountResult
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblySlot
@@ -14,6 +15,7 @@ import de.cyclingsir.cetrack.assembly.domain.ResolvedBy
 import de.cyclingsir.cetrack.bike.domain.DomainSlotMapping
 import de.cyclingsir.cetrack.infrastructure.api.model.Assembly
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyInput
+import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMembership
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMountResult
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMounting
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblySlot
@@ -67,6 +69,16 @@ class AssemblyDomain2ApiMapper(
         bikeId = domain.bikeId,
         mountedAt = domain.mountedAt.atOffset(ZoneOffset.UTC),
         dismountedAt = domain.dismountedAt?.atOffset(ZoneOffset.UTC),
+        createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
+    )
+
+    fun map(domain: DomainAssemblyMembership): AssemblyMembership = AssemblyMembership(
+        id = domain.id,
+        componentId = domain.componentId,
+        assemblySlotId = domain.assemblySlotId,
+        assemblyId = domain.assemblyId,
+        memberFrom = domain.memberFrom.atOffset(ZoneOffset.UTC),
+        memberTo = domain.memberTo?.atOffset(ZoneOffset.UTC),
         createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
     )
 

@@ -60,6 +60,16 @@ class AssemblyControllerTest {
     }
 
     @Test
+    fun `getMemberships binds the slotId query param`() {
+        val slotId = UUID.randomUUID()
+        every { service.getMemberships(slotId, null, null) } returns emptyList()
+
+        mvc.perform(get("/memberships").param("slotId", slotId.toString()))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$").isArray)
+    }
+
+    @Test
     fun `ServiceException renders the shared Error shape through the dispatch chain`() {
         val assemblyId = UUID.randomUUID()
         every { service.deleteAssembly(assemblyId) } throws ServiceException(ErrorCodesDomain.ASSEMBLY_IN_USE)

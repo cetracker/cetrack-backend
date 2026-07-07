@@ -35,3 +35,14 @@ data class DomainAssemblyMounting(
     val dismountedAt: Instant? = null,
     val createdAt: Instant? = null,
 )
+
+/** Temporal fact - a component occupies a slot over [memberFrom, memberTo); denormalized like DomainMounting.bikeId. */
+data class DomainAssemblyMembership(
+    val id: UUID,
+    val componentId: UUID,
+    val assemblySlotId: UUID,
+    val assemblyId: UUID,
+    val memberFrom: Instant,
+    val memberTo: Instant? = null,
+    val createdAt: Instant? = null,
+)

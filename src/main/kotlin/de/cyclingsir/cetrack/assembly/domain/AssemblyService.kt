@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.assembly.domain
 
 import de.cyclingsir.cetrack.assembly.storage.AssemblyDomain2StorageMapper
+import de.cyclingsir.cetrack.assembly.storage.AssemblyMembershipRepository
 import de.cyclingsir.cetrack.assembly.storage.AssemblyMountingRepository
 import de.cyclingsir.cetrack.assembly.storage.AssemblyRepository
 import de.cyclingsir.cetrack.assembly.storage.AssemblySlotEntity
@@ -25,6 +26,7 @@ class AssemblyService(
     private val assemblyRepository: AssemblyRepository,
     private val slotRepository: AssemblySlotRepository,
     private val assemblyMountingRepository: AssemblyMountingRepository,
+    private val membershipRepository: AssemblyMembershipRepository,
     private val mapper: AssemblyDomain2StorageMapper,
 ) {
 
@@ -137,6 +139,25 @@ class AssemblyService(
     fun getAssemblyMountings(assemblyId: UUID): List<DomainAssemblyMounting> {
         requireAssembly(assemblyId)
         return assemblyMountingRepository.findAllByAssemblyIdOrderByMountedAt(assemblyId).map(mapper::map)
+    }
+
+    /** At least one of slotId/componentId required - avoids full-table dumps (spec). */
+    @Transactional(readOnly = true)
+    fun getMemberships(slotId: UUID?, componentId: UUID?, activeAt: Instant?): List<DomainAssemblyMembership> {
+        if (slotId == null && componentId == null) {
+            throw ServiceException(ErrorCodesDomain.ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED)
+        }
+        return membershipRepository.findWithAssembly(slotId, componentId, activeAt).map {
+            DomainAssemblyMembership(
+                id = it.id,
+                componentId = it.componentId,
+                assemblySlotId = it.assemblySlotId,
+                assemblyId = it.assemblyId,
+                memberFrom = it.memberFrom,
+                memberTo = it.memberTo,
+                createdAt = it.createdAt
+            )
+        }
     }
 
     private fun requireAssembly(assemblyId: UUID): ComponentAssemblyEntity =

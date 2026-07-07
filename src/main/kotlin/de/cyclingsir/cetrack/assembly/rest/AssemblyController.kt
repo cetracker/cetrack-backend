@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.assembly.domain.AssemblyService
 import de.cyclingsir.cetrack.infrastructure.api.model.AddMemberRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.Assembly
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyInput
+import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMembership
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMountResult
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMounting
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblySlot
@@ -16,6 +17,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.MountingChanges
 import de.cyclingsir.cetrack.infrastructure.api.model.PlanMountRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.RemoveMemberRequest
 import de.cyclingsir.cetrack.infrastructure.api.rest.AssembliesApi
+import de.cyclingsir.cetrack.infrastructure.api.rest.MembershipsApi
 import de.cyclingsir.cetrack.mounting.rest.MountingDomain2ApiMapper
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -35,7 +37,7 @@ class AssemblyController(
     private val mountingService: AssemblyMountingService,
     private val mapper: AssemblyDomain2ApiMapper,
     private val mountingMapper: MountingDomain2ApiMapper,
-) : AssembliesApi {
+) : AssembliesApi, MembershipsApi {
 
     override fun getAssemblies(): ResponseEntity<List<Assembly>> =
         ResponseEntity.ok(service.getAssemblies().map(mapper::map))
@@ -139,4 +141,11 @@ class AssemblyController(
         ResponseEntity.ok(
             mountingMapper.map(mountingService.removeMember(removeMemberRequest.componentId, removeMemberRequest.to.toInstant()))
         )
+
+    override fun getMemberships(
+        @Valid @RequestParam(value = "slotId", required = false) slotId: UUID?,
+        @Valid @RequestParam(value = "componentId", required = false) componentId: UUID?,
+        @Valid @RequestParam(value = "activeAt", required = false) activeAt: OffsetDateTime?
+    ): ResponseEntity<List<AssemblyMembership>> =
+        ResponseEntity.ok(service.getMemberships(slotId, componentId, activeAt?.toInstant()).map(mapper::map))
 }

@@ -20,8 +20,51 @@ servers:
 tags:
   - name: Assemblies
     description: Component assemblies, their slots, membership and mounting as a unit
+  - name: Memberships
+    description: Read access to assembly slot membership history (component occupies a slot over a time interval)
 
 paths:
+  /memberships:
+    get:
+      operationId: getMemberships
+      description: >
+        returns assembly slot membership facts filtered by slot and/or
+        component and/or point in time. At least one of slotId/componentId is
+        required (400 otherwise) to avoid full-table dumps. activeAt returns
+        the memberships whose interval contains that instant. Empty list when
+        none match.
+      tags:
+        - Memberships
+      parameters:
+        - name: slotId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: componentId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: activeAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMemberships'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /assemblies:
     get:
       operationId: getAssemblies
@@ -225,12 +268,18 @@ paths:
       description: >
         Adds a component to a slot from the given time. Component type must
         match the slot's accepted type; component must not be retired, not be
-        member of another assembly, and not be mounted elsewhere. While the
+        member of another assembly, and not be mounted elsewhere. When the
+        slot is already occupied, this is an atomic swap: the occupant's
+        membership is closed at the given time (and, while the assembly is
+        MOUNTED, its governed mounting too) before the new member is added -
+        parity with the bike-side auto-dismount on mountComponent. While the
         assembly is MOUNTED, the new member is also mounted onto the slot's
         resolved mount point (ADR-0003 steps 1-4); an optional mountPointId
         answers an otherwise-unresolved slot and is persisted as a SlotMapping
         (ask-once). mountPointId is ignored (400 if given) while the assembly
-        is not mounted - there is no bike to key a SlotMapping.
+        is not mounted - there is no bike to key a SlotMapping. The response
+        envelope's membershipChanges always includes the added member, plus
+        the removed occupant on a swap.
       tags:
         - Assemblies
       requestBody:
@@ -573,6 +622,46 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AssemblyMounting'
+    AssemblyMembership:
+      type: object
+      description: temporal fact - a component occupies a slot over a time interval
+      required:
+        - id
+        - componentId
+        - assemblySlotId
+        - assemblyId
+        - memberFrom
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        componentId:
+          type: string
+          format: uuid
+        assemblySlotId:
+          type: string
+          format: uuid
+        assemblyId:
+          type: string
+          format: uuid
+          description: denormalized from the slot, like Mounting.bikeId
+          readOnly: true
+        memberFrom:
+          type: string
+          format: date-time
+        memberTo:
+          type: string
+          format: date-time
+          description: absent/null while the membership is active
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    AssemblyMemberships:
+      type: array
+      items:
+        $ref: '#/components/schemas/AssemblyMembership'
     AddMemberRequest:
       type: object
       required:

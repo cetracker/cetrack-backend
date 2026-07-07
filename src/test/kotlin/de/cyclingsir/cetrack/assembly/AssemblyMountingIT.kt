@@ -17,6 +17,8 @@ import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.domain.ComponentService
 import de.cyclingsir.cetrack.component.domain.DomainComponent
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipAction
+import de.cyclingsir.cetrack.mounting.domain.DomainMembershipChange
 import de.cyclingsir.cetrack.mounting.domain.MountingService
 import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.assertj.core.api.Assertions.assertThat
@@ -382,7 +384,7 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
     }
 
     @Test
-    fun `addMember rejects an already-retired, already-member, or type-mismatched component, and an occupied slot`() {
+    fun `addMember rejects a type-mismatched component, and an already-member component`() {
         val f = fixture()
         val typeId = f.typeId
         val otherTypeId = newType()
@@ -395,12 +397,6 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
                 t1, null)
         }
         assertThat(exType.getError()).isEqualTo(ErrorCodesDomain.TYPE_MISMATCH)
-
-        val freeComponent = newComponent(typeId)
-        val exOccupied = assertThrows<ServiceException> {
-            mountingAssemblyService.addMember(f.assemblyId, freeComponent, f.slotId, t1, null)
-        }
-        assertThat(exOccupied.getError()).isEqualTo(ErrorCodesDomain.SLOT_OCCUPIED)
 
         val anotherComponent = newComponent(typeId)
         jdbc.update("UPDATE assembly_membership SET member_to = ? WHERE component_id = ? AND member_to IS NULL",
@@ -420,5 +416,109 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
             mountingAssemblyService.addMember(f.assemblyId, anotherComponent, newSlot, t1, null)
         }
         assertThat(exAlreadyMember.getError()).isEqualTo(ErrorCodesDomain.ALREADY_MEMBER)
+    }
+
+    // --- addMember occupied-slot swap (CE-0105) -----------------------------------------------
+
+    @Test
+    fun `addMember on an occupied unmounted slot swaps - old membership closed, new active, no mounting side effects`() {
+        val f = fixture()
+        val newMember = newComponent(f.typeId)
+
+        val changes = mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t2, null)
+
+        assertThat(changes.created).isEmpty()
+        assertThat(changes.closed).isEmpty()
+        assertThat(changes.membershipChanges).containsExactlyInAnyOrder(
+            DomainMembershipChange(f.componentId, f.slotId, DomainMembershipAction.REMOVED, t2),
+            DomainMembershipChange(newMember, f.slotId, DomainMembershipAction.ADDED, t2),
+        )
+        assertThat(assemblyService.getAssembly(f.assemblyId, Instant.now()).slots.single().memberComponentId).isEqualTo(newMember)
+        assertThat(assemblyService.getMemberships(null, f.componentId, null).single().memberTo).isEqualTo(t2)
+    }
+
+    @Test
+    fun `addMember on an occupied mounted slot swaps - occupant's governed mounting closes, new one is created`() {
+        val f = fixture()
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, f.typeId)
+        mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t1, emptyList())
+
+        val newMember = newComponent(f.typeId)
+        val changes = mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t2, null)
+
+        assertThat(changes.closed.single().componentId).isEqualTo(f.componentId)
+        assertThat(changes.created.single()).satisfies({
+            assertThat(it.componentId).isEqualTo(newMember)
+            assertThat(it.mountPointId).isEqualTo(mountPointId)
+        })
+        assertThat(mountingService.getMountings(f.componentId, null, null, null).single().dismountedAt).isEqualTo(t2)
+        val newMounting = mountingService.getMountings(newMember, null, null, null).single()
+        assertThat(newMounting.dismountedAt).isNull()
+        assertThat(newMounting.mountPointId).isEqualTo(mountPointId)
+    }
+
+    @Test
+    fun `addMember swap strictly before the occupant's memberFrom is backdated`() {
+        val f = fixture()
+        val newMember = newComponent(f.typeId)
+
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t1.minusSeconds(1), null)
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
+    }
+
+    @Test
+    fun `addMember swap at exactly the occupant's memberFrom is backdated - GiST adjacency boundary`() {
+        val f = fixture()
+        val newMember = newComponent(f.typeId)
+
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t1, null)
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
+    }
+
+    @Test
+    fun `a swap whose new member fails leaves the occupant's membership and governed mounting intact`() {
+        val f = fixture()
+        val bikeId = newBike()
+        newMountPoint(bikeId, f.typeId)
+        mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t1, emptyList())
+
+        val newMember = newComponent(f.typeId)
+        val elsewhereBike = newBike()
+        val elsewhereMountPoint = newMountPoint(elsewhereBike, f.typeId)
+        mountingService.mount(elsewhereBike, elsewhereMountPoint, newMember, t1)
+
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.addMember(f.assemblyId, newMember, f.slotId, t2, null)
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE)
+
+        assertThat(assemblyService.getAssembly(f.assemblyId, Instant.now()).slots.single().memberComponentId).isEqualTo(f.componentId)
+        assertThat(mountingService.getMountings(f.componentId, null, null, null).single().dismountedAt).isNull()
+    }
+
+    // --- getMemberships (CE-0105) --------------------------------------------------------------
+
+    @Test
+    fun `getMemberships filters by slot or component, orders memberFrom desc, includes closed rows, requires a filter`() {
+        val f = fixture()
+        val second = newComponent(f.typeId)
+        mountingAssemblyService.addMember(f.assemblyId, second, f.slotId, t2, null) // swaps, closing f.componentId's membership
+
+        val bySlot = assemblyService.getMemberships(f.slotId, null, null)
+        assertThat(bySlot.map { it.componentId }).containsExactly(second, f.componentId)
+        assertThat(bySlot.first().assemblyId).isEqualTo(f.assemblyId)
+        assertThat(bySlot.last().memberTo).isEqualTo(t2)
+        assertThat(bySlot.first().memberTo).isNull()
+
+        val byComponent = assemblyService.getMemberships(null, f.componentId, null)
+        assertThat(byComponent).singleElement().extracting { it.componentId }.isEqualTo(f.componentId)
+
+        val ex = assertThrows<ServiceException> { assemblyService.getMemberships(null, null, null) }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED)
     }
 }
