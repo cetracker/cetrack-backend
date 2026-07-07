@@ -326,6 +326,11 @@ tasks.bootRun {
     val mapOfProperties = mutableMapOf<String, Any>()
     properties.forEach { k, v -> mapOfProperties.put(k.toString(), v) }
     systemProperties(mapOfProperties)
+
+    // Support --args='--spring.profiles.active=local,postgres'
+    if (System.getProperty("spring.profiles.active") != null) {
+        args = listOf("--spring.profiles.active=${System.getProperty("spring.profiles.active")}")
+    }
 }
 
 tasks.named<Test>("test") {
