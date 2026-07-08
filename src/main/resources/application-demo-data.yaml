@@ -1,0 +1,8 @@
+# demo-data profile: seed/refresh the demo dataset on every start (CE-0043).
+# Lives in its own profile file (not an application.yaml document) so tests,
+# whose src/test/resources/application.yaml shadows the main one, pick it up too.
+spring:
+  sql:
+    init:
+      mode: always
+      platform: demo

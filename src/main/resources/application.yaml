@@ -104,14 +104,3 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration/postgres
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: demo-data
-  sql:
-    init:
-      mode: always
-      platform: demo
