@@ -93,10 +93,12 @@ class DemoDataIT {
 
     @Test
     fun `re-applying the script is idempotent - TRUNCATE header refreshes the data`() {
-        ScriptUtils.executeSqlScript(
-            dataSource.connection,
-            EncodedResource(ClassPathResource("data-demo.sql"), Charsets.UTF_8)
-        )
+        dataSource.connection.use { connection ->
+            ScriptUtils.executeSqlScript(
+                connection,
+                EncodedResource(ClassPathResource("data-demo.sql"), Charsets.UTF_8)
+            )
+        }
         assertThat(count("select count(*) from tour")).isEqualTo(560)
         assertThat(count("select count(*) from bike")).isEqualTo(4)
     }

@@ -18,7 +18,7 @@ from __future__ import annotations
 import random
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 SEED = 20260708
@@ -46,6 +46,11 @@ def sql_date(t: datetime | None) -> str:
 
 def sql_str(s: str | None) -> str:
     return "null" if s is None else "'" + s.replace("'", "''") + "'"
+
+
+def sql_id(s: str | None) -> str:
+    """Quote-or-null for values that never contain quotes (UUIDs, currency codes)."""
+    return "null" if s is None else f"'{s}'"
 
 
 # --------------------------------------------------------------------------
@@ -585,13 +590,11 @@ def validate():
         for s, e in by_comp.get(c.key, []) + by_comp_m.get(c.key, []):
             assert e is not None and e <= c.retired_at, \
                 f"retired component {c.key} has interval open past retirement"
-    retired_bike_mps = {mp for mp, bk, *_ in mount_points if bike_by_key[bk].retired_at}
     for m in mountings:
         b = bike_by_key[m.bike]
         if b.retired_at is not None:
             assert m.end is not None and m.end <= b.retired_at, \
                 f"mounting on retired bike {m.bike} still open ({m.component})"
-    del retired_bike_mps
 
 
 # --------------------------------------------------------------------------
@@ -634,16 +637,14 @@ BIKE_TOUR_YEARS = {
 }
 
 LEGACY_TOURS = [
-    # (id, bike, title, started_at, distance m, moving s, ascent m, power kJ)
-    (LEG_TOUR_GIAU, "b2", "Passo Giau", dt(2010, 6, 7, 10, 22, 46), 53120, 7614, 1520, 5043),
-    (LEG_TOUR_TOURMALET, "b2", "Col du Tourmalet", dt(2010, 6, 11, 9, 50, 8), 43160, 5534, 1268, 4310),
+    # (id, bike, title, started_at, distance m, moving s, ascent m, descent m, power kJ)
+    (LEG_TOUR_GIAU, "b2", "Passo Giau", dt(2010, 6, 7, 10, 22, 46), 53120, 7614, 1520, 1520, 5043),
+    (LEG_TOUR_TOURMALET, "b2", "Col du Tourmalet", dt(2010, 6, 11, 9, 50, 8), 43160, 5534, 1268, 1268, 4310),
 ]
 
 
 def gen_tours():
-    tours = []
-    for tid, bike_key, title, started, dist, moving, ascent, power in LEGACY_TOURS:
-        tours.append((tid, bike_key, title, started, dist, moving, ascent, power))
+    tours = list(LEGACY_TOURS)
     for bike_key, years in BIKE_TOUR_YEARS.items():
         routes, speed, dist_range, ascent_range, watts = BIKE_TOUR_PROFILE[bike_key]
         for year, months in years.items():
@@ -661,10 +662,12 @@ def gen_tours():
                 distance = int(dist_km * 1000)
                 moving = int(dist_km / speed_kmh * 3600)
                 ascent = int(dist_km * rng.uniform(*ascent_range))
+                # mostly loop rides: descent close to, but not exactly, the ascent
+                descent = int(ascent * rng.uniform(0.92, 1.03))
                 power = int(moving * rng.uniform(*watts) / 1000)
                 title = rng.choice(routes)
                 tid = uid(f"tour:{bike_key}:{year}:{m:02d}:{d:02d}:{i}")
-                tours.append((tid, bike_key, title, started, distance, moving, ascent, power))
+                tours.append((tid, bike_key, title, started, distance, moving, ascent, descent, power))
     return tours
 
 
@@ -719,14 +722,14 @@ def emit() -> str:
     w("INSERT INTO mount_point (id, bike_id, component_type_id, position_id, name, mandatory) VALUES")
     w(",\n".join(
         f"      ('{mp}', '{bike_by_key[bk].id}', '{type_id[typ]}', "
-        f"{('null' if pos is None else chr(39) + pos_id[pos] + chr(39))}, {sql_str(name)}, {str(mand).lower()})"
+        f"{sql_id(pos_id[pos] if pos is not None else None)}, {sql_str(name)}, {str(mand).lower()})"
         for mp, bk, name, typ, pos, mand in mount_points) + ";")
     w("")
     w("INSERT INTO component (id, component_type_id, label, manufacturer, model, serial_number, vendor, purchase_date, price, price_currency, retired_at, retirement_kind) VALUES")
     w(",\n".join(
         f"      ('{c.id}', '{type_id[c.typ]}', {sql_str(c.label)}, {sql_str(c.manufacturer)}, "
         f"{sql_str(c.model)}, {sql_str(c.serial)}, {sql_str(c.vendor)}, {sql_date(c.purchase)}, "
-        f"{sql_str(c.price)}, {('null' if c.price is None else chr(39) + 'EUR' + chr(39))}, "
+        f"{sql_str(c.price)}, {sql_id('EUR' if c.price is not None else None)}, "
         f"{sql_ts(c.retired_at)}, {sql_str(c.retirement_kind)})"
         for c in COMPONENTS) + ";")
     w("")
@@ -753,7 +756,7 @@ def emit() -> str:
     w("INSERT INTO mounting (id, component_id, mount_point_id, assembly_mounting_id, mounted_at, dismounted_at) VALUES")
     w(",\n".join(
         f"      ('{m.id}', '{comp_by_key[m.component].id}', '{m.mp_id}', "
-        f"{('null' if m.assembly_mounting_id is None else chr(39) + m.assembly_mounting_id + chr(39))}, "
+        f"{sql_id(m.assembly_mounting_id)}, "
         f"{sql_ts(m.start)}, {sql_ts(m.end)})" for m in mountings) + ";")
     w("")
     w("INSERT INTO slot_mapping (id, assembly_slot_id, bike_id, mount_point_id) VALUES")
@@ -764,13 +767,13 @@ def emit() -> str:
     tours = gen_tours()
     w("INSERT INTO tour (id, bike_id, title, source, started_at, start_year, start_month, start_day, duration_moving, duration_recorded, duration_elapsed, distance, ascent, descent, power_total) VALUES")
     rows = []
-    for tid, bike_key, title, started, distance, moving, ascent, power in tours:
+    for tid, bike_key, title, started, distance, moving, ascent, descent, power in tours:
         recorded = int(moving * 1.03)
         elapsed = int(moving * 1.15)
         rows.append(
             f"      ('{tid}', '{bike_by_key[bike_key].id}', {sql_str(title)}, 'MANUAL', {sql_ts(started)}, "
             f"{started.year}, {started.month}, {started.day}, {moving}, {recorded}, {elapsed}, "
-            f"{distance}, {ascent}, {ascent}, {power})")
+            f"{distance}, {ascent}, {descent}, {power})")
     w(",\n".join(rows) + ";")
     w("")
     w("INSERT INTO maintenance_task (id, bike_id, name, distance_interval, time_interval) VALUES")
