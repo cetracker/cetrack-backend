@@ -34,8 +34,9 @@ class MaintenanceCrudIT : PostgreSQLContainerIT() {
     private fun seedTour(bikeId: UUID, startedAt: Instant, distance: Int) {
         jdbc.update(
             """INSERT INTO tour (id, bike_id, started_at, start_year, start_month, start_day,
-                                  title, distance, duration_moving, ascent, descent, power_total)
-               VALUES (?, ?, ?, 2025, 1, 1, ?, ?, 0, 0, 0, 0)""",
+                                  title, distance, duration_moving, duration_recorded, duration_elapsed,
+                                  ascent, descent, power_total)
+               VALUES (?, ?, ?, 2025, 1, 1, ?, ?, 0, 0, 0, 0, 0, 0)""",
             UUID.randomUUID(), bikeId, java.sql.Timestamp.from(startedAt), "seed tour", distance
         )
     }
