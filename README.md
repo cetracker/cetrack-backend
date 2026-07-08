@@ -64,6 +64,22 @@ For exploring the tool including some demo data, one may start the backend with 
 ./gradlew bootRun -Dspring.profiles.active="demo"
 ```
 
+The `demo` group is `postgres, demo-data` and therefore expects a running PostgreSQL 17
+(same connection parameters/env-vars as the `postgres` profile). On every start the
+`demo-data` profile wipes the schema's data (`TRUNCATE`) and re-seeds it from
+`src/main/resources/data-demo.sql` — nothing entered during a demo run survives a restart.
+
+The dataset (4 bikes, wheel assemblies with cross-mounting history, sold/scrapped
+components, ~560 tours 2010–2020, maintenance tasks) is generated deterministically.
+Do not edit `data-demo.sql` by hand; change and re-run the generator instead:
+
+```bash
+uv run tools/demo-data/generate_demo_data.py   # or: python3 tools/demo-data/generate_demo_data.py
+```
+
+`DemoDataIT` guards that the seed applies cleanly through the real startup path
+(Flyway, then `spring.sql.init`).
+
 ## Running the app as a Container Image
 
 A container image will be available at `https://ghcr.io/cetracker/cetrack-backend:VERSION`.
