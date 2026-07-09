@@ -6,3 +6,4 @@ spring:
     init:
       mode: always
       platform: demo
+logging.level.org.flywaydb: DEBUG
