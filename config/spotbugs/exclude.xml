@@ -56,9 +56,13 @@
         <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest" />
         <Bug pattern="ODR_OPEN_DATABASE_RESOURCE" />
     </Match>
-    <!-- PostgreSQLContainerIT companion object exposes container reference intentionally -->
+    <!-- Kotlin companion object @JvmStatic val always generates a public static getter, whether the
+         value is a Testcontainers container (PostgreSQLContainerIT, DemoDataIT) or a fixture list
+         (MyTourbookImportIT, DerbyReadAdapterTest) - MALICIOUS_CODE reasoning doesn't apply to a
+         Test/IT class's shared companion fixture, so this is excluded for the whole family rather
+         than one class at a time. -->
     <Match>
-        <Class name="de.cyclingsir.cetrack.support.PostgreSQLContainerIT$Companion" />
+        <Class name="~.*(Test|IT)\$Companion" />
         <Bug pattern="MS_EXPOSE_REP" />
     </Match>
     <!-- Kotlin companion object init generates a SA false positive in bytecode -->
@@ -98,11 +102,6 @@
         <Class name="~.*(Test|IT)" />
         <Bug pattern="NM_METHOD_NAMING_CONVENTION" />
     </Match>
-    <!-- MyTourbookImportIT companion vals are test fixtures; Kotlin List is effectively immutable -->
-    <Match>
-        <Class name="de.cyclingsir.cetrack.tour.domain.MyTourbookImportIT$Companion" />
-        <Bug pattern="MS_EXPOSE_REP" />
-    </Match>
     <!-- DerbyFixtureBuilder builds a local in-memory Derby DB; SQL injection risk is not applicable -->
     <Match>
         <Class name="de.cyclingsir.cetrack.tour.support.DerbyFixtureBuilder" />
@@ -132,11 +131,6 @@
     <Match>
         <Class name="de.cyclingsir.cetrack.tour.fit.FitMovingTimeKt" />
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE" />
-    </Match>
-    <!-- DerbyReadAdapterTest companion: TOUR_TYPE_IDS is Kotlin listOf() — effectively immutable -->
-    <Match>
-        <Class name="de.cyclingsir.cetrack.tour.derby.DerbyReadAdapterTest$Companion" />
-        <Bug pattern="MS_EXPOSE_REP" />
     </Match>
     <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
     <Match>
