@@ -148,4 +148,17 @@ interface AssemblyMountingRepository : JpaRepository<AssemblyMountingEntity, UUI
     fun findAllByAssemblyIdOrderByMountedAt(assemblyId: UUID): List<AssemblyMountingEntity>
 
     fun existsByAssemblyId(assemblyId: UUID): Boolean
+
+    @Query(
+        """SELECT EXISTS(SELECT 1 FROM assembly_mounting am
+           WHERE am.assembly_id = :assemblyId AND am.id <> :selfId
+             AND tstzrange(am.mounted_at, am.dismounted_at, '[)') && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz), '[)'))""",
+        nativeQuery = true
+    )
+    fun overlapsOtherOfAssembly(
+        @Param("selfId") selfId: UUID,
+        @Param("assemblyId") assemblyId: UUID,
+        @Param("from") from: Instant,
+        @Param("to") to: Instant?,
+    ): Boolean
 }

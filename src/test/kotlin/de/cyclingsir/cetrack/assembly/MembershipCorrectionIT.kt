@@ -233,7 +233,7 @@ class MembershipCorrectionIT : PostgreSQLContainerIT() {
     }
 
     @Test
-    fun `void is blocked when the governed mounting overlaps without fully coinciding`() {
+    fun `void of a non-coincident membership de-adopts the overlapping governed mounting instead of being blocked`() {
         // CE-0106 adoption: direct mount predates the membership, joined while unmounted,
         // adopted (not re-created) when the assembly is mounted later - mountedAt stays at
         // the original direct-mount time, independent of the membership's memberFrom.
@@ -255,8 +255,14 @@ class MembershipCorrectionIT : PostgreSQLContainerIT() {
         mountingAssemblyService.removeMember(componentId, t3)
         val id = membershipId(slotId, componentId)
 
-        val ex = assertThrows<ServiceException> { mountingAssemblyService.voidMembership(id) }
-        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MEMBERSHIP_VOID_BLOCKED)
+        mountingAssemblyService.voidMembership(id)
+
+        assertThat(assemblyService.getMemberships(slotId, null, null)).isEmpty()
+        // adopted row survives, de-adopted - the direct-mounting fact [t0,t3) stays true
+        val mounting = mountingService.getMountings(componentId, null, null, null).single()
+        assertThat(mounting.assemblyMountingId).isNull()
+        assertThat(mounting.mountedAt).isEqualTo(t0)
+        assertThat(mounting.dismountedAt).isEqualTo(t3)
     }
 
     // --- wire tri-state (MockMvc) ---------------------------------------------------------------

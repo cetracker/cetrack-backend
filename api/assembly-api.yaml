@@ -121,12 +121,12 @@ paths:
         Allowed on closed memberships only (memberTo set) - voiding the
         currently-active membership is rejected with 409
         MEMBERSHIP_VOID_BLOCKED (use removeMember to end it instead). Deletes
-        the membership and any governed mounting fully coincident with it
-        (mountedAt == memberFrom and dismountedAt == memberTo). If a governed
-        mounting overlaps the membership interval but is not fully
-        coincident, the void is rejected with 409 MEMBERSHIP_VOID_BLOCKED -
-        deleting it would destroy an adopted direct mounting or an
-        assembly-mount fact.
+        the membership; every governed mounting overlapping the membership
+        interval is resolved by provenance rather than requiring full
+        coincidence - one created within this membership is deleted, one
+        adopted from a pre-existing direct mounting is de-adopted (governance
+        link cleared, row otherwise untouched). Use voidAssemblyMounting
+        instead when the error is on the assembly mounting itself.
       tags:
         - Memberships
       responses:
@@ -333,6 +333,82 @@ paths:
                 $ref: '#/components/schemas/AssemblyMountings'
         '404':
           $ref: '#/components/responses/NotFound'
+  /assemblies/{assemblyId}/mountings/{mountingId}/action/correct:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+      - $ref: '#/components/parameters/mountingId'
+    post:
+      operationId: correctAssemblyMounting
+      description: >
+        Administrative correction of a data-entry error: adjusts mountedAt
+        and/or dismountedAt of this assembly mounting. An explicit null
+        dismountedAt re-opens the assembly mounting (makes it active again);
+        the currently-active assembly mounting (dismountedAt absent) may be
+        corrected too. Re-validated against the per-assembly non-overlap
+        constraint (409 ASSEMBLY_MOUNTING_OVERLAP). An empty correction, or
+        dismountedAt not after mountedAt, is 400 CORRECTION_INVALID. Cascades
+        to every governed mounting: a governed mounting whose mountedAt
+        equalled the old assembly mountedAt moves with it, unless it is an
+        adopted pre-existing direct mounting (adoption predates the assembly
+        mount and is left untouched); a governed mounting whose dismountedAt
+        equalled the old assembly dismountedAt moves with it regardless of
+        adoption, since dismountAssembly imposed that boundary on it too.
+        Each touched governed mounting is re-validated with the existing
+        mounting overlap checks (409 MOUNTING_OVERLAP).
+      tags:
+        - Assemblies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectAssemblyMountingRequest'
+      responses:
+        '200':
+          description: corrected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMounting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /assemblies/{assemblyId}/mountings/{mountingId}/action/void:
+    parameters:
+      - $ref: '#/components/parameters/assemblyId'
+      - $ref: '#/components/parameters/mountingId'
+    post:
+      operationId: voidAssemblyMounting
+      description: >
+        Administrative removal of an assembly mounting that never happened
+        (erratum). Allowed on active and closed assembly mountings alike -
+        unlike voidMembership, there is no dismount-first requirement: on an
+        active mounting, adopted rows are still open, so de-adoption restores
+        them exactly, whereas forcing a dismount first would stamp a fake
+        dismountedAt that de-adoption could not undo. Every governed mounting
+        is resolved by provenance: one created by this assembly mounting (or
+        by a membership within it) is deleted; one that pre-existed as a
+        direct mounting and was adopted is de-adopted instead - its
+        assemblyMountingId is cleared and the row otherwise left untouched
+        (including any dismountedAt this assembly mounting's own dismount
+        imposed on it - the mounting fact stays true, only the governance
+        link is removed). The assembly mounting row itself is then deleted.
+        Memberships are untouched (assembly-internal facts, independent of
+        mounting history).
+      tags:
+        - Assemblies
+      responses:
+        '204':
+          description: voided
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /assemblies/{assemblyId}/action/addMember:
     parameters:
       - $ref: '#/components/parameters/assemblyId'
@@ -537,6 +613,13 @@ components:
         format: uuid
     membershipId:
       name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    mountingId:
+      name: mountingId
       in: path
       required: true
       schema:
@@ -770,6 +853,30 @@ components:
             current value, explicit null re-opens the membership (clears the
             member-to time; rejected with 409 when another membership of the
             same component or in the same slot would overlap the then
+            open-ended interval).
+    CorrectAssemblyMountingRequest:
+      type: object
+      description: >
+        the request must carry at least one of mountedAt / dismountedAt (an
+        explicit-null dismountedAt counts - it is a re-open); an empty body
+        is 400 (domain validation).
+      properties:
+        mountedAt:
+          type: string
+          format: date-time
+          description: >
+            sets the mounted-at time when provided; omitted keeps the
+            current value. Explicit null is invalid (400) - an assembly
+            mounting always has a mounted-at time.
+        dismountedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            tri-state - a value sets the dismounted-at time, omitted keeps
+            the current value, explicit null re-opens the assembly mounting
+            (clears the dismounted-at time; rejected with 409 when another
+            assembly mounting of the same assembly would overlap the then
             open-ended interval).
     AddMemberRequest:
       type: object

@@ -159,7 +159,8 @@ openapiSpecs.forEach {
         schemaMappings.set(
             mapOf(
                 "CorrectMountingRequest" to "de.cyclingsir.cetrack.mounting.rest.CorrectMountingRequest",
-                "CorrectMembershipRequest" to "de.cyclingsir.cetrack.assembly.rest.CorrectMembershipRequest"
+                "CorrectMembershipRequest" to "de.cyclingsir.cetrack.assembly.rest.CorrectMembershipRequest",
+                "CorrectAssemblyMountingRequest" to "de.cyclingsir.cetrack.assembly.rest.CorrectAssemblyMountingRequest"
             )
         )
 

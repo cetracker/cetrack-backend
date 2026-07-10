@@ -147,6 +147,7 @@ class AssemblyMountingService(
             val ownMounting = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
             if (ownMounting != null && ownMounting.mountPointId == mountPointId) {
                 ownMounting.assemblyMountingId = assemblyMountingId
+                ownMounting.adopted = true
                 toClose.add(ownMounting) // reused as the "touch" list, saved below
             } else {
                 val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)
@@ -350,10 +351,10 @@ class AssemblyMountingService(
      * Erratum: the fact never happened - deliberate exception to "never
      * deleted" (mirrors MountingService.void). Allowed on closed memberships
      * only: voiding the active one would silently drop whatever it governs
-     * with no replacement joining (use removeMember instead). Deletes the
-     * governed mounting only when it is fully coincident with the membership
-     * interval; a partial overlap means deleting it would destroy an adopted
-     * direct mounting or an assembly-mount fact, so the void is rejected.
+     * with no replacement joining (use removeMember instead). Every governed
+     * mounting overlapping the membership interval is resolved by provenance
+     * (CE-0109): one this membership created is deleted, one adopted from a
+     * pre-existing direct mounting is de-adopted instead of destroyed.
      */
     @Transactional
     fun voidMembership(membershipId: UUID) {
@@ -367,13 +368,105 @@ class AssemblyMountingService(
         val overlapping = governed.filter {
             intervalsOverlap(it.mountedAt, it.dismountedAt, membership.memberFrom, membership.memberTo)
         }
-        val coincident = overlapping.filter { it.mountedAt == membership.memberFrom && it.dismountedAt == membership.memberTo }
-        if (overlapping.size != coincident.size) {
-            throw ServiceException(ErrorCodesDomain.MEMBERSHIP_VOID_BLOCKED,
-                "A governed mounting overlaps this membership without fully coinciding with it.")
-        }
-        mountingRepository.deleteAll(coincident)
+        deAdoptOrDelete(overlapping)
         membershipRepository.delete(membership)
+    }
+
+    /**
+     * Administrative correction of a mountedAt/dismountedAt data-entry error
+     * on the assembly mounting itself (CE-0109). Cascades to every governed
+     * mounting: mountedAt moves only for a row this assembly mounting (or a
+     * membership within it) created - not for an adopted pre-existing direct
+     * mounting, whose start predates governance; dismountedAt moves for both
+     * kinds, since dismountAssembly imposed that boundary on adopted rows too.
+     */
+    @Transactional
+    fun correctAssemblyMounting(
+        assemblyId: UUID,
+        mountingId: UUID,
+        mountedAt: Instant?,
+        dismountedAt: Instant?,
+        reopen: Boolean = false,
+    ): DomainAssemblyMounting {
+        val assemblyMounting = requireAssemblyMounting(assemblyId, mountingId)
+        if (mountedAt == null && dismountedAt == null && !reopen) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID)
+        }
+        val oldMountedAt = assemblyMounting.mountedAt
+        val oldDismountedAt = assemblyMounting.dismountedAt
+        val newMountedAt = mountedAt ?: oldMountedAt
+        val newDismountedAt = if (reopen) null else dismountedAt ?: oldDismountedAt
+        if (newDismountedAt != null && !newDismountedAt.isAfter(newMountedAt)) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID, "dismountedAt must be after mountedAt.")
+        }
+        if (assemblyMountingRepository.overlapsOtherOfAssembly(mountingId, assemblyId, newMountedAt, newDismountedAt)) {
+            throw ServiceException(ErrorCodesDomain.ASSEMBLY_MOUNTING_OVERLAP)
+        }
+
+        val governed = mountingRepository.findAllByAssemblyMountingId(mountingId)
+        val touched = governed.filter { (it.mountedAt == oldMountedAt && !it.adopted) || it.dismountedAt == oldDismountedAt }
+        try {
+            touched.forEach { mounting ->
+                if (mounting.mountedAt == oldMountedAt && !mounting.adopted) mounting.mountedAt = newMountedAt
+                if (mounting.dismountedAt == oldDismountedAt) mounting.dismountedAt = newDismountedAt
+                // the overlap query auto-flushes this mounting's pending update first - a genuine
+                // conflict surfaces here as a DIVE, not as a false query result, hence the shared catch
+                if (mountingRepository.overlapsOtherOfComponent(mounting.id!!, mounting.componentId, mounting.mountedAt, mounting.dismountedAt)
+                    || mountingRepository.overlapsOtherOfMountPoint(mounting.id!!, mounting.mountPointId, mounting.mountedAt, mounting.dismountedAt)
+                ) {
+                    throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP)
+                }
+            }
+            mountingRepository.saveAllAndFlush(touched)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
+        }
+
+        assemblyMounting.mountedAt = newMountedAt
+        assemblyMounting.dismountedAt = newDismountedAt
+        try {
+            assemblyMountingRepository.saveAndFlush(assemblyMounting)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.ASSEMBLY_MOUNTING_OVERLAP, null, e)
+        }
+        return mapper.map(assemblyMounting)
+    }
+
+    /**
+     * Erratum: the assembly mounting never happened. Allowed on active and
+     * closed assembly mountings alike (CE-0109) - unlike voidMembership,
+     * there's no dismount-first requirement: on an active mounting, adopted
+     * rows are still open, so de-adoption restores them exactly, whereas
+     * forcing a dismount first would stamp a fake dismountedAt that
+     * de-adoption couldn't undo. Every governed mounting is resolved by
+     * provenance, then the assembly mounting row itself is deleted.
+     */
+    @Transactional
+    fun voidAssemblyMounting(assemblyId: UUID, mountingId: UUID) {
+        val assemblyMounting = requireAssemblyMounting(assemblyId, mountingId)
+        val governed = mountingRepository.findAllByAssemblyMountingId(mountingId)
+        deAdoptOrDelete(governed)
+        assemblyMountingRepository.delete(assemblyMounting)
+    }
+
+    /** Provenance cascade shared by voidMembership/voidAssemblyMounting: created -> delete, adopted -> de-adopt. */
+    private fun deAdoptOrDelete(mountings: List<MountingEntity>) {
+        val (adopted, created) = mountings.partition { it.adopted }
+        adopted.forEach {
+            it.assemblyMountingId = null
+            it.adopted = false
+        }
+        mountingRepository.saveAllAndFlush(adopted)
+        mountingRepository.deleteAll(created)
+    }
+
+    private fun requireAssemblyMounting(assemblyId: UUID, mountingId: UUID): AssemblyMountingEntity {
+        val assemblyMounting = assemblyMountingRepository.findById(mountingId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.ASSEMBLY_MOUNTING_NOT_FOUND) }
+        if (assemblyMounting.assemblyId != assemblyId) {
+            throw ServiceException(ErrorCodesDomain.ASSEMBLY_MOUNTING_NOT_FOUND)
+        }
+        return assemblyMounting
     }
 
     private fun intervalsOverlap(aFrom: Instant, aTo: Instant?, bFrom: Instant, bTo: Instant?): Boolean {
@@ -480,6 +573,7 @@ class AssemblyMountingService(
         val closed = mutableListOf<MountingEntity>()
         if (ownMounting != null && ownMounting.mountPointId == mountPointId) {
             ownMounting.assemblyMountingId = activeAssemblyMounting.id
+            ownMounting.adopted = true
             mountingRepository.saveAndFlush(ownMounting)
         } else {
             val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)

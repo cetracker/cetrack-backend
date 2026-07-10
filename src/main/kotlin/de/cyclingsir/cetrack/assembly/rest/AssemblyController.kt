@@ -177,4 +177,36 @@ class AssemblyController(
         mountingService.voidMembership(membershipId)
         return ResponseEntity(HttpStatus.NO_CONTENT)
     }
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    override fun correctAssemblyMounting(
+        @PathVariable("assemblyId") assemblyId: UUID,
+        @PathVariable("mountingId") mountingId: UUID,
+        @Valid @RequestBody correctAssemblyMountingRequest: CorrectAssemblyMountingRequest
+    ): ResponseEntity<AssemblyMounting> {
+        if (correctAssemblyMountingRequest.mountedAtPresent && correctAssemblyMountingRequest.mountedAt == null) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID,
+                "mountedAt cannot be null - an assembly mounting always has a mounted-at time.")
+        }
+        return ResponseEntity.ok(
+            mapper.map(
+                mountingService.correctAssemblyMounting(
+                    assemblyId,
+                    mountingId,
+                    correctAssemblyMountingRequest.mountedAt?.toInstant(),
+                    correctAssemblyMountingRequest.dismountedAt?.toInstant(),
+                    reopen = correctAssemblyMountingRequest.dismountedAtPresent
+                        && correctAssemblyMountingRequest.dismountedAt == null
+                )
+            )
+        )
+    }
+
+    override fun voidAssemblyMounting(
+        @PathVariable("assemblyId") assemblyId: UUID,
+        @PathVariable("mountingId") mountingId: UUID
+    ): ResponseEntity<Unit> {
+        mountingService.voidAssemblyMounting(assemblyId, mountingId)
+        return ResponseEntity(HttpStatus.NO_CONTENT)
+    }
 }

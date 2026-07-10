@@ -31,6 +31,8 @@ class MountingEntity(
 
     var assemblyMountingId: UUID? = null,
 
+    var adopted: Boolean = false,
+
     var mountedAt: Instant,
 
     var dismountedAt: Instant? = null,

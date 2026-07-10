@@ -81,6 +81,8 @@ enum class ErrorCodesDomain(
     ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED(829, 400, "At least one of slotId/componentId is required", "ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED"),
     MEMBERSHIP_OVERLAP(830, 409, "Membership would overlap an existing membership interval", "MEMBERSHIP_OVERLAP"),
     MEMBERSHIP_VOID_BLOCKED(831, 409, "Membership can't be voided", "MEMBERSHIP_VOID_BLOCKED"),
+    ASSEMBLY_MOUNTING_NOT_FOUND(825, 404, "Assembly mounting not found", "NOT_FOUND"),
+    ASSEMBLY_MOUNTING_OVERLAP(832, 409, "Assembly mounting would overlap an existing assembly mounting interval", "ASSEMBLY_MOUNTING_OVERLAP"),
 
 //  Report domain (CE-0083)
     REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID"),
