@@ -2,6 +2,8 @@ package de.cyclingsir.cetrack.assembly.rest
 
 import de.cyclingsir.cetrack.assembly.domain.AssemblyMountingService
 import de.cyclingsir.cetrack.assembly.domain.AssemblyService
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.AddMemberRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.Assembly
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyInput
@@ -148,4 +150,31 @@ class AssemblyController(
         @Valid @RequestParam(value = "activeAt", required = false) activeAt: OffsetDateTime?
     ): ResponseEntity<List<AssemblyMembership>> =
         ResponseEntity.ok(service.getMemberships(slotId, componentId, activeAt?.toInstant()).map(mapper::map))
+
+    @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+    override fun correctMembership(
+        @PathVariable("membershipId") membershipId: UUID,
+        @Valid @RequestBody correctMembershipRequest: CorrectMembershipRequest
+    ): ResponseEntity<AssemblyMembership> {
+        if (correctMembershipRequest.memberFromPresent && correctMembershipRequest.memberFrom == null) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID,
+                "memberFrom cannot be null - a membership always has a from time.")
+        }
+        return ResponseEntity.ok(
+            mapper.map(
+                mountingService.correctMembership(
+                    membershipId,
+                    correctMembershipRequest.memberFrom?.toInstant(),
+                    correctMembershipRequest.memberTo?.toInstant(),
+                    reopen = correctMembershipRequest.memberToPresent
+                        && correctMembershipRequest.memberTo == null
+                )
+            )
+        )
+    }
+
+    override fun voidMembership(@PathVariable("membershipId") membershipId: UUID): ResponseEntity<Unit> {
+        mountingService.voidMembership(membershipId)
+        return ResponseEntity(HttpStatus.NO_CONTENT)
+    }
 }

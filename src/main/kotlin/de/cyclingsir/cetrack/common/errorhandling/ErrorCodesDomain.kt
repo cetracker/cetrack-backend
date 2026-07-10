@@ -76,9 +76,11 @@ enum class ErrorCodesDomain(
     SLOT_UNMOUNTABLE(823, 409, "A slot has no candidate mount point on this bike", "SLOT_UNMOUNTABLE"),
     SLOT_TARGET_COLLISION(824, 409, "Two slots resolved to the same mount point", "SLOT_TARGET_COLLISION"),
     MEMBER_MOUNTED_ELSEWHERE(826, 409, "Member is mounted at a different mount point", "MEMBER_MOUNTED_ELSEWHERE"),
-    MEMBERSHIP_NOT_FOUND(827, 404, "Component has no active membership in this slot", "NOT_FOUND"),
+    MEMBERSHIP_NOT_FOUND(827, 404, "Membership not found", "NOT_FOUND"),
     ALREADY_MEMBER(828, 409, "Component is already an active member of an assembly", "ALREADY_MEMBER"),
     ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED(829, 400, "At least one of slotId/componentId is required", "ASSEMBLY_MEMBERSHIP_FILTER_REQUIRED"),
+    MEMBERSHIP_OVERLAP(830, 409, "Membership would overlap an existing membership interval", "MEMBERSHIP_OVERLAP"),
+    MEMBERSHIP_VOID_BLOCKED(831, 409, "Membership can't be voided", "MEMBERSHIP_VOID_BLOCKED"),
 
 //  Report domain (CE-0083)
     REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID"),

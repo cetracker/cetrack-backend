@@ -33,6 +33,9 @@ interface MountingRepository : JpaRepository<MountingEntity, UUID> {
     /** Every Mounting an AssemblyMounting governs and hasn't closed yet - dismountAssembly closes them all. */
     fun findAllByAssemblyMountingIdAndDismountedAtIsNull(assemblyMountingId: UUID): List<MountingEntity>
 
+    /** Every governed Mounting a component ever had - the candidates for a membership correction/void cascade. */
+    fun findAllByComponentIdAndAssemblyMountingIdIsNotNull(componentId: UUID): List<MountingEntity>
+
     @Query(
         """SELECT m.id AS id, m.component_id AS componentId, m.mount_point_id AS mountPointId,
                   m.assembly_mounting_id AS assemblyMountingId, m.mounted_at AS mountedAt,

@@ -112,6 +112,32 @@ interface AssemblyMembershipRepository : JpaRepository<AssemblyMembershipEntity,
         @Param("componentId") componentId: UUID?,
         @Param("activeAt") activeAt: Instant?,
     ): List<MembershipWithAssembly>
+
+    @Query(
+        """SELECT EXISTS(SELECT 1 FROM assembly_membership am
+           WHERE am.component_id = :componentId AND am.id <> :selfId
+             AND tstzrange(am.member_from, am.member_to, '[)') && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz), '[)'))""",
+        nativeQuery = true
+    )
+    fun overlapsOtherOfComponent(
+        @Param("selfId") selfId: UUID,
+        @Param("componentId") componentId: UUID,
+        @Param("from") from: Instant,
+        @Param("to") to: Instant?,
+    ): Boolean
+
+    @Query(
+        """SELECT EXISTS(SELECT 1 FROM assembly_membership am
+           WHERE am.assembly_slot_id = :assemblySlotId AND am.id <> :selfId
+             AND tstzrange(am.member_from, am.member_to, '[)') && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz), '[)'))""",
+        nativeQuery = true
+    )
+    fun overlapsOtherOfSlot(
+        @Param("selfId") selfId: UUID,
+        @Param("assemblySlotId") assemblySlotId: UUID,
+        @Param("from") from: Instant,
+        @Param("to") to: Instant?,
+    ): Boolean
 }
 
 @Repository

@@ -21,7 +21,11 @@ tags:
   - name: Assemblies
     description: Component assemblies, their slots, membership and mounting as a unit
   - name: Memberships
-    description: Read access to assembly slot membership history (component occupies a slot over a time interval)
+    description: >
+      Assembly slot membership history (component occupies a slot over a time
+      interval); read access plus administrative correction of a
+      memberFrom/memberTo data-entry error, cascading to the governed
+      mounting it produced.
 
 paths:
   /memberships:
@@ -63,6 +67,75 @@ paths:
                 $ref: '#/components/schemas/AssemblyMemberships'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /memberships/{membershipId}/action/correct:
+    parameters:
+      - $ref: '#/components/parameters/membershipId'
+    post:
+      operationId: correctMembership
+      description: >
+        Administrative correction of a data-entry error: adjusts memberFrom
+        and/or memberTo of this membership. An explicit null memberTo
+        re-opens the membership (makes it active again); the currently-active
+        membership (memberTo absent) may be corrected too. Re-validated
+        against both assembly_membership exclusion constraints - no overlap
+        per component, none per slot (409 MEMBERSHIP_OVERLAP). An empty
+        correction, or memberTo not after memberFrom, is 400
+        CORRECTION_INVALID. Cascades per boundary to the governed mounting it
+        produced: mountedAt moves when it equalled the old memberFrom,
+        dismountedAt moves when it equalled the old memberTo; a boundary that
+        doesn't match (assembly mounted later, or an adopted direct mounting)
+        is left untouched. The cascaded mounting is re-validated with the
+        existing mounting overlap checks (409 MOUNTING_OVERLAP).
+      tags:
+        - Memberships
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectMembershipRequest'
+      responses:
+        '200':
+          description: corrected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssemblyMembership'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /memberships/{membershipId}/action/void:
+    parameters:
+      - $ref: '#/components/parameters/membershipId'
+    post:
+      operationId: voidMembership
+      description: >
+        Administrative removal of a membership that never happened (erratum).
+        Allowed on closed memberships only (memberTo set) - voiding the
+        currently-active membership is rejected with 409
+        MEMBERSHIP_VOID_BLOCKED (use removeMember to end it instead). Deletes
+        the membership and any governed mounting fully coincident with it
+        (mountedAt == memberFrom and dismountedAt == memberTo). If a governed
+        mounting overlaps the membership interval but is not fully
+        coincident, the void is rejected with 409 MEMBERSHIP_VOID_BLOCKED -
+        deleting it would destroy an adopted direct mounting or an
+        assembly-mount fact.
+      tags:
+        - Memberships
+      responses:
+        '204':
+          description: voided
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /assemblies:
@@ -462,6 +535,13 @@ components:
       schema:
         type: string
         format: uuid
+    membershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     BadRequest:
       description: Bad Request
@@ -667,6 +747,30 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/AssemblyMembership'
+    CorrectMembershipRequest:
+      type: object
+      description: >
+        the request must carry at least one of memberFrom / memberTo (an
+        explicit-null memberTo counts - it is a re-open); an empty body is
+        400 (domain validation).
+      properties:
+        memberFrom:
+          type: string
+          format: date-time
+          description: >
+            sets the member-from time when provided; omitted keeps the
+            current value. Explicit null is invalid (400) - a membership
+            always has a from time.
+        memberTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            tri-state - a value sets the member-to time, omitted keeps the
+            current value, explicit null re-opens the membership (clears the
+            member-to time; rejected with 409 when another membership of the
+            same component or in the same slot would overlap the then
+            open-ended interval).
     AddMemberRequest:
       type: object
       required:

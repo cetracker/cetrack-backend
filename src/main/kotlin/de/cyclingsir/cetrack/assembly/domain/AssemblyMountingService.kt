@@ -287,6 +287,114 @@ class AssemblyMountingService(
         return changes
     }
 
+    /**
+     * Administrative correction of a memberFrom/memberTo data-entry error.
+     * Cascades per-boundary to the governed mounting it produced (cascade
+     * rule, CE-0108): a boundary is only touched when it coincided with the
+     * old value - the assembly-mount time and an adopted direct mounting's
+     * start are left untouched.
+     */
+    @Transactional
+    fun correctMembership(
+        membershipId: UUID,
+        memberFrom: Instant?,
+        memberTo: Instant?,
+        reopen: Boolean = false,
+    ): DomainAssemblyMembership {
+        val membership = membershipRepository.findById(membershipId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.MEMBERSHIP_NOT_FOUND) }
+        if (memberFrom == null && memberTo == null && !reopen) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID)
+        }
+        val oldMemberFrom = membership.memberFrom
+        val oldMemberTo = membership.memberTo
+        val newMemberFrom = memberFrom ?: oldMemberFrom
+        val newMemberTo = if (reopen) null else memberTo ?: oldMemberTo
+        if (newMemberTo != null && !newMemberTo.isAfter(newMemberFrom)) {
+            throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID, "memberTo must be after memberFrom.")
+        }
+        if (membershipRepository.overlapsOtherOfComponent(membershipId, membership.componentId, newMemberFrom, newMemberTo)
+            || membershipRepository.overlapsOtherOfSlot(membershipId, membership.assemblySlotId, newMemberFrom, newMemberTo)
+        ) {
+            throw ServiceException(ErrorCodesDomain.MEMBERSHIP_OVERLAP)
+        }
+
+        val governed = mountingRepository.findAllByComponentIdAndAssemblyMountingIdIsNotNull(membership.componentId)
+        val touched = governed.filter { it.mountedAt == oldMemberFrom || it.dismountedAt == oldMemberTo }
+        touched.forEach { mounting ->
+            if (mounting.mountedAt == oldMemberFrom) mounting.mountedAt = newMemberFrom
+            if (mounting.dismountedAt == oldMemberTo) mounting.dismountedAt = newMemberTo
+            if (mountingRepository.overlapsOtherOfComponent(mounting.id!!, mounting.componentId, mounting.mountedAt, mounting.dismountedAt)
+                || mountingRepository.overlapsOtherOfMountPoint(mounting.id!!, mounting.mountPointId, mounting.mountedAt, mounting.dismountedAt)
+            ) {
+                throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP)
+            }
+        }
+        try {
+            mountingRepository.saveAllAndFlush(touched)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
+        }
+
+        membership.memberFrom = newMemberFrom
+        membership.memberTo = newMemberTo
+        try {
+            membershipRepository.saveAndFlush(membership)
+        } catch (e: DataIntegrityViolationException) {
+            throw ServiceException(ErrorCodesDomain.MEMBERSHIP_OVERLAP, null, e)
+        }
+        return toDomainMembership(membership)
+    }
+
+    /**
+     * Erratum: the fact never happened - deliberate exception to "never
+     * deleted" (mirrors MountingService.void). Allowed on closed memberships
+     * only: voiding the active one would silently drop whatever it governs
+     * with no replacement joining (use removeMember instead). Deletes the
+     * governed mounting only when it is fully coincident with the membership
+     * interval; a partial overlap means deleting it would destroy an adopted
+     * direct mounting or an assembly-mount fact, so the void is rejected.
+     */
+    @Transactional
+    fun voidMembership(membershipId: UUID) {
+        val membership = membershipRepository.findById(membershipId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.MEMBERSHIP_NOT_FOUND) }
+        if (membership.memberTo == null) {
+            throw ServiceException(ErrorCodesDomain.MEMBERSHIP_VOID_BLOCKED,
+                "Membership is active - use removeMember to end it.")
+        }
+        val governed = mountingRepository.findAllByComponentIdAndAssemblyMountingIdIsNotNull(membership.componentId)
+        val overlapping = governed.filter {
+            intervalsOverlap(it.mountedAt, it.dismountedAt, membership.memberFrom, membership.memberTo)
+        }
+        val coincident = overlapping.filter { it.mountedAt == membership.memberFrom && it.dismountedAt == membership.memberTo }
+        if (overlapping.size != coincident.size) {
+            throw ServiceException(ErrorCodesDomain.MEMBERSHIP_VOID_BLOCKED,
+                "A governed mounting overlaps this membership without fully coinciding with it.")
+        }
+        mountingRepository.deleteAll(coincident)
+        membershipRepository.delete(membership)
+    }
+
+    private fun intervalsOverlap(aFrom: Instant, aTo: Instant?, bFrom: Instant, bTo: Instant?): Boolean {
+        val aStartsBeforeBEnds = bTo == null || aFrom.isBefore(bTo)
+        val bStartsBeforeAEnds = aTo == null || bFrom.isBefore(aTo)
+        return aStartsBeforeBEnds && bStartsBeforeAEnds
+    }
+
+    private fun toDomainMembership(entity: AssemblyMembershipEntity): DomainAssemblyMembership {
+        val assemblyId = slotRepository.findById(entity.assemblySlotId).orElseThrow().assemblyId
+        return DomainAssemblyMembership(
+            id = entity.id!!,
+            componentId = entity.componentId,
+            assemblySlotId = entity.assemblySlotId,
+            assemblyId = assemblyId,
+            memberFrom = entity.memberFrom,
+            memberTo = entity.memberTo,
+            createdAt = entity.createdAt
+        )
+    }
+
     /** ADR-0003 steps 1-4 + occupant/ownership checks for one filled slot. */
     private fun planSlot(
         slotId: UUID,

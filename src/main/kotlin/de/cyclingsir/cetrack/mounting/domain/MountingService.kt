@@ -158,7 +158,7 @@ class MountingService(
             .orElseThrow { ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND) }
         if (mounting.assemblyMountingId != null) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED,
-                "Correction cascades for governed mountings are tracked in CE-0093.")
+                "Correct it in the assembly slot member history instead.")
         }
         if (mountedAt == null && dismountedAt == null && !reopenDismount) {
             throw ServiceException(ErrorCodesDomain.CORRECTION_INVALID)
@@ -190,7 +190,8 @@ class MountingService(
         val mounting = mountingRepository.findById(mountingId)
             .orElseThrow { ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND) }
         if (mounting.assemblyMountingId != null) {
-            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED)
+            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED,
+                "Void it in the assembly slot member history instead.")
         }
         mountingRepository.delete(mounting)
     }

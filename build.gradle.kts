@@ -158,7 +158,8 @@ openapiSpecs.forEach {
         // from explicit null - re-open semantics); kotlin-spring can't express this
         schemaMappings.set(
             mapOf(
-                "CorrectMountingRequest" to "de.cyclingsir.cetrack.mounting.rest.CorrectMountingRequest"
+                "CorrectMountingRequest" to "de.cyclingsir.cetrack.mounting.rest.CorrectMountingRequest",
+                "CorrectMembershipRequest" to "de.cyclingsir.cetrack.assembly.rest.CorrectMembershipRequest"
             )
         )
 
