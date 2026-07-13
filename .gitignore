@@ -37,6 +37,7 @@ out/
 
 ### Debug Data
 src/main/resources/data-postgres.sql
+logs/
 
 ### NetBeans ###
 /nbproject/private/

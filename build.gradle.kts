@@ -226,7 +226,15 @@ val byeBuddyVersion = "1.18.9"
 val derbyVersion = "10.17.1.0"
 val commonsCompressVersion = "1.28.0"
 
+configurations.all {
+    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
+}
+
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-log4j2")
+    // required for Log4j2 YAML config (log4j2-local.yaml)
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")

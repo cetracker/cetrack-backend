@@ -74,6 +74,8 @@ spring:
     user:
       name: user
       password: pwd
+logging:
+    config: classpath:log4j2-local.yaml
 app:
     mytourbook:
       workdir: ${user.home}/tmp/cetracker
