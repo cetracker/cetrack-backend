@@ -183,6 +183,27 @@ class MembershipCorrectionIT : PostgreSQLContainerIT() {
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MEMBERSHIP_OVERLAP)
     }
 
+    @Test
+    fun `re-open is rejected when the cascaded governed mounting collides with a later mounting on the mount point`() {
+        // CE-0113: the membership guards pass (no other membership of this slot/component), but
+        // re-opening cascades to the governed mounting, which then collides with an unrelated
+        // later mounting on the same mount point - must surface as 409 MOUNTING_OVERLAP, not 500.
+        val f = fixture()
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, f.typeId)
+        mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t1, emptyList())
+        mountingAssemblyService.removeMember(f.componentId, t2)
+        val id = membershipId(f.slotId, f.componentId)
+
+        val laterComponent = newComponent(f.typeId)
+        mountingService.mount(bikeId, mountPointId, laterComponent, t3)
+
+        mvc.perform(post("/memberships/$id/action/correct").contentType(MediaType.APPLICATION_JSON)
+            .content("""{"memberTo":null}"""))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("MOUNTING_OVERLAP"))
+    }
+
     // --- validation ---------------------------------------------------------------------------
 
     @Test

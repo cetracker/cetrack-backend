@@ -322,16 +322,18 @@ class AssemblyMountingService(
 
         val governed = mountingRepository.findAllByComponentIdAndAssemblyMountingIdIsNotNull(membership.componentId)
         val touched = governed.filter { it.mountedAt == oldMemberFrom || it.dismountedAt == oldMemberTo }
-        touched.forEach { mounting ->
-            if (mounting.mountedAt == oldMemberFrom) mounting.mountedAt = newMemberFrom
-            if (mounting.dismountedAt == oldMemberTo) mounting.dismountedAt = newMemberTo
-            if (mountingRepository.overlapsOtherOfComponent(mounting.id!!, mounting.componentId, mounting.mountedAt, mounting.dismountedAt)
-                || mountingRepository.overlapsOtherOfMountPoint(mounting.id!!, mounting.mountPointId, mounting.mountedAt, mounting.dismountedAt)
-            ) {
-                throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP)
-            }
-        }
         try {
+            touched.forEach { mounting ->
+                if (mounting.mountedAt == oldMemberFrom) mounting.mountedAt = newMemberFrom
+                if (mounting.dismountedAt == oldMemberTo) mounting.dismountedAt = newMemberTo
+                // the overlap query auto-flushes this mounting's pending update first - a genuine
+                // conflict surfaces here as a DIVE, not as a false query result, hence the shared catch
+                if (mountingRepository.overlapsOtherOfComponent(mounting.id!!, mounting.componentId, mounting.mountedAt, mounting.dismountedAt)
+                    || mountingRepository.overlapsOtherOfMountPoint(mounting.id!!, mounting.mountPointId, mounting.mountedAt, mounting.dismountedAt)
+                ) {
+                    throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP)
+                }
+            }
             mountingRepository.saveAllAndFlush(touched)
         } catch (e: DataIntegrityViolationException) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_OVERLAP, null, e)
