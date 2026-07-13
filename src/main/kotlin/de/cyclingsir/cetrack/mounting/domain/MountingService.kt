@@ -203,24 +203,15 @@ class MountingService(
         bikeId = projection.bikeId,
         mountPointName = projection.mountPointName,
         assemblyMountingId = projection.assemblyMountingId,
+        assemblyId = projection.assemblyId,
         mountedAt = projection.mountedAt,
         dismountedAt = projection.dismountedAt,
         createdAt = projection.createdAt
     )
 
-    private fun toDomain(entity: MountingEntity): DomainMounting {
-        val mountPoint = mountPointRepository.findById(entity.mountPointId)
-            .orElseThrow { ServiceException(ErrorCodesDomain.MOUNT_POINT_NOT_FOUND) }
-        return DomainMounting(
-            id = entity.id!!,
-            componentId = entity.componentId,
-            mountPointId = entity.mountPointId,
-            bikeId = mountPoint.bikeId,
-            mountPointName = mountPoint.name,
-            assemblyMountingId = entity.assemblyMountingId,
-            mountedAt = entity.mountedAt,
-            dismountedAt = entity.dismountedAt,
-            createdAt = entity.createdAt
-        )
-    }
+    /** Callers flush [entity] before mapping, so the joined projection always resolves it. */
+    private fun toDomain(entity: MountingEntity): DomainMounting =
+        mountingRepository.findWithPlaceById(entity.id!!)
+            ?.let(::toDomain)
+            ?: throw ServiceException(ErrorCodesDomain.MOUNTING_NOT_FOUND)
 }

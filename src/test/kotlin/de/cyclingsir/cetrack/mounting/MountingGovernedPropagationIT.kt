@@ -83,12 +83,23 @@ class MountingGovernedPropagationIT : PostgreSQLContainerIT() {
         val governedMember = newComponent(typeId)
         val slotId = seedMountedAssemblyMember(bikeId, mountPointId, typeId, governedMember)
         val replacement = newComponent(typeId)
+        val expectedAssemblyId = jdbc.queryForObject(
+            "SELECT assembly_id FROM assembly_mounting WHERE bike_id = ?", UUID::class.java, bikeId
+        )
+        // CE-0112 read path: the governed member's query projection resolves assemblyId too
+        assertThat(mountingService.getMountings(governedMember, null, null, null).single().assemblyId)
+            .isEqualTo(expectedAssemblyId)
 
         val changes = mountingService.mount(bikeId, mountPointId, replacement, t2)
 
         assertThat(changes.closed.single().componentId).isEqualTo(governedMember)
         assertThat(changes.created.single().componentId).isEqualTo(replacement)
         assertThat(changes.created.single().assemblyMountingId).isNotNull()
+        // CE-0112: mount() closes a governed occupant via propagateOccupant - both the closed
+        // (still-governed) mounting and the newly-created (now-governed) replacement must carry
+        // the denormalized assemblyId in the response, not just assemblyMountingId.
+        assertThat(changes.closed.single().assemblyId).isEqualTo(expectedAssemblyId)
+        assertThat(changes.created.single().assemblyId).isEqualTo(expectedAssemblyId)
         assertThat(changes.membershipChanges).hasSize(2)
         assertThat(changes.membershipChanges).anySatisfy {
             assertThat(it.componentId).isEqualTo(governedMember)
@@ -158,6 +169,9 @@ class MountingGovernedPropagationIT : PostgreSQLContainerIT() {
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_GOVERNED)
 
         // the occupant at the target must be untouched - the whole mount was rejected
-        assertThat(mountingService.getMountings(directOccupant, null, null, null).single().dismountedAt).isNull()
+        val directOccupantMounting = mountingService.getMountings(directOccupant, null, null, null).single()
+        assertThat(directOccupantMounting.dismountedAt).isNull()
+        // CE-0112: a directly-mounted (ungoverned) mounting carries no assemblyId
+        assertThat(directOccupantMounting.assemblyId).isNull()
     }
 }

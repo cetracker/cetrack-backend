@@ -14,6 +14,7 @@ data class DomainMounting(
     val bikeId: UUID,
     val mountPointName: String,
     val assemblyMountingId: UUID? = null,
+    val assemblyId: UUID? = null,
     val mountedAt: Instant,
     val dismountedAt: Instant? = null,
     val createdAt: Instant? = null

@@ -16,6 +16,7 @@ interface MountingWithPlace {
     val componentId: UUID
     val mountPointId: UUID
     val assemblyMountingId: UUID?
+    val assemblyId: UUID?
     val mountedAt: Instant
     val dismountedAt: Instant?
     val createdAt: Instant?
@@ -41,11 +42,13 @@ interface MountingRepository : JpaRepository<MountingEntity, UUID> {
 
     @Query(
         """SELECT m.id AS id, m.component_id AS componentId, m.mount_point_id AS mountPointId,
-                  m.assembly_mounting_id AS assemblyMountingId, m.mounted_at AS mountedAt,
+                  m.assembly_mounting_id AS assemblyMountingId, asm.assembly_id AS assemblyId,
+                  m.mounted_at AS mountedAt,
                   m.dismounted_at AS dismountedAt, m.created_at AS createdAt,
                   mp.bike_id AS bikeId, mp.name AS mountPointName
            FROM mounting m
            JOIN mount_point mp ON mp.id = m.mount_point_id
+           LEFT JOIN assembly_mounting asm ON asm.id = m.assembly_mounting_id
            WHERE (CAST(:componentId AS uuid) IS NULL OR m.component_id = :componentId)
              AND (CAST(:mountPointId AS uuid) IS NULL OR m.mount_point_id = :mountPointId)
              AND (CAST(:bikeId AS uuid) IS NULL OR mp.bike_id = :bikeId)
@@ -63,11 +66,13 @@ interface MountingRepository : JpaRepository<MountingEntity, UUID> {
 
     @Query(
         """SELECT m.id AS id, m.component_id AS componentId, m.mount_point_id AS mountPointId,
-                  m.assembly_mounting_id AS assemblyMountingId, m.mounted_at AS mountedAt,
+                  m.assembly_mounting_id AS assemblyMountingId, asm.assembly_id AS assemblyId,
+                  m.mounted_at AS mountedAt,
                   m.dismounted_at AS dismountedAt, m.created_at AS createdAt,
                   mp.bike_id AS bikeId, mp.name AS mountPointName
            FROM mounting m
            JOIN mount_point mp ON mp.id = m.mount_point_id
+           LEFT JOIN assembly_mounting asm ON asm.id = m.assembly_mounting_id
            WHERE m.id = :id""",
         nativeQuery = true
     )

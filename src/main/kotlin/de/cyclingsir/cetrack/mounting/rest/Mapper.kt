@@ -18,6 +18,7 @@ class MountingDomain2ApiMapper {
         bikeId = domain.bikeId,
         mountPointName = domain.mountPointName,
         assemblyMountingId = domain.assemblyMountingId,
+        assemblyId = domain.assemblyId,
         mountedAt = domain.mountedAt.atOffset(ZoneOffset.UTC),
         dismountedAt = domain.dismountedAt?.atOffset(ZoneOffset.UTC),
         createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)

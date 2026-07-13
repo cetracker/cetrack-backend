@@ -614,6 +614,7 @@ class AssemblyMountingService(
         bikeId = bikeId,
         mountPointName = mountPointName,
         assemblyMountingId = entity.assemblyMountingId,
+        assemblyId = entity.assemblyMountingId?.let { assemblyMountingRepository.findById(it).orElseThrow().assemblyId },
         mountedAt = entity.mountedAt,
         dismountedAt = entity.dismountedAt,
         createdAt = entity.createdAt

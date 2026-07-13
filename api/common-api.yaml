@@ -78,7 +78,15 @@ components:
         assemblyMountingId:
           type: string
           format: uuid
+          nullable: true
           description: provenance - set when this mounting is governed by an assembly mounting
+        assemblyId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            provenance - the assembly this mounting is governed by, denormalized
+            from the assembly mounting; set iff assemblyMountingId is set
         mountedAt:
           type: string
           format: date-time
