@@ -95,10 +95,11 @@ class AssemblyMountingCorrectionIT : PostgreSQLContainerIT() {
             mountingService.mount(bikeId, mountPointB, componentB, adoptComponentBAt)
             mountingAssemblyService.addMember(assemblyId, componentB, slotB, adoptComponentBAt, mountPointId = null)
         } else {
-            jdbc.update(
+            val rowsInserted = jdbc.update(
                 "INSERT INTO assembly_membership (component_id, assembly_slot_id, member_from) VALUES (?, ?, ?)",
                 componentB, slotB, java.sql.Timestamp.from(t1)
             )
+            check(rowsInserted == 1)
         }
         return TwoSlotFixture(assemblyId, bikeId, slotA, typeA, componentA, slotB, typeB, componentB, mountPointB)
     }
