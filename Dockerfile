@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jre-noble
+FROM eclipse-temurin:25-jre-alpine
 
 COPY /build/libs/cetrack-*.jar /app/service.jar
 WORKDIR /app
