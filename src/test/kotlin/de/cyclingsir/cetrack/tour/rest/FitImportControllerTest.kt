@@ -100,7 +100,7 @@ import java.util.UUID
     }
 
     @Test
-    fun `parseFitFile returns 400 on invalid FIT bytes`() {
+    fun `parseFitFile returns 400 with structured Error body on invalid FIT bytes`() {
         every { fitImportService.parseToDrafts(any()) } throws
             FitParseException("FIT file contains no sessions")
 
@@ -108,6 +108,8 @@ import java.util.UUID
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .content(ByteArray(4) { 0xFF.toByte() }))
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("FIT_PARSE_FAILED"))
+            .andExpect(jsonPath("$.message").value("FIT file could not be parsed: FIT file contains no sessions"))
     }
 
     @Test

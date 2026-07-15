@@ -1,5 +1,7 @@
 package de.cyclingsir.cetrack.tour.rest
 
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.FitDraftTour
 import de.cyclingsir.cetrack.infrastructure.api.rest.FitImportApi
 import de.cyclingsir.cetrack.tour.domain.FitImportService
@@ -30,7 +32,7 @@ class FitImportController(
             ResponseEntity.ok(drafts.map(mapper::map))
         } catch (e: FitParseException) {
             logger.warn { "FIT parse failed: ${e.message}" }
-            ResponseEntity.badRequest().build()
+            throw ServiceException(ErrorCodesDomain.FIT_PARSE_FAILED, e.message)
         }
     }
 }

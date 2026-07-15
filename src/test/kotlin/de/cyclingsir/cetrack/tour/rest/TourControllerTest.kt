@@ -1,6 +1,8 @@
 package de.cyclingsir.cetrack.tour.rest
 
 import de.cyclingsir.cetrack.common.errorhandling.CentralExceptionHandler
+import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
+import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.infrastructure.api.model.TourCreateRequest
 import de.cyclingsir.cetrack.tour.domain.DomainTour
 import de.cyclingsir.cetrack.tour.domain.TourService
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.time.Instant
@@ -110,5 +113,18 @@ class TourControllerTest {
             .andExpect(status().isOk)
 
         assertEquals(TourSource.FIT, sourceSlot.captured)
+    }
+
+    @Test
+    fun `createTour duplicate returns 409 with structured Error body`() {
+        every { tourMapper.map(any<TourCreateRequest>()) } returns mockk(relaxed = true)
+        every { service.addTour(any(), any()) } throws
+            ServiceException(ErrorCodesDomain.TOUR_DUPLICATE)
+
+        mvc.perform(post("/tours")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(validCreateBody))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.code").value("TOUR_DUPLICATE"))
     }
 }

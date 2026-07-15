@@ -38,10 +38,6 @@ paths:
                 $ref: '#/components/schemas/Tours'
         '204':
           description: No Content
-        '400':
-          description: Bad Request
-        '404':
-          description: Not Found
     post:
       operationId: createTour
       description: creates a new tour
@@ -61,14 +57,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Tour'
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '409':
           description: >
             Duplicate — a tour with the same startedAt, distance, durationRecorded,
             durationElapsed, and bikeId already exists (TOUR_DUPLICATE).
             Same trip with a different bike is allowed (ADR-0003).
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
   /tours/upload:
     post:
       operationId: uploadTours
@@ -85,9 +85,9 @@ paths:
         '201':
           description: The Uploaded file was successfully processed
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
   /tours/import:
     post:
       operationId: importTours
@@ -104,9 +104,9 @@ paths:
         '201':
           description: The Uploaded file was successfully processed
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
   /tours/fit/parse:
     post:
       operationId: parseFitFile
@@ -139,9 +139,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/FitDraftTours'
         '400':
-          description: FIT file invalid, unreadable, or contains no valid sessions
+          description: FIT file invalid, unreadable, or contains no valid sessions (FIT_PARSE_FAILED)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
 
   /tours/mytourbook/import-sessions:
     post:
@@ -180,10 +184,18 @@ paths:
             created. Any existing unreviewed PENDING session is left untouched.
         '400':
           description: Archive invalid or unreadable (ARCHIVE_INVALID)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '422':
           description: Derby schema incompatible with this backend release (DERBY_SCHEMA_INCOMPATIBLE)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '500':
-          description: Internal Server Error
+          $ref: '#/components/responses/InternalServerError'
 
   /tours/mytourbook/import-sessions/pending:
     get:
@@ -222,6 +234,10 @@ paths:
                 $ref: '#/components/schemas/ImportSession'
         '404':
           description: Session not found (IMPORT_SESSION_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
 
   /tours/mytourbook/import-sessions/{sessionId}/commit:
     parameters:
@@ -245,10 +261,22 @@ paths:
           description: Tours committed successfully
         '400':
           description: Bad Request (e.g. approvedMtTourIds not in session candidates)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '404':
           description: Session not found (IMPORT_SESSION_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
         '409':
           description: Session already superseded or committed (IMPORT_SESSION_SUPERSEDED)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
 
   /tours/{tourId}:
     parameters:
@@ -266,9 +294,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Tour'
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Not Found
+          $ref: '#/components/responses/NotFound'
   /tours/{tourId}/action/relate:
     parameters:
       - $ref: '#/components/parameters/tourId'
@@ -286,11 +314,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/Tour'
         '400':
-          description: Bad Request
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Not Found
+          $ref: '#/components/responses/NotFound'
 
 components:
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    UnprocessableEntity:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
   parameters:
     tourId:
       name: tourId

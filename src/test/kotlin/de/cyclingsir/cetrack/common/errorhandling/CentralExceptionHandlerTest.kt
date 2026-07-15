@@ -69,14 +69,14 @@ import org.springframework.web.context.request.WebRequest
   }
 
   @Test
-  fun `legacy error without wireCode keeps the old ErrorDetails shape`() {
+  fun `TOUR_DUPLICATE renders the shared Error shape`() {
    val response = centralExceptionHandler.handleServiceException(
     ServiceException(ErrorCodesDomain.TOUR_DUPLICATE),
     webRequest
    )
 
    Assertions.assertEquals(409, response.statusCode.value())
-   val body = Assertions.assertInstanceOf(ErrorDetails::class.java, response.body)
-   Assertions.assertEquals(ErrorCodesDomain.TOUR_DUPLICATE.code, body.code)
+   val body = Assertions.assertInstanceOf(Error::class.java, response.body)
+   Assertions.assertEquals("TOUR_DUPLICATE", body.code)
   }
  }

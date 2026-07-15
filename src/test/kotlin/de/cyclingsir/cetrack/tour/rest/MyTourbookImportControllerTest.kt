@@ -158,7 +158,7 @@ class MyTourbookImportControllerTest {
 
     // #40
     @Test
-    fun `stage with invalid archive returns 400`() {
+    fun `stage with invalid archive returns 400 with structured Error body`() {
         every { importService.stage(any()) } throws
             ServiceException(ARCHIVE_INVALID, "corrupt archive")
 
@@ -166,6 +166,7 @@ class MyTourbookImportControllerTest {
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .content(ByteArray(8)))
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("ARCHIVE_INVALID"))
     }
 
     // #41

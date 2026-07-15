@@ -18,18 +18,19 @@ enum class ErrorCodesDomain(
     BIKE_ALREADY_RETIRED(306, 409, "Bike is already retired", "BIKE_ALREADY_RETIRED"),
 
 //  Tour domain
-    TOUR_DUPLICATE(400, 409, "Tour already exists"),
+    TOUR_DUPLICATE(400, 409, "Tour already exists", "TOUR_DUPLICATE"),
 
 //  MyTourbook DB import domain
-    ARCHIVE_INVALID(500, 400, "Archive is invalid or unreadable"),
-    ARCHIVE_EXCEEDS_SIZE_LIMIT(501, 400, "Archive exceeds size limit"),
-    DERBY_SCHEMA_INCOMPATIBLE(502, 422, "Derby schema is incompatible with this backend release"),
-    IMPORT_SESSION_NOT_FOUND(503, 404, "Import session not found"),
-    IMPORT_SESSION_SUPERSEDED(504, 409, "Import session has been superseded or already committed"),
-    IMPORT_RESOLUTION_REPLACE_AMBIGUOUS(505, 400, "REPLACE not allowed when multiple existing tours match the triple-key"),
-    IMPORT_RESOLUTION_SAME_BIKE(506, 400, "IMPORT_NEW not allowed when incoming bike matches the existing tour bike"),
-    IMPORT_TOUR_NOT_FOUND(507, 404, "Matched tour not found"),
-    IMPORT_BIKE_NOT_FOUND(508, 400, "Bike referenced in import not found"),
+    ARCHIVE_INVALID(500, 400, "Archive is invalid or unreadable", "ARCHIVE_INVALID"),
+    ARCHIVE_EXCEEDS_SIZE_LIMIT(501, 400, "Archive exceeds size limit", "ARCHIVE_EXCEEDS_SIZE_LIMIT"),
+    DERBY_SCHEMA_INCOMPATIBLE(502, 422, "Derby schema is incompatible with this backend release", "DERBY_SCHEMA_INCOMPATIBLE"),
+    IMPORT_SESSION_NOT_FOUND(503, 404, "Import session not found", "IMPORT_SESSION_NOT_FOUND"),
+    IMPORT_SESSION_SUPERSEDED(504, 409, "Import session has been superseded or already committed", "IMPORT_SESSION_SUPERSEDED"),
+    IMPORT_RESOLUTION_REPLACE_AMBIGUOUS(505, 400, "REPLACE not allowed when multiple existing tours match the triple-key", "IMPORT_RESOLUTION_REPLACE_AMBIGUOUS"),
+    IMPORT_RESOLUTION_SAME_BIKE(506, 400, "IMPORT_NEW not allowed when incoming bike matches the existing tour bike", "IMPORT_RESOLUTION_SAME_BIKE"),
+    IMPORT_TOUR_NOT_FOUND(507, 404, "Matched tour not found", "IMPORT_TOUR_NOT_FOUND"),
+    IMPORT_BIKE_NOT_FOUND(508, 400, "Bike referenced in import not found", "IMPORT_BIKE_NOT_FOUND"),
+    FIT_PARSE_FAILED(509, 400, "FIT file could not be parsed", "FIT_PARSE_FAILED"),
 
 //  Component domain (CE-0083)
     COMPONENT_NOT_FOUND(600, 404, "Component not found", "NOT_FOUND"),
