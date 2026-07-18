@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: Cycling Equipment API
+  description: >
+    The API documentation for tracking cycling equipment - PIN-gated write
+    access control (CE-0118): exchanging the shared edit PIN for an unlock
+    token and reporting whether the edit gate is enabled.
+  version: 2.0.0
+  license:
+    name: (c) CyclingSir
+  contact:
+    name: CyclingSir
+    url: https://github.com/cyc1ingsir
+servers:
+  - url: http://localhost:8080/{basePath}
+    description: the default server url
+    variables:
+      basePath:
+        default: api
+tags:
+  - name: Auth
+    description: >
+      Edit-gate PIN unlock and gate-status. Both endpoints in this file are
+      themselves exempt from the edit-gate filter - a locked-out or never-unlocked
+      client must always be able to reach them.
+
+paths:
+  /auth/unlock:
+    post:
+      operationId: unlock
+      description: >
+        Exchanges the 6-digit edit PIN for a bearer token valid for ~30 days.
+        Exempt from the edit-gate filter (contract: this path is never itself
+        gated). Well-formed but wrong PINs count toward the shared lockout
+        counter - 5 consecutive failures trigger a 60s global cooldown (429);
+        malformed requests (400) and calls while the gate is disabled (409) do
+        not count, and a success resets the counter. The returned token is an
+        alternative credential to the raw-PIN header (see securitySchemes
+        `bearerAuth` / `editPin`) - either satisfies the edit-gate filter on
+        subsequent mutating requests, they are not combined.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnlockRequest'
+      responses:
+        '200':
+          description: >
+            unlocked; attach the token as `Authorization: Bearer <token>` on
+            subsequent mutating requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnlockResponse'
+        '400':
+          description: malformed PIN (not exactly 6 digits)
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: >
+            edit gate disabled (code GATE_DISABLED) - no PIN configured, there
+            is nothing to unlock
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
+        '429':
+          description: >
+            too many consecutive wrong PINs (code TOO_MANY_ATTEMPTS); the
+            global lockout is shared across all clients
+          headers:
+            Retry-After:
+              description: seconds remaining until the cooldown lifts
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: './common-api.yaml#/components/schemas/Error'
+  /auth/status:
+    get:
+      operationId: getAuthStatus
+      description: >
+        Open GET - reports only whether the edit gate is enabled (a PIN is
+        configured), not whether the caller currently holds a valid
+        token/PIN; token expiry is tracked client-side from the unlock
+        response instead. Exempt from the edit-gate filter like
+        POST /auth/unlock (contract: this path is never itself gated, so any
+        client can check gate state before attempting a write).
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthStatus'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Unlock token minted by POST /auth/unlock; attach as
+        `Authorization: Bearer <token>`. Alternative credential to `editPin` -
+        the edit-gate filter accepts either (OR semantics, not combined).
+    editPin:
+      type: apiKey
+      in: header
+      name: Cetrack-Edit-Pin
+      description: >
+        The raw 6-digit edit PIN sent directly as a header. Alternative
+        credential to `bearerAuth` (OR semantics); used e.g. by the
+        mytourbook-uploader tool, which has no browser to hold a token.
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: './common-api.yaml#/components/schemas/Error'
+  schemas:
+    UnlockRequest:
+      type: object
+      required:
+        - pin
+      properties:
+        pin:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: the shared 6-digit edit PIN
+    UnlockResponse:
+      type: object
+      required:
+        - token
+        - expiresAt
+      properties:
+        token:
+          type: string
+          description: >
+            bearer token; attach as an `Authorization: Bearer <token>` header
+        expiresAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: fixed expiry (~30 days from issuance)
+    AuthStatus:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: whether the edit gate (CETRACK_EDIT_PIN) is currently configured

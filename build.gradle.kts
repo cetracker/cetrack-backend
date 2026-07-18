@@ -96,7 +96,8 @@ val openapiSpecs = mapOf(
     "component" to "api/component-api.yaml",
     "maintenance" to "api/maintenance-api.yaml",
     "report" to "api/report-api.yaml",
-    "tour" to "api/tour-api.yaml"
+    "tour" to "api/tour-api.yaml",
+    "auth" to "api/auth-api.yaml"
 )
 // The first spec key "owns" the shared generated files: supporting files (ApiUtil.kt,
 // Exceptions.kt, SpringDocConfiguration.kt) and any models that the generator emits for

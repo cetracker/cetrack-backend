@@ -35,7 +35,7 @@ components:
       properties:
         code:
           type: string
-          description: stable machine-readable error code (e.g. TYPE_MISMATCH, COMPONENT_RETIRED, MOUNTING_OVERLAP, UNRESOLVED_SLOTS, MEMBER_MOUNTED_ELSEWHERE, ASSEMBLY_INCOMPLETE, IN_USE, ASSEMBLY_MEMBER_GUIDED_CHOICE)
+          description: stable machine-readable error code (e.g. TYPE_MISMATCH, COMPONENT_RETIRED, MOUNTING_OVERLAP, UNRESOLVED_SLOTS, MEMBER_MOUNTED_ELSEWHERE, ASSEMBLY_INCOMPLETE, IN_USE, ASSEMBLY_MEMBER_GUIDED_CHOICE, UNAUTHORIZED, INVALID_PIN, TOO_MANY_ATTEMPTS, GATE_DISABLED)
         message:
           type: string
           description: human-readable explanation

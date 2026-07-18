@@ -4,7 +4,9 @@ info:
   description: >
     The API documentation for tracking cycling equipment - derived reports.
     Mileage is computed server-side from tours covered by mounting
-    intervals (domain model §5).
+    intervals (domain model §5). Mutating requests (POST/PUT/PATCH/DELETE)
+    return 401 when the edit gate is enabled and no valid credential is
+    presented (CE-0118).
   version: 2.0.0
   license:
     name: (c) CyclingSir

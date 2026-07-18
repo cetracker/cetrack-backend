@@ -1,7 +1,11 @@
 openapi: 3.0.3
 info:
   title: Cycling Equipment API
-  description: The API documentation for tracking cycling equipment and parts - tour related definitions
+  description: >
+    The API documentation for tracking cycling equipment and parts - tour
+    related definitions. Mutating requests (POST/PUT/PATCH/DELETE) return 401
+    when the edit gate is enabled and no valid credential is presented
+    (CE-0118).
   version: 1.1.0
   license:
     name: (c) CyclingSir
