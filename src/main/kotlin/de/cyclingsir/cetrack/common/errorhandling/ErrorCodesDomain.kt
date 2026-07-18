@@ -91,7 +91,13 @@ enum class ErrorCodesDomain(
 //  Maintenance domain (CE-0088)
     MAINTENANCE_TASK_NOT_FOUND(1000, 404, "Maintenance task not found", "NOT_FOUND"),
     MAINTENANCE_TASK_DATA_INVALID(1001, 400, "Maintenance task data violates a constraint", "DATA_INVALID"),
-    MAINTENANCE_EVENT_NOT_FOUND(1002, 404, "Maintenance event not found", "NOT_FOUND");
+    MAINTENANCE_EVENT_NOT_FOUND(1002, 404, "Maintenance event not found", "NOT_FOUND"),
+
+//  Auth domain (CE-0118)
+    UNAUTHORIZED(1100, 401, "Missing or invalid edit credential", "UNAUTHORIZED"),
+    INVALID_PIN(1101, 401, "Wrong edit PIN", "INVALID_PIN"),
+    TOO_MANY_ATTEMPTS(1102, 429, "Too many consecutive wrong PINs", "TOO_MANY_ATTEMPTS"),
+    GATE_DISABLED(1103, 409, "Edit gate is disabled; no PIN configured", "GATE_DISABLED");
 
     override val reason: String?
         get() = description

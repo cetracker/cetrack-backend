@@ -27,6 +27,8 @@ app:
     max-decompressed-bytes: 524288000  # 500 MB
     tour-person-id: 0
     tour-type-ids: [0, 1, 2, 4, 113]
+  security:
+    edit-pin: ${CETRACK_EDIT_PIN:}
 
 # Actuator Endpoints
 management:

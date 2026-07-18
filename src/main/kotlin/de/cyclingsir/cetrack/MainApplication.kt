@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack
 
+import de.cyclingsir.cetrack.common.security.AppSecurityConfiguration
 import de.cyclingsir.cetrack.configuration.CetrackBanner
 import de.cyclingsir.cetrack.tour.configuration.MyTourbookImportConfiguration
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -11,7 +12,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 @SpringBootApplication
 @EnableJpaRepositories
 @EnableJpaAuditing
-@EnableConfigurationProperties(MyTourbookImportConfiguration::class)
+@EnableConfigurationProperties(MyTourbookImportConfiguration::class, AppSecurityConfiguration::class)
 class MainApplication
 
 fun main(args: Array<String>) {
