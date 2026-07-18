@@ -8,6 +8,7 @@ Accept: application/json
 // @no-log
 POST http://{{host}}:{{port}}/api/parts
 Content-Type: application/json
+Authorization: Bearer {{unlockToken}}
 
 {
   "label": "Bremsscheibe original vorn",
@@ -37,6 +38,7 @@ if(response.contentType.mimeType == "application/json") {
 ###
 POST http://localhost:8080/api/partTypes
 Content-Type: application/json
+Authorization: Bearer {{unlockToken}}
 
 {
   "name": "Bremsscheibe vorn"
@@ -59,6 +61,7 @@ Content-Type: application/json
 POST http://{{host}}:{{port}}/api/partTypes/{{partTypeId}}/action/relate?bikeId={{bikeId}}
 #POST http://{{host}}:{{port}}/api/partTypes/{{partTypeId}}/action/relate?bikeId=4598aded-4886-496c-9042-0358c7f5de7a
 Content-Type: application/json
+Authorization: Bearer {{unlockToken}}
 
 ###
 // @no-log
@@ -68,6 +71,7 @@ Content-Type: application/json
 ###
 POST http://{{host}}:{{port}}/api/parts/{{partId}}/action/relate
 Content-Type: application/json
+Authorization: Bearer {{unlockToken}}
 
 {
   "partId": "{{partId}}",

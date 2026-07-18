@@ -1,18 +1,15 @@
 ###
 // @no-log
-GET http://{{host}}:{{port}}/api/bikes
+GET http://{{host}}:{{port}}/api/auth/status
 Content-Type: application/json
 
 ###
 // @no-log
-POST http://{{host}}:{{port}}/api/bikes
+POST http://{{host}}:{{port}}/api/auth/unlock
 Content-Type: application/json
-Authorization: Bearer {{unlockToken}}
 
 {
-  "model": "Atmos",
-  "manufacturer": "Parapera",
-  "boughtAt": "2022-02-01T14:00:05.0Z"
+  "pin": "123456"
 }
 > {%
     client.test("Response content-type is json", function() {
@@ -20,8 +17,8 @@ Authorization: Bearer {{unlockToken}}
         client.assert(type === "application/json", "Expected 'application/json' but received '" + type + "'");
     });
 if(response.contentType.mimeType == "application/json") {
-    client.global.set("bikeId", response.body.id);
+    client.global.set("unlockToken", response.body.token);
 } else {
-    client.global.set("bikeId", "unknown");
+    client.global.set("unlockToken", "unknown");
 }
 %}
