@@ -61,8 +61,7 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
     /** One assembly, one slot, one member component - the common fixture. */
     private data class Fixture(val assemblyId: UUID, val slotId: UUID, val typeId: UUID, val componentId: UUID)
 
-    private fun fixture(positionId: UUID? = null): Fixture {
-        val typeId = newType()
+    private fun fixture(positionId: UUID? = null, typeId: UUID = newType()): Fixture {
         val assemblyId = assemblyService.createAssembly(DomainAssembly(name = "asm-${UUID.randomUUID()}", positionId = positionId)).id!!
         val slotId = assemblyService.createAssemblySlot(
             assemblyId, DomainAssemblySlot(assemblyId = assemblyId, name = "slot", componentTypeId = typeId, validFrom = t1)
@@ -73,6 +72,27 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
             componentId, slotId, java.sql.Timestamp.from(t1)
         )
         return Fixture(assemblyId, slotId, typeId, componentId)
+    }
+
+    /** N-slot assembly of one component type, no members - callers add membership + pin slot mappings. */
+    private fun multiSlotAssembly(name: String, typeId: UUID, slotCount: Int): Pair<UUID, List<UUID>> {
+        val assemblyId = assemblyService.createAssembly(DomainAssembly(name = name)).id!!
+        val slots = (1..slotCount).map { i ->
+            assemblyService.createAssemblySlot(
+                assemblyId, DomainAssemblySlot(assemblyId = assemblyId, name = "s$i", componentTypeId = typeId, validFrom = t1)
+            ).id!!
+        }
+        return assemblyId to slots
+    }
+
+    private fun addMember(slotId: UUID, componentId: UUID, from: Instant = t1) {
+        jdbc.update("INSERT INTO assembly_membership (component_id, assembly_slot_id, member_from) VALUES (?, ?, ?)",
+            componentId, slotId, java.sql.Timestamp.from(from))
+    }
+
+    private fun pinSlotMapping(slotId: UUID, bikeId: UUID, mountPointId: UUID) {
+        jdbc.update("INSERT INTO slot_mapping (assembly_slot_id, bike_id, mount_point_id) VALUES (?, ?, ?)",
+            slotId, bikeId, mountPointId)
     }
 
     // --- ADR-0003 resolution outcomes -----------------------------------------------------
@@ -209,7 +229,7 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
     // --- Occupant policy ---------------------------------------------------------------------
 
     @Test
-    fun `direct occupant is evicted, governed occupant of another assembly mounting rejects`() {
+    fun `direct occupant is evicted on mount`() {
         val f = fixture()
         val bikeId = newBike()
         val mountPointId = newMountPoint(bikeId, f.typeId)
@@ -219,22 +239,231 @@ class AssemblyMountingIT : PostgreSQLContainerIT() {
         val result = mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t2, emptyList())
         assertThat(result.changes.closed.single().componentId).isEqualTo(directOccupant)
         assertThat(result.changes.created.single().componentId).isEqualTo(f.componentId)
+    }
 
-        // governed occupant: seed another assembly's active mounting at a mount point
-        val f2 = fixture()
-        val governedMountPointId = newMountPoint(bikeId, f2.typeId)
-        val otherAssemblyMountingId = UUID.randomUUID()
-        jdbc.update("INSERT INTO component_assembly (id, name) VALUES (?, ?)", UUID.randomUUID(), "unused")
-        val otherAssemblyId = UUID.randomUUID()
-        jdbc.update("INSERT INTO component_assembly (id, name) VALUES (?, ?)", otherAssemblyId, "other")
-        jdbc.update("INSERT INTO assembly_mounting (id, assembly_id, bike_id, mounted_at) VALUES (?, ?, ?, ?)",
-            otherAssemblyMountingId, otherAssemblyId, bikeId, java.sql.Timestamp.from(t1))
-        val governedComponent = newComponent(f2.typeId)
-        jdbc.update("INSERT INTO mounting (component_id, mount_point_id, assembly_mounting_id, mounted_at) VALUES (?, ?, ?, ?)",
-            governedComponent, governedMountPointId, otherAssemblyMountingId, java.sql.Timestamp.from(t1))
+    // --- CE-0119: mounting overrides a governed occupant instead of rejecting -----------------
 
-        val ex = assertThrows<ServiceException> { mountingAssemblyService.mountAssembly(f2.assemblyId, bikeId, t2, emptyList()) }
+    @Test
+    fun `mounting overrides another assembly's governed occupant - CE-0119`() {
+        val f = fixture()
+        val bikeId = newBike()
+        newMountPoint(bikeId, f.typeId) // the only candidate - both assemblies below target it
+        val blocked = mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t1, emptyList())
+
+        val g = fixture(typeId = f.typeId)
+        val result = mountingAssemblyService.mountAssembly(g.assemblyId, bikeId, t2, emptyList())
+
+        assertThat(result.changes.created.single().componentId).isEqualTo(g.componentId)
+        assertThat(result.changes.closed.single().componentId).isEqualTo(f.componentId)
+        assertThat(result.dismountedAssemblyMountings).singleElement()
+            .extracting { it.id }.isEqualTo(blocked.assemblyMounting.id)
+
+        assertThat(assemblyService.getAssemblyMountings(f.assemblyId).single().dismountedAt).isEqualTo(t2)
+        assertThat(mountingService.getMountings(f.componentId, null, null, null).single().dismountedAt).isEqualTo(t2)
+        assertThat(mountingService.getMountings(g.componentId, null, null, null).single().dismountedAt).isNull()
+    }
+
+    @Test
+    fun `mounting overrides a blocker colliding on every slot - CE-0119 regression`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 2)
+        val componentsA = slotsA.map { newComponent(typeId) }
+        slotsA.zip(componentsA).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        pinSlotMapping(slotsA[1], bikeId, mp2)
+        mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 2)
+        val componentsB = slotsB.map { newComponent(typeId) }
+        slotsB.zip(componentsB).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsB[0], bikeId, mp1)
+        pinSlotMapping(slotsB[1], bikeId, mp2)
+
+        val result = mountingAssemblyService.mountAssembly(assemblyB, bikeId, t2, emptyList())
+
+        assertThat(result.dismountedAssemblyMountings).singleElement().extracting { it.assemblyId }.isEqualTo(assemblyA)
+        assertThat(result.changes.closed).hasSize(2)
+        assertThat(result.changes.created).hasSize(2)
+        assertThat(assemblyService.getAssemblyMountings(assemblyA).single().dismountedAt).isEqualTo(t2)
+        componentsA.forEach { c -> assertThat(mountingService.getMountings(c, null, null, null).single().dismountedAt).isEqualTo(t2) }
+        componentsB.forEach { c -> assertThat(mountingService.getMountings(c, null, null, null).single().dismountedAt).isNull() }
+    }
+
+    @Test
+    fun `mounting overrides a blocker fully on partial overlap, including its non-colliding slot - CE-0119`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+        val mp3 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 2)
+        val componentsA = slotsA.map { newComponent(typeId) }
+        slotsA.zip(componentsA).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        pinSlotMapping(slotsA[1], bikeId, mp2)
+        mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 2)
+        val componentsB = slotsB.map { newComponent(typeId) }
+        slotsB.zip(componentsB).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsB[0], bikeId, mp2) // collides with A
+        pinSlotMapping(slotsB[1], bikeId, mp3) // does not collide with A
+
+        mountingAssemblyService.mountAssembly(assemblyB, bikeId, t2, emptyList())
+
+        // A is fully dismounted, including the mp1 member B never targeted
+        componentsA.forEach { c -> assertThat(mountingService.getMountings(c, null, null, null).single().dismountedAt).isEqualTo(t2) }
+        assertThat(assemblyService.getAssemblyMountings(assemblyA).single().dismountedAt).isEqualTo(t2)
+    }
+
+    @Test
+    fun `mounting overrides two distinct blocking assemblies - CE-0119`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 1)
+        val componentA = newComponent(typeId)
+        addMember(slotsA[0], componentA)
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyC, slotsC) = multiSlotAssembly("C", typeId, 1)
+        val componentC = newComponent(typeId)
+        addMember(slotsC[0], componentC)
+        pinSlotMapping(slotsC[0], bikeId, mp2)
+        mountingAssemblyService.mountAssembly(assemblyC, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 2)
+        val componentsB = slotsB.map { newComponent(typeId) }
+        slotsB.zip(componentsB).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsB[0], bikeId, mp1)
+        pinSlotMapping(slotsB[1], bikeId, mp2)
+
+        val result = mountingAssemblyService.mountAssembly(assemblyB, bikeId, t2, emptyList())
+
+        assertThat(result.dismountedAssemblyMountings.map { it.assemblyId }).containsExactlyInAnyOrder(assemblyA, assemblyC)
+        assertThat(mountingService.getMountings(componentA, null, null, null).single().dismountedAt).isEqualTo(t2)
+        assertThat(mountingService.getMountings(componentC, null, null, null).single().dismountedAt).isEqualTo(t2)
+    }
+
+    @Test
+    fun `mounting override backdated relative to the blocker is rejected, blocker untouched - CE-0119`() {
+        val f = fixture()
+        val bikeId = newBike()
+        newMountPoint(bikeId, f.typeId)
+        mountingAssemblyService.mountAssembly(f.assemblyId, bikeId, t2, emptyList()) // A mounted at t2
+
+        val g = fixture(typeId = f.typeId)
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.mountAssembly(g.assemblyId, bikeId, t1, emptyList()) // t1 is before A even started
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
+
+        assertThat(assemblyService.getAssemblyMountings(f.assemblyId).single().dismountedAt).isNull()
+        assertThat(mountingService.getMountings(f.componentId, null, null, null).single().dismountedAt).isNull()
+    }
+
+    @Test
+    fun `mount atomicity - a fellow slot failing elsewhere leaves an already-planned override untouched - CE-0119`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 1)
+        val componentA = newComponent(typeId)
+        addMember(slotsA[0], componentA)
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 2)
+        val overridingComponent = newComponent(typeId)
+        val elsewhereComponent = newComponent(typeId)
+        addMember(slotsB[0], overridingComponent)
+        addMember(slotsB[1], elsewhereComponent)
+        pinSlotMapping(slotsB[0], bikeId, mp1) // would override A
+        pinSlotMapping(slotsB[1], bikeId, mp2)
+        val elsewhereBike = newBike()
+        val elsewhereMp = newMountPoint(elsewhereBike, typeId)
+        // seed the historical fact via SQL (ADR-0001 §3 would guided-choice-block mount() here, elsewhereComponent is a member)
+        jdbc.update("INSERT INTO mounting (component_id, mount_point_id, mounted_at) VALUES (?, ?, ?)",
+            elsewhereComponent, elsewhereMp, java.sql.Timestamp.from(t1)) // unrelated failure on the other slot
+
+        val ex = assertThrows<ServiceException> { mountingAssemblyService.mountAssembly(assemblyB, bikeId, t2, emptyList()) }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE)
+
+        assertThat(assemblyService.getAssemblyMountings(assemblyA).single().dismountedAt).isNull()
+        assertThat(mountingService.getMountings(componentA, null, null, null).single().dismountedAt).isNull()
+    }
+
+    @Test
+    fun `planMount resolves a governed occupant and lists it in assembliesToDismount, deduped - CE-0119`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 2)
+        val componentsA = slotsA.map { newComponent(typeId) }
+        slotsA.zip(componentsA).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        pinSlotMapping(slotsA[1], bikeId, mp2)
+        val blocked = mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 2)
+        val componentsB = slotsB.map { newComponent(typeId) }
+        slotsB.zip(componentsB).forEach { (s, c) -> addMember(s, c) }
+        pinSlotMapping(slotsB[0], bikeId, mp1)
+        pinSlotMapping(slotsB[1], bikeId, mp2)
+
+        val plan = mountingAssemblyService.planMount(assemblyB, bikeId, t2)
+
+        assertThat(plan.mountable).isTrue()
+        assertThat(plan.slots).allSatisfy { assertThat(it.state).isEqualTo(DomainPlannedSlotState.RESOLVED) }
+        assertThat(plan.assembliesToDismount).singleElement().satisfies({
+            assertThat(it.assemblyId).isEqualTo(assemblyA)
+            assertThat(it.assemblyMountingId).isEqualTo(blocked.assemblyMounting.id)
+        })
+        // planning changes nothing
+        componentsA.forEach { c -> assertThat(mountingService.getMountings(c, null, null, null).single().dismountedAt).isNull() }
+    }
+
+    @Test
+    fun `addMember into another mounted assembly's governed point still rejects - CE-0119`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mp1 = newMountPoint(bikeId, typeId)
+        val mp2 = newMountPoint(bikeId, typeId)
+
+        val (assemblyA, slotsA) = multiSlotAssembly("A", typeId, 1)
+        val componentA = newComponent(typeId)
+        addMember(slotsA[0], componentA)
+        pinSlotMapping(slotsA[0], bikeId, mp1)
+        mountingAssemblyService.mountAssembly(assemblyA, bikeId, t1, emptyList())
+
+        val (assemblyB, slotsB) = multiSlotAssembly("B", typeId, 1)
+        val componentB = newComponent(typeId)
+        addMember(slotsB[0], componentB)
+        pinSlotMapping(slotsB[0], bikeId, mp2)
+        mountingAssemblyService.mountAssembly(assemblyB, bikeId, t1, emptyList())
+
+        val extraSlot = assemblyService.createAssemblySlot(
+            assemblyB, DomainAssemblySlot(assemblyId = assemblyB, name = "extra", componentTypeId = typeId, validFrom = t1)
+        ).id!!
+        val newMember = newComponent(typeId)
+
+        val ex = assertThrows<ServiceException> {
+            mountingAssemblyService.addMember(assemblyB, newMember, extraSlot, t2, mp1)
+        }
         assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_GOVERNED)
+        assertThat(mountingService.getMountings(componentA, null, null, null).single().dismountedAt).isNull()
     }
 
     // --- Slot collision / unmountable ---------------------------------------------------------
