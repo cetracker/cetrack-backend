@@ -505,7 +505,11 @@ paths:
         The client asks the user once for each unresolved slot, then calls
         mount with slotResolutions. Genuine impossibilities (incomplete
         assembly, no candidate for a slot, member mounted elsewhere) are
-        reported per slot in the plan, not as an error status.
+        reported per slot in the plan, not as an error status. A slot whose
+        target mount point is occupied by another assembly's governed
+        mounting resolves normally; that other assembly is listed in
+        assembliesToDismount as a warning - mounting will dismount it as a
+        unit.
       tags:
         - Assemblies
       requestBody:
@@ -537,10 +541,17 @@ paths:
         (ADR-0001 §1): every filled slot is resolved to one mount point
         (ADR-0003 - position filter, stored slot mapping, or a slotResolution
         passed here, which is then persisted as a slot mapping); all member
-        mountings are created/adopted in one transaction. Any conflict rejects
-        the whole mount with 409 - final codes: ASSEMBLY_INCOMPLETE,
-        UNRESOLVED_SLOTS (candidates in details), SLOT_UNMOUNTABLE,
-        SLOT_TARGET_COLLISION, MEMBER_MOUNTED_ELSEWHERE, MOUNTING_GOVERNED,
+        mountings are created/adopted in one transaction. A slot whose target
+        mount point is occupied by another assembly's governed mounting
+        overrides it: that other assembly's mounting (and all mountings it
+        governs) is dismounted as a unit at `at` before this assembly is
+        mounted - reported in the result as dismountedAssemblyMountings. If
+        `at` is not after the start of every mounting this would close, the
+        whole mount is rejected with 409 MOUNTING_BACKDATED and nothing is
+        dismounted. Any other conflict rejects the whole mount with 409 -
+        final codes: ASSEMBLY_INCOMPLETE, UNRESOLVED_SLOTS (candidates in
+        details), SLOT_UNMOUNTABLE, SLOT_TARGET_COLLISION,
+        MEMBER_MOUNTED_ELSEWHERE, MOUNTING_BACKDATED,
         ASSEMBLY_ALREADY_MOUNTED, BIKE_RETIRED.
       tags:
         - Assemblies
@@ -1006,7 +1017,6 @@ components:
             - noCandidate
             - positionFilterEmpty
             - memberMountedElsewhere
-            - occupiedByGovernedMounting
           description: set when state is impossible - machine-readable cause
         reason:
           type: string
@@ -1041,6 +1051,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PlannedSlot'
+        assembliesToDismount:
+          type: array
+          description: >
+            other assemblies whose governed mountings occupy this plan's
+            target mount points; mounting will dismount each of these as a
+            unit at `at` before mounting this assembly (deduped by assemblyId)
+          items:
+            $ref: '#/components/schemas/AssemblyToDismount'
+    AssemblyToDismount:
+      type: object
+      description: an assembly that will be fully dismounted by a mount call
+      required:
+        - assemblyId
+        - assemblyMountingId
+        - name
+      properties:
+        assemblyId:
+          type: string
+          format: uuid
+        assemblyMountingId:
+          type: string
+          format: uuid
+        name:
+          type: string
     MountAssemblyRequest:
       type: object
       required:
@@ -1081,3 +1115,11 @@ components:
           description: slot mappings persisted from this mount's slotResolutions (ADR-0003 ask-once)
           items:
             $ref: './bike-api.yaml#/components/schemas/SlotMapping'
+        dismountedAssemblyMountings:
+          type: array
+          description: >
+            other assemblies' mountings closed as a side effect of this mount
+            overriding their governed occupancy; their member mountings also
+            appear in changes.closed
+          items:
+            $ref: '#/components/schemas/AssemblyMounting'
