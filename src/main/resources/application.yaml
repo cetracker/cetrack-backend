@@ -92,6 +92,17 @@ management:
 
 ---
 
+# gated access - test edit-pin for local testing
+spring:
+  config:
+    activate:
+      on-profile: gate
+app:
+    security:
+        edit-pin: 123456
+
+---
+
 spring:
   config:
     activate:
