@@ -161,7 +161,7 @@ class MountDismountIT : PostgreSQLContainerIT() {
     }
 
     @Test
-    fun `backdated times are service-level 400s`() {
+    fun `backdated times are service-level 400s - CE-0120 before-T occupant collides instead`() {
         val typeId = newType()
         val bikeId = newBike()
         val mountPointId = newMountPoint(bikeId, typeId)
@@ -170,14 +170,92 @@ class MountDismountIT : PostgreSQLContainerIT() {
 
         mountingService.mount(bikeId, mountPointId, first, t2)
 
-        // replacing strictly before - and exactly at - the occupant's start is rejected
+        // t1 predates the occupant's start - occupant isn't active at T, so this isn't "the
+        // occupant" at all; the insert collides with the occupant's still-open interval on GiST.
         val exBefore = assertThrows<ServiceException> { mountingService.mount(bikeId, mountPointId, second, t1) }
-        assertThat(exBefore.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
+        assertThat(exBefore.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_OVERLAP)
+        // exactly at the occupant's start - it IS the occupant at T, boundary rejected
         val exSame = assertThrows<ServiceException> { mountingService.mount(bikeId, mountPointId, second, t2) }
         assertThat(exSame.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
 
         val exDismount = assertThrows<ServiceException> { mountingService.dismount(first, t2) }
         assertThat(exDismount.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_BACKDATED)
+    }
+
+    // --- CE-0120: occupancy resolved at mount time T, not now ---------------------------------
+
+    @Test
+    fun `mount evicts a closed occupant containing T, shortening its history - CE-0120`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, typeId)
+        val first = newComponent(typeId)
+        val second = newComponent(typeId)
+
+        mountingService.mount(bikeId, mountPointId, first, t1)
+        mountingService.dismount(first, t3)
+
+        val changes = mountingService.mount(bikeId, mountPointId, second, t2)
+        assertThat(changes.closed.single().componentId).isEqualTo(first)
+        assertThat(changes.closed.single().dismountedAt).isEqualTo(t2)
+        assertThat(mountingService.getMountings(first, null, null, null).single().dismountedAt).isEqualTo(t2)
+    }
+
+    @Test
+    fun `mount shortens the component's own closed mounting elsewhere containing T - CE-0120`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mpA = newMountPoint(bikeId, typeId)
+        val mpB = newMountPoint(bikeId, typeId)
+        val component = newComponent(typeId)
+
+        mountingService.mount(bikeId, mpA, component, t1)
+        mountingService.dismount(component, t3)
+
+        val changes = mountingService.mount(bikeId, mpB, component, t2)
+        assertThat(changes.closed.single().mountPointId).isEqualTo(mpA)
+        assertThat(changes.closed.single().dismountedAt).isEqualTo(t2)
+        assertThat(changes.created.single().mountPointId).isEqualTo(mpB)
+    }
+
+    @Test
+    fun `mount at exactly an occupant's closed dismountedAt is adjacent, not evicted - CE-0120`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, typeId)
+        val first = newComponent(typeId)
+        val second = newComponent(typeId)
+
+        mountingService.mount(bikeId, mountPointId, first, t1)
+        mountingService.dismount(first, t2)
+
+        val changes = mountingService.mount(bikeId, mountPointId, second, t2)
+        assertThat(changes.closed).isEmpty()
+        assertThat(changes.created.single().componentId).isEqualTo(second)
+    }
+
+    @Test
+    fun `mount rejects replacing a closed governed occupant - correct the assembly history instead - CE-0120`() {
+        val typeId = newType()
+        val bikeId = newBike()
+        val mountPointId = newMountPoint(bikeId, typeId)
+
+        val assemblyId = seedUnmountedAssemblyMembership(newComponent(typeId), typeId)
+        val governedComponent = newComponent(typeId)
+        val assemblyMountingId = UUID.randomUUID()
+        jdbc.update(
+            "INSERT INTO assembly_mounting (id, assembly_id, bike_id, mounted_at, dismounted_at) VALUES (?, ?, ?, ?, ?)",
+            assemblyMountingId, assemblyId, bikeId, java.sql.Timestamp.from(t1), java.sql.Timestamp.from(t3)
+        )
+        jdbc.update(
+            "INSERT INTO mounting (component_id, mount_point_id, assembly_mounting_id, mounted_at, dismounted_at) VALUES (?, ?, ?, ?, ?)",
+            governedComponent, mountPointId, assemblyMountingId, java.sql.Timestamp.from(t1), java.sql.Timestamp.from(t3)
+        )
+
+        val replacement = newComponent(typeId)
+        val ex = assertThrows<ServiceException> { mountingService.mount(bikeId, mountPointId, replacement, t2) }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.MOUNTING_GOVERNED)
+        assertThat(mountingService.getMountings(governedComponent, null, null, null).single().dismountedAt).isEqualTo(t3)
     }
 
     @Test
