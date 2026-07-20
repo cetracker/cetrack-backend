@@ -63,7 +63,15 @@ class AssemblyMountingService(
             }
         }
         val mountable = planned.isNotEmpty() && planned.all { it.state == DomainPlannedSlotState.RESOLVED }
-        return DomainMountPlan(assemblyId = assemblyId, bikeId = bikeId, at = at, mountable = mountable, slots = planned)
+        val assembliesToDismount = planned.mapNotNull { it.willDismountAssemblyMountingId }.distinct().map { mountingId ->
+            val mounting = assemblyMountingRepository.findById(mountingId).orElseThrow()
+            val name = assemblyRepository.findById(mounting.assemblyId).orElseThrow().name
+            DomainAssemblyToDismount(assemblyId = mounting.assemblyId, assemblyMountingId = mountingId, name = name)
+        }
+        return DomainMountPlan(
+            assemblyId = assemblyId, bikeId = bikeId, at = at, mountable = mountable, slots = planned,
+            assembliesToDismount = assembliesToDismount
+        )
     }
 
     @Transactional
@@ -112,24 +120,28 @@ class AssemblyMountingService(
         if (memberMountedElsewhere.isNotEmpty()) {
             throw ServiceException(ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE)
         }
-        val governedOccupant = unmountable.filter { it.reasonCode == DomainImpossibleReason.OCCUPIED_BY_GOVERNED_MOUNTING }
-        if (governedOccupant.isNotEmpty()) {
-            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED)
-        }
         val resolvedMountPointBySlot = planned.associate { it.slotId to it.mountPointId!! }
         val colliding = SlotResolver.collidingSlotIds(resolvedMountPointBySlot)
         if (colliding.isNotEmpty()) {
             throw ServiceException(ErrorCodesDomain.SLOT_TARGET_COLLISION, null, mapOf("slotIds" to colliding))
         }
 
-        // backdate pre-check before any mutation - direct occupants this mount would evict
+        // backdate pre-check before any mutation - direct (non-governed) occupants this mount would evict;
+        // governed occupants are covered by validateAssemblyMountingClosable below
         planned.forEach { slot ->
             val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(slot.mountPointId!!)
-            if (occupant != null && occupant.componentId != slot.componentId && !at.isAfter(occupant.mountedAt)) {
+            if (occupant != null && occupant.componentId != slot.componentId && occupant.assemblyMountingId == null
+                && !at.isAfter(occupant.mountedAt)) {
                 throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED,
                     "Occupant mounting to close started at ${occupant.mountedAt}.")
             }
         }
+
+        // override: dismount every blocking assembly as a unit, fully validated before any of them mutate
+        val blockingAssemblyMountings = planned.mapNotNull { it.willDismountAssemblyMountingId }.distinct()
+            .map { assemblyMountingRepository.findById(it).orElseThrow() }
+        blockingAssemblyMountings.forEach { validateAssemblyMountingClosable(it, at) }
+        val dismountChanges = blockingAssemblyMountings.map { closeAssemblyMounting(it, at) }
 
         val assemblyMounting = assemblyMountingRepository.saveAndFlush(
             AssemblyMountingEntity(id = null, assemblyId = assemblyId, bikeId = bikeId, mountedAt = at)
@@ -178,14 +190,16 @@ class AssemblyMountingService(
         val mountPointNames = planned.associate { it.mountPointId!! to mountPointName(it.mountPointId, bikeId) }
         val changes = DomainMountingChanges(
             created = created.map { toDomainMounting(it, bikeId, mountPointNames[it.mountPointId]!!) },
-            closed = closed.map { toDomainMounting(it, bikeId, mountPointNames[it.mountPointId]!!) }
+            closed = dismountChanges.flatMap { it.closed } +
+                closed.map { toDomainMounting(it, bikeId, mountPointNames[it.mountPointId]!!) }
         )
         return DomainAssemblyMountResult(
             assemblyMounting = mapper.map(assemblyMounting),
             changes = changes,
             rememberedSlotMappings = remembered.map {
                 DomainSlotMapping(it.id, it.assemblySlotId, it.bikeId, it.mountPointId, it.createdAt)
-            }
+            },
+            dismountedAssemblyMountings = blockingAssemblyMountings.map { mapper.map(it) }
         )
     }
 
@@ -194,6 +208,13 @@ class AssemblyMountingService(
         requireAssembly(assemblyId)
         val active = assemblyMountingRepository.findByAssemblyIdAndDismountedAtIsNull(assemblyId)
             ?: throw ServiceException(ErrorCodesDomain.ASSEMBLY_NOT_MOUNTED)
+        validateAssemblyMountingClosable(active, at)
+        val changes = closeAssemblyMounting(active, at)
+        return DomainAssemblyMountResult(assemblyMounting = mapper.map(active), changes = changes)
+    }
+
+    /** Backdate checks only, no mutation - callers validate every blocker before mutating any of them. */
+    private fun validateAssemblyMountingClosable(active: AssemblyMountingEntity, at: Instant) {
         if (!at.isAfter(active.mountedAt)) {
             throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED, "Assembly mounting started at ${active.mountedAt}.")
         }
@@ -203,15 +224,19 @@ class AssemblyMountingService(
                 throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED, "Mounting to close started at ${mounting.mountedAt}.")
             }
         }
+    }
+
+    /** Closes the assembly mounting and everything it governs at `at`. Assumes validateAssemblyMountingClosable already passed. */
+    private fun closeAssemblyMounting(active: AssemblyMountingEntity, at: Instant): DomainMountingChanges {
+        val governed = mountingRepository.findAllByAssemblyMountingIdAndDismountedAtIsNull(active.id!!)
         governed.forEach { it.dismountedAt = at }
         active.dismountedAt = at
         mountingRepository.saveAllAndFlush(governed)
         assemblyMountingRepository.saveAndFlush(active)
 
-        val changes = DomainMountingChanges(
+        return DomainMountingChanges(
             closed = governed.map { toDomainMounting(it, active.bikeId, mountPointName(it.mountPointId, active.bikeId)) }
         )
-        return DomainAssemblyMountResult(assemblyMounting = mapper.map(active), changes = changes)
     }
 
     @Transactional
@@ -528,9 +553,9 @@ class AssemblyMountingService(
                     val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(outcome.mountPointId)
                     if (occupant != null && occupant.componentId != componentId && occupant.assemblyMountingId != null) {
                         DomainPlannedSlot(
-                            slotId = slotId, componentId = componentId, state = DomainPlannedSlotState.IMPOSSIBLE,
-                            reasonCode = DomainImpossibleReason.OCCUPIED_BY_GOVERNED_MOUNTING,
-                            reason = "Mount point is occupied by another assembly's governed mounting."
+                            slotId = slotId, componentId = componentId, state = DomainPlannedSlotState.RESOLVED,
+                            mountPointId = outcome.mountPointId, resolvedBy = outcome.resolvedBy,
+                            willDismountAssemblyMountingId = occupant.assemblyMountingId
                         )
                     } else {
                         val willDismount = if (occupant != null && occupant.componentId != componentId) occupant.componentId else null
@@ -557,6 +582,10 @@ class AssemblyMountingService(
     ): DomainMountingChanges {
         val bikeId = activeAssemblyMounting.bikeId
         val planned = planSlot(slotId, componentId, componentTypeId, assembly.positionId, bikeId, userAnswer)
+        if (planned.willDismountAssemblyMountingId != null) {
+            // a single member joining a mounted assembly must not silently dismount a whole other assembly
+            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED)
+        }
         when (planned.state) {
             DomainPlannedSlotState.UNRESOLVED -> throw ServiceException(
                 ErrorCodesDomain.UNRESOLVED_SLOTS, null, mapOf("candidates" to planned.candidates)
@@ -564,7 +593,6 @@ class AssemblyMountingService(
             DomainPlannedSlotState.IMPOSSIBLE -> throw ServiceException(
                 when (planned.reasonCode) {
                     DomainImpossibleReason.MEMBER_MOUNTED_ELSEWHERE -> ErrorCodesDomain.MEMBER_MOUNTED_ELSEWHERE
-                    DomainImpossibleReason.OCCUPIED_BY_GOVERNED_MOUNTING -> ErrorCodesDomain.MOUNTING_GOVERNED
                     else -> ErrorCodesDomain.SLOT_UNMOUNTABLE
                 }
             )

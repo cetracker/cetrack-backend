@@ -5,6 +5,7 @@ import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMembership
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMounting
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyMountResult
 import de.cyclingsir.cetrack.assembly.domain.DomainAssemblySlot
+import de.cyclingsir.cetrack.assembly.domain.DomainAssemblyToDismount
 import de.cyclingsir.cetrack.assembly.domain.DomainCandidate
 import de.cyclingsir.cetrack.assembly.domain.DomainImpossibleReason
 import de.cyclingsir.cetrack.assembly.domain.DomainMountPlan
@@ -20,6 +21,7 @@ import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMountResult
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyMounting
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblySlot
 import de.cyclingsir.cetrack.infrastructure.api.model.AssemblySlotInput
+import de.cyclingsir.cetrack.infrastructure.api.model.AssemblyToDismount
 import de.cyclingsir.cetrack.infrastructure.api.model.Candidate
 import de.cyclingsir.cetrack.infrastructure.api.model.MountPlan
 import de.cyclingsir.cetrack.infrastructure.api.model.PlannedSlot
@@ -97,7 +99,14 @@ class AssemblyDomain2ApiMapper(
         bikeId = domain.bikeId,
         at = domain.at.atOffset(ZoneOffset.UTC),
         mountable = domain.mountable,
-        slots = domain.slots.map(::map)
+        slots = domain.slots.map(::map),
+        assembliesToDismount = domain.assembliesToDismount.map(::map)
+    )
+
+    fun map(domain: DomainAssemblyToDismount): AssemblyToDismount = AssemblyToDismount(
+        assemblyId = domain.assemblyId,
+        assemblyMountingId = domain.assemblyMountingId,
+        name = domain.name
     )
 
     fun map(domain: DomainPlannedSlot): PlannedSlot = PlannedSlot(
@@ -124,7 +133,6 @@ class AssemblyDomain2ApiMapper(
                 DomainImpossibleReason.NO_CANDIDATE -> PlannedSlot.ReasonCode.noCandidate
                 DomainImpossibleReason.POSITION_FILTER_EMPTY -> PlannedSlot.ReasonCode.positionFilterEmpty
                 DomainImpossibleReason.MEMBER_MOUNTED_ELSEWHERE -> PlannedSlot.ReasonCode.memberMountedElsewhere
-                DomainImpossibleReason.OCCUPIED_BY_GOVERNED_MOUNTING -> PlannedSlot.ReasonCode.occupiedByGovernedMounting
             }
         },
         reason = domain.reason
@@ -139,7 +147,8 @@ class AssemblyDomain2ApiMapper(
     fun map(domain: DomainAssemblyMountResult): AssemblyMountResult = AssemblyMountResult(
         assemblyMounting = map(domain.assemblyMounting),
         changes = mountingMapper.map(domain.changes),
-        rememberedSlotMappings = domain.rememberedSlotMappings.map(::map)
+        rememberedSlotMappings = domain.rememberedSlotMappings.map(::map),
+        dismountedAssemblyMountings = domain.dismountedAssemblyMountings.map(::map)
     )
 
 }
