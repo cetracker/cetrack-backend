@@ -541,18 +541,25 @@ paths:
         (ADR-0001 §1): every filled slot is resolved to one mount point
         (ADR-0003 - position filter, stored slot mapping, or a slotResolution
         passed here, which is then persisted as a slot mapping); all member
-        mountings are created/adopted in one transaction. A slot whose target
-        mount point is occupied by another assembly's governed mounting
-        overrides it: that other assembly's mounting (and all mountings it
-        governs) is dismounted as a unit at `at` before this assembly is
-        mounted - reported in the result as dismountedAssemblyMountings. If
-        `at` is not after the start of every mounting this would close, the
-        whole mount is rejected with 409 MOUNTING_BACKDATED and nothing is
-        dismounted. Any other conflict rejects the whole mount with 409 -
-        final codes: ASSEMBLY_INCOMPLETE, UNRESOLVED_SLOTS (candidates in
-        details), SLOT_UNMOUNTABLE, SLOT_TARGET_COLLISION,
-        MEMBER_MOUNTED_ELSEWHERE, MOUNTING_BACKDATED,
-        ASSEMBLY_ALREADY_MOUNTED, BIKE_RETIRED.
+        mountings are created/adopted in one transaction. Occupancy at the
+        resolved mount point is evaluated as of `at`, not now (CE-0120): a
+        mounting active at `at` (open, or already closed but containing `at`)
+        is what "occupies" the point. A slot whose target mount point is
+        occupied at `at` by another assembly's governed mounting overrides
+        it: that other assembly's mounting (and all mountings it governs) is
+        dismounted as a unit at `at` before this assembly is mounted -
+        reported in the result as dismountedAssemblyMountings; if that other
+        assembly's mounting is already closed, nothing is touched and the
+        mount collides instead (409 MOUNTING_OVERLAP), never silently
+        shortening closed governed history. If `at` is not after the start of
+        the occupant mounting it would close, the whole mount is rejected
+        with 400 MOUNTING_BACKDATED and nothing is dismounted; a mounting
+        that only started after `at` is not "the occupant" at all and instead
+        collides on insert (409 MOUNTING_OVERLAP). Any other conflict rejects
+        the whole mount with 409 - final codes: ASSEMBLY_INCOMPLETE,
+        UNRESOLVED_SLOTS (candidates in details), SLOT_UNMOUNTABLE,
+        SLOT_TARGET_COLLISION, MEMBER_MOUNTED_ELSEWHERE, MOUNTING_BACKDATED,
+        MOUNTING_OVERLAP, ASSEMBLY_ALREADY_MOUNTED, BIKE_RETIRED.
       tags:
         - Assemblies
       requestBody:
