@@ -59,7 +59,7 @@ class AssemblyMountingService(
             if (componentId == null) {
                 DomainPlannedSlot(slotId = slot.slotId, state = DomainPlannedSlotState.EMPTY)
             } else {
-                planSlot(slot.slotId, componentId, slot.componentTypeId, assembly.positionId, bikeId, userAnswer = null)
+                planSlot(slot.slotId, componentId, slot.componentTypeId, assembly.positionId, bikeId, at, userAnswer = null)
             }
         }
         val mountable = planned.isNotEmpty() && planned.all { it.state == DomainPlannedSlotState.RESOLVED }
@@ -97,7 +97,7 @@ class AssemblyMountingService(
 
         val planned = activeSlots.map { slot ->
             planSlot(
-                slot.slotId, slot.memberComponentId!!, slot.componentTypeId, assembly.positionId, bikeId,
+                slot.slotId, slot.memberComponentId!!, slot.componentTypeId, assembly.positionId, bikeId, at,
                 userAnswer = answers[slot.slotId]
             )
         }
@@ -129,7 +129,7 @@ class AssemblyMountingService(
         // backdate pre-check before any mutation - direct (non-governed) occupants this mount would evict;
         // governed occupants are covered by validateAssemblyMountingClosable below
         planned.forEach { slot ->
-            val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(slot.mountPointId!!)
+            val occupant = mountingRepository.findByMountPointIdActiveAt(slot.mountPointId!!, at)
             if (occupant != null && occupant.componentId != slot.componentId && occupant.assemblyMountingId == null
                 && !at.isAfter(occupant.mountedAt)) {
                 throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED,
@@ -137,9 +137,13 @@ class AssemblyMountingService(
             }
         }
 
-        // override: dismount every blocking assembly as a unit, fully validated before any of them mutate
+        // override: dismount every blocking assembly as a unit, fully validated before any of them mutate.
+        // A blocker already closed (occupant found closed-but-containing-T, CE-0120) is excluded -
+        // there's nothing to close, and touching it would corrupt its historical dismountedAt;
+        // the insert below collides with its untouched governed row on GiST instead.
         val blockingAssemblyMountings = planned.mapNotNull { it.willDismountAssemblyMountingId }.distinct()
             .map { assemblyMountingRepository.findById(it).orElseThrow() }
+            .filter { it.dismountedAt == null }
         blockingAssemblyMountings.forEach { validateAssemblyMountingClosable(it, at) }
         val dismountChanges = blockingAssemblyMountings.map { closeAssemblyMounting(it, at) }
 
@@ -156,14 +160,18 @@ class AssemblyMountingService(
         planned.forEach { slot ->
             val mountPointId = slot.mountPointId!!
             val componentId = slot.componentId!!
-            val ownMounting = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
-            if (ownMounting != null && ownMounting.mountPointId == mountPointId) {
+            val ownMounting = mountingRepository.findByComponentIdActiveAt(componentId, at)
+            if (ownMounting != null && ownMounting.dismountedAt == null && ownMounting.mountPointId == mountPointId) {
                 ownMounting.assemblyMountingId = assemblyMountingId
                 ownMounting.adopted = true
                 toClose.add(ownMounting) // reused as the "touch" list, saved below
             } else {
-                val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)
-                if (occupant != null) {
+                // an open governed occupant was already closed above via closeAssemblyMounting and
+                // is no longer active at T, so it won't be found here - only a direct occupant is
+                // ever evicted in this branch. A closed-governed occupant (blocker excluded above)
+                // is left untouched; the insert below collides with it on GiST instead.
+                val occupant = mountingRepository.findByMountPointIdActiveAt(mountPointId, at)
+                if (occupant != null && occupant.assemblyMountingId == null) {
                     occupant.dismountedAt = at
                     toClose.add(occupant)
                     closed.add(occupant)
@@ -522,6 +530,7 @@ class AssemblyMountingService(
         componentTypeId: UUID,
         assemblyPositionId: UUID?,
         bikeId: UUID,
+        at: Instant,
         userAnswer: UUID?,
     ): DomainPlannedSlot {
         val candidateEntities = mountPointRepository.findAllByBikeIdAndComponentTypeId(bikeId, componentTypeId)
@@ -542,7 +551,7 @@ class AssemblyMountingService(
                 candidates = outcome.candidates.map { DomainCandidate(it.mountPointId, it.mountPointName, it.positionId) }
             )
             is SlotResolutionOutcome.Resolved -> {
-                val ownMounting = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
+                val ownMounting = mountingRepository.findByComponentIdActiveAt(componentId, at)
                 if (ownMounting != null && ownMounting.mountPointId != outcome.mountPointId) {
                     DomainPlannedSlot(
                         slotId = slotId, componentId = componentId, state = DomainPlannedSlotState.IMPOSSIBLE,
@@ -550,7 +559,7 @@ class AssemblyMountingService(
                         reason = "Component is mounted at a different mount point."
                     )
                 } else {
-                    val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(outcome.mountPointId)
+                    val occupant = mountingRepository.findByMountPointIdActiveAt(outcome.mountPointId, at)
                     if (occupant != null && occupant.componentId != componentId && occupant.assemblyMountingId != null) {
                         DomainPlannedSlot(
                             slotId = slotId, componentId = componentId, state = DomainPlannedSlotState.RESOLVED,
@@ -581,7 +590,7 @@ class AssemblyMountingService(
         userAnswer: UUID?,
     ): DomainMountingChanges {
         val bikeId = activeAssemblyMounting.bikeId
-        val planned = planSlot(slotId, componentId, componentTypeId, assembly.positionId, bikeId, userAnswer)
+        val planned = planSlot(slotId, componentId, componentTypeId, assembly.positionId, bikeId, from, userAnswer)
         if (planned.willDismountAssemblyMountingId != null) {
             // a single member joining a mounted assembly must not silently dismount a whole other assembly
             throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED)
@@ -599,14 +608,14 @@ class AssemblyMountingService(
             else -> Unit
         }
         val mountPointId = planned.mountPointId!!
-        val ownMounting = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
+        val ownMounting = mountingRepository.findByComponentIdActiveAt(componentId, from)
         val closed = mutableListOf<MountingEntity>()
-        if (ownMounting != null && ownMounting.mountPointId == mountPointId) {
+        if (ownMounting != null && ownMounting.dismountedAt == null && ownMounting.mountPointId == mountPointId) {
             ownMounting.assemblyMountingId = activeAssemblyMounting.id
             ownMounting.adopted = true
             mountingRepository.saveAndFlush(ownMounting)
         } else {
-            val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)
+            val occupant = mountingRepository.findByMountPointIdActiveAt(mountPointId, from)
             if (occupant != null) {
                 if (!from.isAfter(occupant.mountedAt)) {
                     throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED, "Occupant mounting started at ${occupant.mountedAt}.")
