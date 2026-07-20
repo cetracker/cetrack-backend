@@ -31,6 +31,14 @@ interface MountingRepository : JpaRepository<MountingEntity, UUID> {
 
     fun findByMountPointIdAndDismountedAtIsNull(mountPointId: UUID): MountingEntity?
 
+    /** The mounting occupying this component at T - open, or closed but containing T. CE-0120. */
+    @Query("SELECT m FROM mounting m WHERE m.componentId = :componentId AND m.mountedAt <= :at AND (m.dismountedAt IS NULL OR m.dismountedAt > :at)")
+    fun findByComponentIdActiveAt(@Param("componentId") componentId: UUID, @Param("at") at: Instant): MountingEntity?
+
+    /** The mounting occupying this mount point at T - open, or closed but containing T. CE-0120. */
+    @Query("SELECT m FROM mounting m WHERE m.mountPointId = :mountPointId AND m.mountedAt <= :at AND (m.dismountedAt IS NULL OR m.dismountedAt > :at)")
+    fun findByMountPointIdActiveAt(@Param("mountPointId") mountPointId: UUID, @Param("at") at: Instant): MountingEntity?
+
     /** Every Mounting an AssemblyMounting governs and hasn't closed yet - dismountAssembly closes them all. */
     fun findAllByAssemblyMountingIdAndDismountedAtIsNull(assemblyMountingId: UUID): List<MountingEntity>
 
