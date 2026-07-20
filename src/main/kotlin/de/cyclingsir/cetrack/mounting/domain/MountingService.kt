@@ -64,8 +64,8 @@ class MountingService(
             )
         }
 
-        val occupant = mountingRepository.findByMountPointIdAndDismountedAtIsNull(mountPointId)
-        val own = mountingRepository.findByComponentIdAndDismountedAtIsNull(componentId)
+        val occupant = mountingRepository.findByMountPointIdActiveAt(mountPointId, at)
+        val own = mountingRepository.findByComponentIdActiveAt(componentId, at)
         // ADR-0001 §2 (ruling 2b, first bullet): the component itself governed elsewhere is
         // rejected before the occupant is touched - auto-dismounting it here would silently
         // rip it out of its mounted assembly with no replacement joining. The degenerate
@@ -80,6 +80,12 @@ class MountingService(
                 throw ServiceException(ErrorCodesDomain.MOUNTING_BACKDATED,
                     "Mounting to close started at ${mounting.mountedAt}.")
             }
+        }
+        // a governed occupant already closed at T is a finished assembly episode - propagating
+        // membership from it, or silently shortening it, would rewrite governed history that
+        // only the assembly/corrections API may touch. CE-0120.
+        if (occupant != null && occupant.assemblyMountingId != null && occupant.dismountedAt != null) {
+            throw ServiceException(ErrorCodesDomain.MOUNTING_GOVERNED, "Occupant history is governed - correct the assembly history instead.")
         }
         // ADR-0001 §2 (ruling 2b, second bullet): a governed occupant of a MOUNTED assembly
         // propagates membership to the replacement instead of rejecting the mount.
