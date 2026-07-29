@@ -1,6 +1,7 @@
 package de.cyclingsir.cetrack.common.errorhandling
 
 import de.cyclingsir.cetrack.infrastructure.api.model.Error
+import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -54,6 +55,26 @@ class CentralExceptionHandler : ResponseEntityExceptionHandler() {
         return handleExceptionInternal(
             ex, ed, supplyHeaders(), HttpStatus.valueOf(ed.status), req
         )
+    }
+
+    /**
+     * @Min/@Max on query params (e.g. GET /reports/tours) fail before the
+     * controller method runs: ReportsApi is @Validated, so Spring Boot's
+     * ValidationAutoConfiguration wraps the ReportController bean in a
+     * MethodValidationInterceptor proxy that raises ConstraintViolationException
+     * (verified empirically against the real servlet stack) - must still render
+     * as the shared Error schema (every spec declares 400 as common-api.yaml
+     * Error), not Spring's default ProblemDetail/empty body.
+     */
+    @ExceptionHandler
+    fun handleConstraintViolation(ex: ConstraintViolationException): ResponseEntity<Any> {
+        val violations = ex.constraintViolations.joinToString("; ") {
+            "${it.propertyPath}: ${it.message}"
+        }
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Error(code = "DATA_INVALID", message = violations.ifBlank { "Request validation failed" }))
     }
 
     /**

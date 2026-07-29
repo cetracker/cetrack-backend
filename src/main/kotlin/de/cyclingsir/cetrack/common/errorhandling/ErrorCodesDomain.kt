@@ -89,6 +89,8 @@ enum class ErrorCodesDomain(
 
 //  Report domain (CE-0083)
     REPORT_SCOPE_INVALID(900, 400, "scope must be one of: components, bikes", "DATA_INVALID"),
+    REPORT_GRANULARITY_INVALID(901, 400, "granularity must be one of: month, year", "DATA_INVALID"),
+    REPORT_RANGE_INVALID(902, 400, "endYear/yearsBack is out of range", "DATA_INVALID"),
 
 //  Maintenance domain (CE-0088)
     MAINTENANCE_TASK_NOT_FOUND(1000, 404, "Maintenance task not found", "NOT_FOUND"),

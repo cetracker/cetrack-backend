@@ -151,6 +151,16 @@
         <Class name="de.cyclingsir.cetrack.common.errorhandling.ServiceException" />
         <Bug pattern="EI_EXPOSE_REP" />
     </Match>
+    <!-- Kotlin data class: availableYears/bikes/buckets Lists are read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.report.domain.DomainTourReport" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
+    <!-- Kotlin data class: items List is read-only via the List interface -->
+    <Match>
+        <Class name="de.cyclingsir.cetrack.report.domain.DomainTourBucket" />
+        <Bug pattern="EI_EXPOSE_REP" />
+    </Match>
     <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
     <Match>
         <Class name="de.cyclingsir.cetrack.component.rest.ComponentControllerTest" />
@@ -162,6 +172,10 @@
     </Match>
     <Match>
         <Class name="de.cyclingsir.cetrack.common.errorhandling.CentralExceptionHandlerTest" />
+        <Bug code="SA" />
+    </Match>
+    <Match>
+        <Class name="de.cyclingsir.cetrack.report.rest.ReportControllerTest" />
         <Bug code="SA" />
     </Match>
     <!-- Kotlin MockMvc/MockK initializer blocks generate SA_LOCAL_SELF_ASSIGNMENT in bytecode -->
