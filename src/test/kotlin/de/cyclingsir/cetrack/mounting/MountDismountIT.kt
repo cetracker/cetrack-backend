@@ -6,12 +6,12 @@ import de.cyclingsir.cetrack.bike.domain.DomainBike
 import de.cyclingsir.cetrack.bike.domain.DomainMountPoint
 import de.cyclingsir.cetrack.catalog.domain.CatalogService
 import de.cyclingsir.cetrack.catalog.domain.DomainComponentType
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.domain.ComponentService
 import de.cyclingsir.cetrack.component.domain.DomainComponent
 import de.cyclingsir.cetrack.component.domain.DomainComponentStatus
-import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.mounting.domain.MountingService
 import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.assertj.core.api.Assertions.assertThat

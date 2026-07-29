@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack.bike.domain
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -23,6 +24,10 @@ data class DomainBike(
     val priceCurrency: String? = null,
 
     val retiredAt: Instant? = null,
+
+    val retirementKind: DomainRetirementKind? = null,
+
+    val retirementNote: String? = null,
 
     val createdAt: Instant? = null
 )

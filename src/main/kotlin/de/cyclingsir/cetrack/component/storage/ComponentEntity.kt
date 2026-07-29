@@ -56,6 +56,9 @@ class ComponentEntity(
     @Column(length = 20)
     var retirementKind: String? = null,
 
+    @Column(length = 200)
+    var retirementNote: String? = null,
+
     @CreatedDate
     var createdAt: Instant? = null
 )

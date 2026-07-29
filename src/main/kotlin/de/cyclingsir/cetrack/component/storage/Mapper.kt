@@ -1,7 +1,7 @@
 package de.cyclingsir.cetrack.component.storage
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.component.domain.DomainComponent
-import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 
 /**
  * Manual mapping: retirementKind is a lowercase varchar in the schema
@@ -22,6 +22,7 @@ class ComponentDomain2StorageMapper {
         priceCurrency = domain.priceCurrency,
         retiredAt = domain.retiredAt,
         retirementKind = domain.retirementKind?.name?.lowercase(),
+        retirementNote = domain.retirementNote,
         createdAt = domain.createdAt
     )
 
@@ -38,6 +39,7 @@ class ComponentDomain2StorageMapper {
         priceCurrency = jpa.priceCurrency,
         retiredAt = jpa.retiredAt,
         retirementKind = jpa.retirementKind?.let { DomainRetirementKind.valueOf(it.uppercase()) },
+        retirementNote = jpa.retirementNote,
         createdAt = jpa.createdAt
     )
 }

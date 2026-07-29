@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.bike.domain
 import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
@@ -150,7 +151,7 @@ class BikeServiceTest {
     every { repository.saveAndFlush(entity) } returns entity
     every { mapper.map(entity) } returns bikeWith(model = "Tarmac", id = UUID_BIKE_A).copy(retiredAt = at)
 
-    val result = bikeService.retireBike(UUID_BIKE_A, at)
+    val result = bikeService.retireBike(UUID_BIKE_A, at, DomainRetirementKind.SCRAPPED)
 
     Assertions.assertEquals(at, entity.retiredAt)
     Assertions.assertEquals(at, result.retiredAt)
@@ -161,7 +162,7 @@ class BikeServiceTest {
     every { repository.findById(UUID_BIKE_A) } returns Optional.empty()
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
-      bikeService.retireBike(UUID_BIKE_A, Instant.now())
+      bikeService.retireBike(UUID_BIKE_A, Instant.now(), DomainRetirementKind.SCRAPPED)
     }
     Assertions.assertEquals(ErrorCodesDomain.BIKE_NOT_FOUND.code, ex.getError().code)
   }
@@ -173,7 +174,7 @@ class BikeServiceTest {
     every { repository.findById(UUID_BIKE_A) } returns Optional.of(entity)
 
     val ex = Assertions.assertThrows(ServiceException::class.java) {
-      bikeService.retireBike(UUID_BIKE_A, Instant.now())
+      bikeService.retireBike(UUID_BIKE_A, Instant.now(), DomainRetirementKind.SCRAPPED)
     }
     Assertions.assertEquals(ErrorCodesDomain.BIKE_ALREADY_RETIRED.code, ex.getError().code)
     Assertions.assertEquals(409, ex.getError().httpStatus)

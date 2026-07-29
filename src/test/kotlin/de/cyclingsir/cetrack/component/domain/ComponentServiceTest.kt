@@ -1,11 +1,14 @@
 package de.cyclingsir.cetrack.component.domain
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.storage.ComponentDomain2StorageMapper
+import de.cyclingsir.cetrack.component.storage.ComponentEntity
 import de.cyclingsir.cetrack.component.storage.ComponentRepository
 import io.mockk.every
 import io.mockk.mockk
+import java.util.Optional
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -49,6 +52,19 @@ class ComponentServiceTest {
 
         val ex = assertThrows<ServiceException> { service.addComponent(aComponent()) }
         assertEquals(ErrorCodesDomain.COMPONENT_DATA_INVALID, ex.getError())
+    }
+
+    @Test
+    fun `correctRetirement rejects a component that is not retired`() {
+        val id = UUID.randomUUID()
+        every { repository.findById(id) } returns Optional.of(
+            ComponentEntity(id = id, componentTypeId = UUID.randomUUID(), label = "front tire")
+        )
+
+        val ex = assertThrows<ServiceException> {
+            service.correctRetirement(id, DomainRetirementKind.SCRAPPED, null)
+        }
+        assertEquals(ErrorCodesDomain.COMPONENT_NOT_RETIRED, ex.getError())
     }
 
     @Test

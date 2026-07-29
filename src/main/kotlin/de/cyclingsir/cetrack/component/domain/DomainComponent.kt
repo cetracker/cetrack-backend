@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack.component.domain
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -10,10 +11,6 @@ import java.util.UUID
  */
 enum class DomainComponentStatus {
     IN_STOCK, IN_ASSEMBLY, MOUNTED, RETIRED
-}
-
-enum class DomainRetirementKind {
-    SCRAPPED, SOLD
 }
 
 data class DomainComponent(
@@ -29,6 +26,7 @@ data class DomainComponent(
     val priceCurrency: String? = null,
     val retiredAt: Instant? = null,
     val retirementKind: DomainRetirementKind? = null,
+    val retirementNote: String? = null,
     val status: DomainComponentStatus? = null,
     val directlyMounted: Boolean = false,
     val createdAt: Instant? = null

@@ -1,9 +1,12 @@
 package de.cyclingsir.cetrack.bike.rest
 
 import de.cyclingsir.cetrack.bike.domain.BikeService
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.Bike
 import de.cyclingsir.cetrack.infrastructure.api.model.BikeInput
+import de.cyclingsir.cetrack.infrastructure.api.model.CorrectRetirementRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.RetireBikeRequest
+import de.cyclingsir.cetrack.infrastructure.api.model.RetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.rest.BikesApi
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.Valid
@@ -52,5 +55,39 @@ class BikeController(private val service: BikeService, private val mapper: BikeD
         @PathVariable("bikeId") bikeId: UUID,
         @Valid @RequestBody retireBikeRequest: RetireBikeRequest
     ): ResponseEntity<Bike> =
-        ResponseEntity.ok(mapper.map(service.retireBike(bikeId, retireBikeRequest.at.toInstant())))
+        ResponseEntity.ok(
+            mapper.map(
+                service.retireBike(
+                    bikeId,
+                    retireBikeRequest.at.toInstant(),
+                    toDomainRetirementKind(retireBikeRequest.kind),
+                    retireBikeRequest.note,
+                )
+            )
+        )
+
+    override fun correctBikeRetirement(
+        @PathVariable("bikeId") bikeId: UUID,
+        @Valid @RequestBody correctRetirementRequest: CorrectRetirementRequest
+    ): ResponseEntity<Bike> =
+        ResponseEntity.ok(
+            mapper.map(
+                service.correctRetirement(
+                    bikeId,
+                    toDomainRetirementKind(correctRetirementRequest.kind),
+                    correctRetirementRequest.note,
+                )
+            )
+        )
+}
+
+private fun toDomainRetirementKind(kind: RetirementKind): DomainRetirementKind = when (kind) {
+    RetirementKind.scrapped -> DomainRetirementKind.SCRAPPED
+    RetirementKind.sold -> DomainRetirementKind.SOLD
+    RetirementKind.gifted -> DomainRetirementKind.GIFTED
+    RetirementKind.broken -> DomainRetirementKind.BROKEN
+    RetirementKind.lost -> DomainRetirementKind.LOST
+    RetirementKind.stolen -> DomainRetirementKind.STOLEN
+    RetirementKind.wornOut -> DomainRetirementKind.WORN_OUT
+    RetirementKind.other -> DomainRetirementKind.OTHER
 }

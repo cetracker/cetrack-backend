@@ -3,6 +3,7 @@ package de.cyclingsir.cetrack.bike.domain
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
 import de.cyclingsir.cetrack.bike.storage.BikeEntity
 import de.cyclingsir.cetrack.bike.storage.BikeRepository
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesService
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
@@ -90,20 +91,41 @@ class BikeService(private val repository: BikeRepository, private val mapper: Bi
     }
 
     /**
-     * retire(bike, at) - domain-model.md: a retired bike gets no new tours or
-     * mountings; existing mountings stay (no dismount precondition, unlike
-     * component retire). Backdatable per spec.
+     * retire(bike, at, kind, note) - domain-model.md: a retired bike gets no
+     * new tours or mountings; existing mountings stay (no dismount
+     * precondition, unlike component retire). Backdatable per spec.
      */
     @Transactional
-    fun retireBike(bikeId: UUID, at: Instant): DomainBike {
+    fun retireBike(bikeId: UUID, at: Instant, kind: DomainRetirementKind, note: String? = null): DomainBike {
         val existing = repository.findById(bikeId)
             .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
         if (existing.retiredAt != null) {
             throw ServiceException(ErrorCodesDomain.BIKE_ALREADY_RETIRED)
         }
         existing.retiredAt = at
+        existing.retirementKind = kind.name.lowercase()
+        existing.retirementNote = normalizeNote(note)
         return mapper.map(repository.saveAndFlush(existing))
     }
+
+    /**
+     * Full replacement of the retirement reason - never touches retiredAt.
+     * Bike retire has no preconditions to re-run, unlike component.
+     */
+    @Transactional
+    fun correctRetirement(bikeId: UUID, kind: DomainRetirementKind, note: String?): DomainBike {
+        val existing = repository.findById(bikeId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.BIKE_NOT_FOUND) }
+        if (existing.retiredAt == null) {
+            throw ServiceException(ErrorCodesDomain.BIKE_NOT_RETIRED, "Bike is not retired.")
+        }
+        existing.retirementKind = kind.name.lowercase()
+        existing.retirementNote = normalizeNote(note)
+        return mapper.map(repository.saveAndFlush(existing))
+    }
+
+    /** Blank isn't a third state distinct from absent. */
+    private fun normalizeNote(note: String?): String? = note?.trim()?.ifBlank { null }
 
     @Transactional
     fun deleteBike(bikeId: UUID) {

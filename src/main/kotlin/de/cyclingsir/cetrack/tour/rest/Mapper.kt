@@ -2,8 +2,10 @@ package de.cyclingsir.cetrack.tour.rest
 
 import com.syouth.kmapper.processor_annotations.Mapper
 import de.cyclingsir.cetrack.bike.domain.DomainBike
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.DomainMTTour
 import de.cyclingsir.cetrack.infrastructure.api.model.MTTour
+import de.cyclingsir.cetrack.infrastructure.api.model.RetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.Tour
 import de.cyclingsir.cetrack.infrastructure.api.model.TourCreateRequest
 import de.cyclingsir.cetrack.tour.domain.DomainTour
@@ -24,6 +26,31 @@ interface TourDomain2ApiMapperSupport {
     fun mapDuration2Int(d: Duration): Long = d.toSeconds()
     fun mapDomainSource2Api(s: TourSource): Tour.Source = Tour.Source.valueOf(s.name)
     fun mapApiSource2Domain(s: Tour.Source?): TourSource = s?.let { TourSource.valueOf(it.name) } ?: TourSource.MYTOURBOOK
+
+    /** Nested in DomainTour.bike/Tour.bike; kmapper can't auto-convert enum<->enum (CE-0126). */
+    fun mapDomainRetirementKind2Api(kind: DomainRetirementKind?): RetirementKind? = when (kind) {
+        null -> null
+        DomainRetirementKind.SCRAPPED -> RetirementKind.scrapped
+        DomainRetirementKind.SOLD -> RetirementKind.sold
+        DomainRetirementKind.GIFTED -> RetirementKind.gifted
+        DomainRetirementKind.BROKEN -> RetirementKind.broken
+        DomainRetirementKind.LOST -> RetirementKind.lost
+        DomainRetirementKind.STOLEN -> RetirementKind.stolen
+        DomainRetirementKind.WORN_OUT -> RetirementKind.wornOut
+        DomainRetirementKind.OTHER -> RetirementKind.other
+    }
+
+    fun mapApiRetirementKind2Domain(kind: RetirementKind?): DomainRetirementKind? = when (kind) {
+        null -> null
+        RetirementKind.scrapped -> DomainRetirementKind.SCRAPPED
+        RetirementKind.sold -> DomainRetirementKind.SOLD
+        RetirementKind.gifted -> DomainRetirementKind.GIFTED
+        RetirementKind.broken -> DomainRetirementKind.BROKEN
+        RetirementKind.lost -> DomainRetirementKind.LOST
+        RetirementKind.stolen -> DomainRetirementKind.STOLEN
+        RetirementKind.wornOut -> DomainRetirementKind.WORN_OUT
+        RetirementKind.other -> DomainRetirementKind.OTHER
+    }
 /*
     fun mapNullableBike2NullableBikeId(b: DomainBike?): UUID? = b?.id
     fun mapNullableBikeId2NullableDomainBike(id: UUID?): DomainBike? = id?.let{

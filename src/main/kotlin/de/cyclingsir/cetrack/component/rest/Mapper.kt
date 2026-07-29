@@ -1,11 +1,12 @@
 package de.cyclingsir.cetrack.component.rest
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.component.domain.DomainComponent
 import de.cyclingsir.cetrack.component.domain.DomainComponentStatus
-import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.Component
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentInput
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentStatus
+import de.cyclingsir.cetrack.infrastructure.api.model.RetirementKind
 import java.time.ZoneOffset
 
 /**
@@ -25,7 +26,8 @@ class ComponentDomain2ApiMapper {
         price = domain.price,
         priceCurrency = domain.priceCurrency,
         retiredAt = domain.retiredAt?.atOffset(ZoneOffset.UTC),
-        retirementKind = domain.retirementKind?.let { Component.RetirementKind.forValue(it.name.lowercase()) },
+        retirementKind = domain.retirementKind?.let(::map),
+        retirementNote = domain.retirementNote,
         status = domain.status?.let(::map),
         directlyMounted = domain.directlyMounted,
         createdAt = domain.createdAt?.atOffset(ZoneOffset.UTC)
@@ -55,5 +57,27 @@ class ComponentDomain2ApiMapper {
         ComponentStatus.inAssembly -> DomainComponentStatus.IN_ASSEMBLY
         ComponentStatus.mounted -> DomainComponentStatus.MOUNTED
         ComponentStatus.retired -> DomainComponentStatus.RETIRED
+    }
+
+    fun map(kind: DomainRetirementKind): RetirementKind = when (kind) {
+        DomainRetirementKind.SCRAPPED -> RetirementKind.scrapped
+        DomainRetirementKind.SOLD -> RetirementKind.sold
+        DomainRetirementKind.GIFTED -> RetirementKind.gifted
+        DomainRetirementKind.BROKEN -> RetirementKind.broken
+        DomainRetirementKind.LOST -> RetirementKind.lost
+        DomainRetirementKind.STOLEN -> RetirementKind.stolen
+        DomainRetirementKind.WORN_OUT -> RetirementKind.wornOut
+        DomainRetirementKind.OTHER -> RetirementKind.other
+    }
+
+    fun map(kind: RetirementKind): DomainRetirementKind = when (kind) {
+        RetirementKind.scrapped -> DomainRetirementKind.SCRAPPED
+        RetirementKind.sold -> DomainRetirementKind.SOLD
+        RetirementKind.gifted -> DomainRetirementKind.GIFTED
+        RetirementKind.broken -> DomainRetirementKind.BROKEN
+        RetirementKind.lost -> DomainRetirementKind.LOST
+        RetirementKind.stolen -> DomainRetirementKind.STOLEN
+        RetirementKind.wornOut -> DomainRetirementKind.WORN_OUT
+        RetirementKind.other -> DomainRetirementKind.OTHER
     }
 }

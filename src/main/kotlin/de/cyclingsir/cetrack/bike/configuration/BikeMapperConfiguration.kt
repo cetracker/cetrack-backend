@@ -1,9 +1,7 @@
 package de.cyclingsir.cetrack.bike.configuration
 
 import de.cyclingsir.cetrack.bike.rest.BikeDomain2ApiMapper
-import de.cyclingsir.cetrack.bike.rest.BikeDomain2ApiMapperImpl
 import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapper
-import de.cyclingsir.cetrack.bike.storage.BikeDomain2StorageMapperImpl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -14,8 +12,8 @@ import org.springframework.context.annotation.Configuration
 class BikeMapperConfiguration {
 
     @Bean
-    fun getBikeDomain2ApiMapper() : BikeDomain2ApiMapper = BikeDomain2ApiMapperImpl()
+    fun getBikeDomain2ApiMapper() : BikeDomain2ApiMapper = BikeDomain2ApiMapper()
 
     @Bean
-    fun getBikeDomain2StorageMapper() : BikeDomain2StorageMapper = BikeDomain2StorageMapperImpl()
+    fun getBikeDomain2StorageMapper() : BikeDomain2StorageMapper = BikeDomain2StorageMapper()
 }

@@ -2,18 +2,26 @@ package de.cyclingsir.cetrack.component
 
 import de.cyclingsir.cetrack.catalog.domain.CatalogService
 import de.cyclingsir.cetrack.catalog.domain.DomainComponentType
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.domain.ComponentService
 import de.cyclingsir.cetrack.component.domain.DomainComponent
 import de.cyclingsir.cetrack.component.domain.DomainComponentStatus
-import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.support.PostgreSQLContainerIT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.context.WebApplicationContext
 import java.time.Instant
 import java.util.UUID
 
@@ -22,6 +30,9 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
     @Autowired private lateinit var service: ComponentService
     @Autowired private lateinit var catalogService: CatalogService
     @Autowired private lateinit var jdbc: JdbcTemplate
+    @Autowired private lateinit var wac: WebApplicationContext
+
+    private val mvc: MockMvc by lazy { MockMvcBuilders.webAppContextSetup(wac).build() }
 
     private fun newType(): UUID =
         catalogService.addComponentType(DomainComponentType(name = "type-${UUID.randomUUID()}")).id!!
@@ -211,5 +222,69 @@ class ComponentCrudIT : PostgreSQLContainerIT() {
             service.retireComponent(free.id, Instant.now(), DomainRetirementKind.SOLD)
         }
         assertThat(exAgain.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_RETIRED)
+    }
+
+    @Test
+    fun `correctRetirement replaces kind and note, clears note by omission, blank note normalises to null`() {
+        val component = newComponent()
+        val retired = service.retireComponent(
+            component.id!!, Instant.parse("2025-01-01T00:00:00Z"), DomainRetirementKind.SOLD, "sold to Jan"
+        )
+
+        val corrected = service.correctRetirement(retired.id!!, DomainRetirementKind.GIFTED, "given to a friend")
+        assertThat(corrected.retirementKind).isEqualTo(DomainRetirementKind.GIFTED)
+        assertThat(corrected.retirementNote).isEqualTo("given to a friend")
+        assertThat(corrected.retiredAt).isEqualTo(retired.retiredAt)
+
+        val noteCleared = service.correctRetirement(retired.id, DomainRetirementKind.GIFTED, null)
+        assertThat(noteCleared.retirementNote).isNull()
+
+        val blankNormalised = service.correctRetirement(retired.id, DomainRetirementKind.OTHER, "   ")
+        assertThat(blankNormalised.retirementNote).isNull()
+    }
+
+    @Test
+    fun `correctRetirement rejects a component that is not retired`() {
+        val component = newComponent()
+        val ex = assertThrows<ServiceException> {
+            service.correctRetirement(component.id!!, DomainRetirementKind.SCRAPPED, null)
+        }
+        assertThat(ex.getError()).isEqualTo(ErrorCodesDomain.COMPONENT_NOT_RETIRED)
+    }
+
+    @Test
+    fun `correctRetirement never re-runs the retire preconditions`() {
+        val typeId = newType()
+        val component = newComponent(typeId)
+        val retired = service.retireComponent(component.id!!, Instant.parse("2025-01-01T00:00:00Z"), DomainRetirementKind.SCRAPPED)
+        // pathological state reachable only by seeding raw SQL - proves correctRetirement doesn't
+        // check hasActiveMounting/hasActiveMembership the way retireComponent does.
+        seedMounting(retired.id!!, typeId)
+
+        val corrected = service.correctRetirement(retired.id, DomainRetirementKind.SOLD, "resold")
+        assertThat(corrected.retirementKind).isEqualTo(DomainRetirementKind.SOLD)
+        assertThat(corrected.retiredAt).isEqualTo(retired.retiredAt)
+        assertThat(service.getComponent(retired.id).status).isEqualTo(DomainComponentStatus.RETIRED)
+    }
+
+    @Test
+    fun `all eight retirement kinds round-trip over REST against real Postgres`() {
+        val kinds = listOf("scrapped", "sold", "gifted", "broken", "lost", "stolen", "wornOut", "other")
+        for (kind in kinds) {
+            val component = newComponent()
+            mvc.perform(
+                post("/components/${component.id}/action/retire")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""{"at":"2025-01-01T00:00:00Z","kind":"$kind","note":"note for $kind"}""")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.retirementKind").value(kind))
+                .andExpect(jsonPath("$.retirementNote").value("note for $kind"))
+
+            mvc.perform(get("/components/${component.id}"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.retirementKind").value(kind))
+                .andExpect(jsonPath("$.retirementNote").value("note for $kind"))
+        }
     }
 }

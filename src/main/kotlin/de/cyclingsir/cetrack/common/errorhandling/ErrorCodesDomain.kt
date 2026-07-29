@@ -16,6 +16,7 @@ enum class ErrorCodesDomain(
     BIKE_NOT_IDENTIFIABLE(304, 400, "A bike must have at least a name or a model", "BIKE_NOT_IDENTIFIABLE"),
     BIKE_PRICE_CURRENCY_MISMATCH(305, 400, "Purchase price and currency code must be provided together", "PRICE_CURRENCY_MISMATCH"),
     BIKE_ALREADY_RETIRED(306, 409, "Bike is already retired", "BIKE_ALREADY_RETIRED"),
+    BIKE_NOT_RETIRED(307, 409, "Bike is not retired", "NOT_RETIRED"),
 
 //  Tour domain
     TOUR_DUPLICATE(400, 409, "Tour already exists", "TOUR_DUPLICATE"),
@@ -39,6 +40,7 @@ enum class ErrorCodesDomain(
     COMPONENT_IN_USE(603, 409, "Component was mounted or an assembly member; retire it instead of deleting", "IN_USE"),
     COMPONENT_RETIRED(604, 409, "Component is retired", "COMPONENT_RETIRED"),
     RETIRE_PRECONDITION_FAILED(605, 409, "Component still has an active mounting or assembly membership", "RETIRE_PRECONDITION_FAILED"),
+    COMPONENT_NOT_RETIRED(606, 409, "Component is not retired", "NOT_RETIRED"),
 
 //  Catalog domain (CE-0083)
     COMPONENT_TYPE_NOT_FOUND(700, 404, "Component type not found", "NOT_FOUND"),

@@ -1,10 +1,10 @@
 package de.cyclingsir.cetrack.component.rest
 
 import de.cyclingsir.cetrack.component.domain.ComponentService
-import de.cyclingsir.cetrack.component.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.infrastructure.api.model.Component
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentInput
 import de.cyclingsir.cetrack.infrastructure.api.model.ComponentStatus
+import de.cyclingsir.cetrack.infrastructure.api.model.CorrectRetirementRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.DismountRequest
 import de.cyclingsir.cetrack.infrastructure.api.model.MountingChanges
 import de.cyclingsir.cetrack.infrastructure.api.model.RetireComponentRequest
@@ -72,11 +72,24 @@ class ComponentController(
         @PathVariable("componentId") componentId: UUID,
         @Valid @RequestBody retireComponentRequest: RetireComponentRequest
     ): ResponseEntity<Component> {
-        val kind = when (retireComponentRequest.kind) {
-            RetireComponentRequest.Kind.scrapped -> DomainRetirementKind.SCRAPPED
-            RetireComponentRequest.Kind.sold -> DomainRetirementKind.SOLD
-        }
-        val retired = service.retireComponent(componentId, retireComponentRequest.at.toInstant(), kind)
+        val retired = service.retireComponent(
+            componentId,
+            retireComponentRequest.at.toInstant(),
+            mapper.map(retireComponentRequest.kind),
+            retireComponentRequest.note,
+        )
         return ResponseEntity.ok(mapper.map(retired))
+    }
+
+    override fun correctComponentRetirement(
+        @PathVariable("componentId") componentId: UUID,
+        @Valid @RequestBody correctRetirementRequest: CorrectRetirementRequest
+    ): ResponseEntity<Component> {
+        val corrected = service.correctRetirement(
+            componentId,
+            mapper.map(correctRetirementRequest.kind),
+            correctRetirementRequest.note,
+        )
+        return ResponseEntity.ok(mapper.map(corrected))
     }
 }

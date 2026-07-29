@@ -1,5 +1,6 @@
 package de.cyclingsir.cetrack.component.domain
 
+import de.cyclingsir.cetrack.common.domain.DomainRetirementKind
 import de.cyclingsir.cetrack.common.errorhandling.ErrorCodesDomain
 import de.cyclingsir.cetrack.common.errorhandling.ServiceException
 import de.cyclingsir.cetrack.component.storage.ComponentDomain2StorageMapper
@@ -115,11 +116,16 @@ class ComponentService(
     }
 
     /**
-     * retire(component, at, scrapped|sold) - domain-model.md §4: requires no
+     * retire(component, at, kind, note) - domain-model.md §4: requires no
      * active Mounting and no active AssemblyMembership.
      */
     @Transactional
-    fun retireComponent(componentId: UUID, at: Instant, kind: DomainRetirementKind): DomainComponent {
+    fun retireComponent(
+        componentId: UUID,
+        at: Instant,
+        kind: DomainRetirementKind,
+        note: String? = null,
+    ): DomainComponent {
         val existing = repository.findById(componentId)
             .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND) }
         if (existing.retiredAt != null) {
@@ -135,9 +141,31 @@ class ComponentService(
         }
         existing.retiredAt = at
         existing.retirementKind = kind.name.lowercase()
+        existing.retirementNote = normalizeNote(note)
         val entity = repository.saveAndFlush(existing)
         return mapper.map(entity).copy(status = DomainComponentStatus.RETIRED)
     }
+
+    /**
+     * Full replacement of the retirement reason - never touches retiredAt and
+     * never re-runs the retire preconditions above (correcting a reason can't
+     * un-retire or re-retire a component).
+     */
+    @Transactional
+    fun correctRetirement(componentId: UUID, kind: DomainRetirementKind, note: String?): DomainComponent {
+        val existing = repository.findById(componentId)
+            .orElseThrow { ServiceException(ErrorCodesDomain.COMPONENT_NOT_FOUND) }
+        if (existing.retiredAt == null) {
+            throw ServiceException(ErrorCodesDomain.COMPONENT_NOT_RETIRED, "Component is not retired.")
+        }
+        existing.retirementKind = kind.name.lowercase()
+        existing.retirementNote = normalizeNote(note)
+        val entity = repository.saveAndFlush(existing)
+        return mapper.map(entity).copy(status = DomainComponentStatus.RETIRED)
+    }
+
+    /** Blank isn't a third state distinct from absent. */
+    private fun normalizeNote(note: String?): String? = note?.trim()?.ifBlank { null }
 
     /** The display identity must not be blank (successor of the old part rule). */
     private fun requireIdentifiable(component: DomainComponent) {
