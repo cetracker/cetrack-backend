@@ -223,7 +223,7 @@ val kMapperVersion = "1.3.0"
 val kotlinLoggingVersion = "8.0.4"
 val swaggerVersion = "2.2.52"
 val mockKVersion = "1.14.11"
-val byeBuddyVersion = "1.18.9"
+val byeBuddyVersion = "1.18.11"
 val derbyVersion = "10.17.1.0"
 val commonsCompressVersion = "1.28.0"
 
