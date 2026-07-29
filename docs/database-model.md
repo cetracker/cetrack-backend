@@ -25,6 +25,8 @@ erDiagram
         string price
         char3 price_currency
         datetime retired_at "NULL = active"
+        string retirement_kind "NULL allowed - legacy retired bikes have none"
+        string retirement_note "NULL allowed"
     }
     mount_point {
         id id PK
@@ -46,7 +48,8 @@ erDiagram
         string price
         char3 price_currency
         datetime retired_at
-        string retirement_kind
+        string retirement_kind "scrapped, sold, gifted, broken, lost, stolen, worn_out, other"
+        string retirement_note "NULL allowed"
     }
     component_assembly {
         id id PK
