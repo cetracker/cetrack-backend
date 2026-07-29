@@ -202,6 +202,39 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /components/{componentId}/action/correctRetirement:
+    parameters:
+      - $ref: '#/components/parameters/componentId'
+    post:
+      operationId: correctComponentRetirement
+      description: >
+        Administrative correction of the retirement reason. Full replacement:
+        kind is required, an omitted note clears any existing note. Precondition:
+        the component must currently be retired - violation returns 409. Never
+        changes retiredAt or re-runs the retire preconditions.
+      tags:
+        - Components
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './common-api.yaml#/components/schemas/CorrectRetirementRequest'
+      responses:
+        '200':
+          description: corrected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /mountings:
     get:
       operationId: getMountings
@@ -429,12 +462,17 @@ components:
           readOnly: true
           description: set via the retire action only
         retirementKind:
-          type: string
-          enum:
-            - scrapped
-            - sold
+          allOf:
+            - $ref: './common-api.yaml#/components/schemas/RetirementKind'
           readOnly: true
-          description: set via the retire action only
+          description: >
+            set via the retire/correctRetirement actions only; absent on
+            components retired before this field existed
+        retirementNote:
+          type: string
+          maxLength: 200
+          readOnly: true
+          description: set via the retire/correctRetirement actions only
         status:
           allOf:
             - $ref: '#/components/schemas/ComponentStatus'
@@ -508,10 +546,11 @@ components:
           format: date-time
           description: retirement time; backdatable
         kind:
+          $ref: './common-api.yaml#/components/schemas/RetirementKind'
+        note:
           type: string
-          enum:
-            - scrapped
-            - sold
+          maxLength: 200
+          description: optional free text; blank is normalised to absent
     CorrectMountingRequest:
       type: object
       description: >

@@ -151,6 +151,41 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /bikes/{bikeId}/action/correctRetirement:
+    parameters:
+      - $ref: '#/components/parameters/bikeId'
+    post:
+      operationId: correctBikeRetirement
+      description: >
+        Administrative correction of the retirement reason. Full replacement:
+        kind is required, an omitted note clears any existing note. Precondition:
+        the bike must currently be retired - violation returns 409. Never
+        changes retiredAt.
+      tags:
+        - Bikes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './common-api.yaml#/components/schemas/CorrectRetirementRequest'
+      responses:
+        '200':
+          description: corrected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /bikes/{bikeId}/mountPoints:
     parameters:
       - $ref: '#/components/parameters/bikeId'
@@ -397,6 +432,18 @@ components:
           format: date-time
           readOnly: true
           description: set via the retire action only
+        retirementKind:
+          allOf:
+            - $ref: './common-api.yaml#/components/schemas/RetirementKind'
+          readOnly: true
+          description: >
+            set via the retire/correctRetirement actions only; absent on
+            bikes retired before this field existed
+        retirementNote:
+          type: string
+          maxLength: 200
+          readOnly: true
+          description: set via the retire/correctRetirement actions only
         createdAt:
           type: string
           format: date-time
@@ -430,11 +477,18 @@ components:
       type: object
       required:
         - at
+        - kind
       properties:
         at:
           type: string
           format: date-time
           description: retirement time; backdatable
+        kind:
+          $ref: './common-api.yaml#/components/schemas/RetirementKind'
+        note:
+          type: string
+          maxLength: 200
+          description: optional free text; blank is normalised to absent
     MountPoint:
       type: object
       description: >

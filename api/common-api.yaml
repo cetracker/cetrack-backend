@@ -35,7 +35,7 @@ components:
       properties:
         code:
           type: string
-          description: stable machine-readable error code (e.g. TYPE_MISMATCH, COMPONENT_RETIRED, MOUNTING_OVERLAP, UNRESOLVED_SLOTS, MEMBER_MOUNTED_ELSEWHERE, ASSEMBLY_INCOMPLETE, IN_USE, ASSEMBLY_MEMBER_GUIDED_CHOICE, UNAUTHORIZED, INVALID_PIN, TOO_MANY_ATTEMPTS, GATE_DISABLED)
+          description: stable machine-readable error code (e.g. TYPE_MISMATCH, COMPONENT_RETIRED, NOT_RETIRED, MOUNTING_OVERLAP, UNRESOLVED_SLOTS, MEMBER_MOUNTED_ELSEWHERE, ASSEMBLY_INCOMPLETE, IN_USE, ASSEMBLY_MEMBER_GUIDED_CHOICE, UNAUTHORIZED, INVALID_PIN, TOO_MANY_ATTEMPTS, GATE_DISABLED)
         message:
           type: string
           description: human-readable explanation
@@ -141,3 +141,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MembershipChange'
+    RetirementKind:
+      type: string
+      description: why an item left the fleet
+      enum:
+        - scrapped
+        - sold
+        - gifted
+        - broken
+        - lost
+        - stolen
+        - wornOut
+        - other
+    CorrectRetirementRequest:
+      type: object
+      description: >
+        Full replacement of the retirement reason; an omitted note clears any
+        existing note. The retirement time is not correctable here.
+      required:
+        - kind
+      properties:
+        kind:
+          $ref: '#/components/schemas/RetirementKind'
+        note:
+          type: string
+          maxLength: 200

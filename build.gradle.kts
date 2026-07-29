@@ -115,6 +115,8 @@ val openApiSharedFiles = listOf(
     "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/MountingChanges.kt",
     "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/MembershipChange.kt",
     "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/SlotMapping.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/RetirementKind.kt",
+    "src/main/kotlin/de/cyclingsir/cetrack/infrastructure/api/model/CorrectRetirementRequest.kt",
     // divergent per-spec enum converters; dispensable because enum constant names equal the
     // wire values, so Spring's default String->enum binding covers the query params
     "src/main/kotlin/org/openapitools/configuration/EnumConverterConfiguration.kt"
