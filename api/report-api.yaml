@@ -88,6 +88,66 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /reports/tours:
+    get:
+      tags:
+        - Reports
+      operationId: getTourReport
+      description: >
+        Per-time-bucket x per-bike tour aggregates for the report bar chart
+        (CE-0127). Tours are bucketed by their startYear/startMonth (the
+        rider-local calendar as reported by tour-api), not by the UTC instant of
+        startedAt. Buckets with no tours are omitted; the client fills the axis
+        from granularity/endYear/yearsBack and renders the gaps as zero. All
+        three metrics are always returned so the client can switch metrics
+        without refetching. Always 200 with a JSON object - an empty range
+        yields buckets: []; never 204. The response is bounded by
+        yearsBack <= 20 (at most 240 buckets), so no pagination is needed.
+      parameters:
+        - name: granularity
+          in: query
+          required: false
+          description: Bucket width. Unknown values are rejected with 400.
+          schema:
+            type: string
+            enum: [month, year]
+            default: month
+        - name: endYear
+          in: query
+          required: false
+          description: >
+            Last (most recent) year included. Defaults to the newest year that
+            has tours, so the first request needs no prior knowledge; that year
+            is always present in availableYears.
+          schema:
+            type: integer
+            format: int16
+            minimum: 1970
+            maximum: 2200
+        - name: yearsBack
+          in: query
+          required: false
+          description: >
+            Number of years covered, counting back from and including endYear:
+            startYear = endYear - yearsBack + 1. month granularity yields
+            yearsBack x 12 buckets.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 1
+      responses:
+        '200':
+          description: o.k.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TourReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   responses:
     BadRequest:
@@ -163,3 +223,105 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/MileageItem'
+    TourReport:
+      type: object
+      description: >
+        Chart-shaped projection: a series list (bikes) plus the buckets that
+        stack over it.
+      required:
+        - availableYears
+        - bikes
+        - buckets
+      properties:
+        availableYears:
+          type: array
+          uniqueItems: true
+          description: >
+            Every year with at least one tour, newest first, independent of the
+            requested range; drives the end-year picker.
+          items:
+            type: integer
+            format: int16
+        bikes:
+          type: array
+          description: >
+            One entry per bike having at least one tour inside the requested
+            range, in the order the client stacks segments and lists the legend.
+            Bikes with no tours in the range are absent. The Unassigned entry
+            (bikeId absent) is last and present only if such tours exist.
+          items:
+            $ref: '#/components/schemas/TourReportBike'
+        buckets:
+          type: array
+          description: ascending by year, then month
+          items:
+            $ref: '#/components/schemas/TourReportBucket'
+    TourReportBike:
+      type: object
+      description: >
+        Series identity. Carries raw identity fields so the client composes the
+        display identity with the same rule used elsewhere.
+      properties:
+        bikeId:
+          type: string
+          format: uuid
+          description: >
+            absent for the Unassigned series - tours with no bike; at most one
+            such entry (defensive: tour.bike_id is currently mandatory)
+        bikeName:
+          type: string
+          description: may be empty when the bike has no name
+        bikeModel:
+          type: string
+          description: bike display identity is name, else model (same rule as elsewhere)
+    TourReportBucket:
+      type: object
+      required:
+        - year
+        - items
+      properties:
+        year:
+          type: integer
+          format: int16
+        month:
+          type: integer
+          format: int16
+          minimum: 1
+          maximum: 12
+          description: >
+            set for granularity=month only; omitted (not null) for
+            granularity=year
+        items:
+          type: array
+          description: >
+            one entry per contributing bike, in the order of the top-level bikes
+            list; bikes with no tours in this bucket are omitted
+          items:
+            $ref: '#/components/schemas/TourReportItem'
+    TourReportItem:
+      type: object
+      description: aggregates of one bike's tours inside one bucket
+      required:
+        - distance
+        - ascent
+        - durationMoving
+      properties:
+        bikeId:
+          type: string
+          format: uuid
+          description: absent for the Unassigned series; joins to TourReportBike
+        distance:
+          type: integer
+          format: int64
+          minimum: 0
+          description: total distance in meters
+        ascent:
+          type: integer
+          format: int64
+          minimum: 0
+          description: total altitude climbed in meters
+        durationMoving:
+          type: integer
+          format: int64
+          minimum: 0
+          description: total time moving in seconds
